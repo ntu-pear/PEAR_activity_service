@@ -61,13 +61,6 @@ jobs:
       #    echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
       #    echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
 
-
-      # Ensure image build successfully before deleting old deployment
-      - name: Build Docker image
-        run: |
-          echo "Building Docker image..."
-          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
-
       - name: Delete old deployment
         run: |
           echo "Deleting old deployment..."
@@ -77,6 +70,11 @@ jobs:
         run: |
           docker rmi activity_service_dev
           docker rmi localhost:5000/activity_service_dev
+
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image..."
+          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
 
       - name: Tag Docker image
         run: |
