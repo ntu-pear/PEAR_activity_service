@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+
+# Git repository
+.git/
+.gitignore
+
+# Kubernetes config files
+k8s/
+
+# README and documentation files
+README.md
+
+# VSCode settings folder (for local dev)
+.vscode/
+
+# Temporary or backup files
+*.swp
+*.swo
+*.bak
+*.tmp

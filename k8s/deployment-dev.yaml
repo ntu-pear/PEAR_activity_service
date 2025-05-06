@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activity-service-dev
+  labels:
+    app: activity-service-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: activity-service-dev
+  template:
+    metadata:
+      labels:
+        app: activity-service-dev
+    spec:
+      containers:
+      - name: activity-service
+        image: host.minikube.internal:5000/activity_service_dev:latest  # Replace with your Docker image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_DRIVER_DEV
+          valueFrom: 
+            configMapKeyRef:
+              name: fyp-config
+              key: DB_DRIVER_DEV
+        - name: DB_SERVER_DEV
+          valueFrom: 
+            configMapKeyRef:
+              name: fyp-config
+              key: DB_SERVER_DEV
+        - name: DB_DATABASE_DEV
+          valueFrom: 
+            configMapKeyRef:
+              name: fyp-config
+              key: DB_DATABASE_DEV
+        - name: DB_DATABASE_PORT
+          valueFrom: 
+            configMapKeyRef:
+              name: fyp-config
+              key: DB_DATABASE_PORT
+        - name: DB_USERNAME_DEV
+          valueFrom: 
+            secretKeyRef:
+              name: fyp-secret
+              key: DB_USERNAME_DEV
+        - name: DB_PASSWORD_DEV
+          valueFrom: 
+            secretKeyRef:
+              name: fyp-secret
+              key: DB_PASSWORD_DEV
+        volumeMounts:
+        - name: log-volume
+          mountPath: /app/logs  # Path inside the container
+      volumes:
+      - name: log-volume
+        hostPath:
+          path: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs  # Path on the host machine
+          type: DirectoryOrCreate  # Ensures directory is created if it doesn’t exist
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: activity-service-dev
+spec:
+  selector:
+    app: activity-service-dev
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30000
+  type: NodePort
