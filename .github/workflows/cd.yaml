@@ -48,18 +48,25 @@ jobs:
           ls -la
           git status
 
-      #- name: Create .env file from GitHub Secrets
-      #  run: |
-      #    echo "DB_SERVER_DEV=${{ secrets.DB_SERVER_DEV }}" >> .env
-      #    echo "DB_DATABASE_DEV=${{ secrets.DB_DATABASE_DEV }}" >> .env
-      #    echo "DB_DATABASE_PORT=${{ secrets.DB_DATABASE_PORT }}" >> .env
-      #    echo "DB_USERNAME_DEV=${{ secrets.DB_USERNAME_DEV }}" >> .env
-      #    echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
-      #    echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "DB_SERVER_DEV=${{ secrets.DB_SERVER_DEV }}" >> .env
+          echo "DB_DATABASE_DEV=${{ secrets.DB_DATABASE_DEV }}" >> .env
+          echo "DB_DATABASE_PORT=${{ secrets.DB_DATABASE_PORT }}" >> .env
+          echo "DB_USERNAME_DEV=${{ secrets.DB_USERNAME_DEV }}" >> .env
+          echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
+          echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
       #    echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
       #    echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
       #    echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
       #    echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+
+
+      # Ensure image build successfully before deleting old deployment
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image..."
+          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
 
       - name: Delete old deployment
         run: |
@@ -70,11 +77,6 @@ jobs:
         run: |
           docker rmi activity_service_dev
           docker rmi localhost:5000/activity_service_dev
-
-      - name: Build Docker image
-        run: |
-          echo "Building Docker image..."
-          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
 
       - name: Tag Docker image
         run: |
