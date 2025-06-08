@@ -34,6 +34,12 @@ cd PEAR_activity_service
 conda create -n pear_activity_service python=3.9.19
 conda activate pear_activity_service
 ```
+Python
+```bash
+python -m venv pear_activity_service
+pear_activity_service/Scripts/activate #for windows
+# source pear_activity_service/bin/activate for linux
+```
 ### Install the required dependencies
 ```bash
 #install the necessary requirements in the conda environment
