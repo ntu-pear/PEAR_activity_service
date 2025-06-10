@@ -91,4 +91,4 @@ jobs:
         run: |
           echo "Deploying..."
           kubectl apply -f './k8s/deployment-dev.yaml'
-          kubectl apply -f '../k8s/filebeat-daemonset.yaml'
+          kubectl apply -f './k8s/filebeat-daemonset.yaml'
