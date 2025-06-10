@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 import app.crud.activity_crud as crud
 import app.schemas.activity as schemas
-from app.utils.database import get_db
+from app.database import get_db
 
 router = APIRouter(
     prefix="/activities",
@@ -20,11 +20,9 @@ def create_activity(
 
 @router.get("/", response_model=List[schemas.Activity])
 def list_activities(
-    skip: int = 0,
-    limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    return crud.get_activities(db, skip, limit)
+    return crud.get_activities(db)
 
 @router.get("/{activity_id}", response_model=schemas.Activity)
 def get_activity(

@@ -1,6 +1,6 @@
 import uuid, datetime
 from sqlalchemy import Column, String, Boolean, Integer, DateTime
-from app.utils.database import Base
+from app.database import Base
 
 class Activity(Base):
     __tablename__ = "activity"

@@ -8,8 +8,8 @@ def get_activity(db: Session, activity_id: str):
              .filter(models.Activity.id == activity_id)\
              .first()
 
-def get_activities(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Activity).offset(skip).limit(limit).all()
+def get_activities(db: Session):
+    return db.query(models.Activity).all()
 
 def create_activity(db: Session, obj_in: schemas.ActivityCreate):
     db_obj = models.Activity(**obj_in.dict())
