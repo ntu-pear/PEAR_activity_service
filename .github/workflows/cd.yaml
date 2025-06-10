@@ -24,20 +24,17 @@ jobs:
           echo "Checking Docker registry access..."
           docker info || (echo "Docker not accessible" && exit 1)
 
-  build:
+  deploy:
     needs: precheck
     runs-on: [self-hosted, Linux, X64, activity]
 
-    #env:
-    #  DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
-    #  DB_DATABASE_DEV: ${{ secrets.DB_DATABASE_DEV }}
-    #  DB_DATABASE_PORT: ${{ secrets.DB_DATABASE_PORT }}
-    #  DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
-    #  DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
-    #  CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-    #  CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-    #  CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-    #  WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
+    env:
+      DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
+      DB_DATABASE_DEV: ${{ secrets.DB_DATABASE_DEV }}
+      DB_DATABASE_PORT: ${{ secrets.DB_DATABASE_PORT }}
+      DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
+      DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
+      WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
 
 
     steps:
@@ -50,16 +47,20 @@ jobs:
 
       - name: Create .env file from GitHub Secrets
         run: |
+          if [ ! -z "${{ secrets.DB_DRIVER }}" ]; then echo "DB_DRIVER=${{ secrets.DB_DRIVER }}" >> .env; fi
           echo "DB_SERVER_DEV=${{ secrets.DB_SERVER_DEV }}" >> .env
           echo "DB_DATABASE_DEV=${{ secrets.DB_DATABASE_DEV }}" >> .env
           echo "DB_DATABASE_PORT=${{ secrets.DB_DATABASE_PORT }}" >> .env
           echo "DB_USERNAME_DEV=${{ secrets.DB_USERNAME_DEV }}" >> .env
           echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
           echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
-      #    echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
-      #    echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
-      #    echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
-      #    echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+          echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+
+      - name: Apply Kubernetes ConfigMap
+        run: |
+          echo "Applying ConfigMap..."
+          kubectl apply -f './k8s/configmap.yaml'
+          kubectl apply -f './k8s/secret.yaml'
 
       - name: Delete old deployment
         run: |
@@ -89,6 +90,5 @@ jobs:
       - name: Deploying to Kubernetes
         run: |
           echo "Deploying..."
-          kubectl apply -f './k8s/configmap.yaml'
-          kubectl apply -f './k8s/secret.yaml'
           kubectl apply -f './k8s/deployment-dev.yaml'
+          kubectl apply -f './k8s/filebeat-daemonset.yaml'

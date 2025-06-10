@@ -46,10 +46,7 @@ spec:
               name: fyp-secret
               key: DB_USERNAME_DEV
         - name: DB_PASSWORD_DEV
-          valueFrom: 
-            secretKeyRef:
-              name: fyp-secret
-              key: DB_PASSWORD_DEV
+          value: "Fyppear@3"
         volumeMounts:
         - name: log-volume
           mountPath: /app/logs  # Path inside the container
