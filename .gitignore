@@ -71,3 +71,5 @@ logs/*.log
 
 # IntelliJ
 .idea/
+
+pear_activity_service/
