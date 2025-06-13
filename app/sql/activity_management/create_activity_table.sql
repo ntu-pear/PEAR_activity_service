@@ -1,44 +1,26 @@
-USE fyp_dev_zihao; /*Change to your database name*/
+USE activity_service_dev; /*Change to your database name*/
 GO
 
 IF NOT EXISTS (
-    SELECT * 
-      FROM sys.objects 
-     WHERE object_id = OBJECT_ID(N'[dbo].[activity]')
-       AND type = N'U'
+  SELECT *
+    FROM sys.objects
+   WHERE object_id = OBJECT_ID(N'[dbo].[ACTIVITY]')
+     AND type = N'U'
 )
 BEGIN
-    CREATE TABLE [dbo].[activity] (
-        [id]                  UNIQUEIDENTIFIER NOT NULL
-                              CONSTRAINT [PK_activity] PRIMARY KEY
-                              DEFAULT NEWID(),
-        [title]               NVARCHAR(200)     NOT NULL,
-        [description]         NVARCHAR(MAX)     NULL,
-        [start_date]          DATETIME2(3)      NOT NULL,
-        [end_date]            DATETIME2(3)      NULL,
-        [is_fixed]            BIT               NOT NULL CONSTRAINT [DF_activity_is_fixed] DEFAULT (0),
-        [is_compulsory]       BIT               NOT NULL CONSTRAINT [DF_activity_is_compulsory] DEFAULT (0),
-        [is_group]            BIT               NOT NULL CONSTRAINT [DF_activity_is_group] DEFAULT (0),
-        [min_duration]        INT               NULL,
-        [max_duration]        INT               NULL,
-        [min_people_required] INT               NULL,
-        [created_date]        DATETIME2(3)      NOT NULL CONSTRAINT [DF_activity_created_date] DEFAULT (SYSUTCDATETIME()),
-        [modified_date]       DATETIME2(3)      NOT NULL CONSTRAINT [DF_activity_modified_date] DEFAULT (SYSUTCDATETIME())
-    );
-
-    EXEC('
-    CREATE TRIGGER [dbo].[TRG_activity_ModifiedDate]
-    ON [dbo].[activity]
-    AFTER UPDATE
-    AS
-    BEGIN
-      SET NOCOUNT ON;
-      UPDATE a
-        SET modified_date = SYSUTCDATETIME()
-      FROM [dbo].[activity] AS a
-      JOIN inserted AS i
-        ON a.id = i.id;
-    END
-    ');
+  CREATE TABLE [dbo].[ACTIVITY] (
+    [ID]              INT            IDENTITY(1,1) NOT NULL
+       CONSTRAINT [PK_ACTIVITY] PRIMARY KEY,
+    [ACTIVE]          BIT            NOT NULL CONSTRAINT [DF_ACTIVITY_ACTIVE] DEFAULT (1),
+    [IS_DELETED]      BIT            NOT NULL CONSTRAINT [DF_ACTIVITY_IS_DELETED] DEFAULT (0),
+    [TITLE]           NVARCHAR(200)  NOT NULL,
+    [DESCRIPTION]     NVARCHAR(MAX)  NULL,
+    [START_DATE]      DATETIME2(3)   NOT NULL,
+    [END_DATE]        DATETIME2(3)   NULL,
+    [CREATED_DATE]    DATETIME2(3)   NOT NULL CONSTRAINT [DF_ACTIVITY_CREATED_DATE] DEFAULT SYSUTCDATETIME(),
+    [MODIFIED_DATE]   DATETIME2(3)   NOT NULL CONSTRAINT [DF_ACTIVITY_MODIFIED_DATE] DEFAULT SYSUTCDATETIME(),
+    [CREATED_BY_ID]   NVARCHAR(50)   NULL,
+    [MODIFIED_BY_ID]  NVARCHAR(50)   NULL
+  );
 END
 GO

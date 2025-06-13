@@ -1,20 +1,20 @@
-import uuid, datetime
-from sqlalchemy import Column, String, Boolean, Integer, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from app.database import Base
 
 class Activity(Base):
-    __tablename__ = "activity"
+    __tablename__ = "ACTIVITY"
 
-    id                  = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    title               = Column(String, nullable=False)
-    description         = Column(String, nullable=True)
-    start_date          = Column(DateTime, nullable=False)
-    end_date            = Column(DateTime, nullable=True)
-    is_fixed            = Column(Boolean, default=False)
-    is_compulsory       = Column(Boolean, default=False)
-    is_group            = Column(Boolean, default=False)
-    min_duration        = Column(Integer, nullable=True)
-    max_duration        = Column(Integer, nullable=True)
-    min_people_required = Column(Integer, nullable=True)
-    created_date        = Column(DateTime, default=datetime.datetime.utcnow)
-    modified_date       = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    id            = Column("ID", Integer, primary_key=True, autoincrement=True)
+    active        = Column("ACTIVE", Boolean, nullable=False, default=True)
+    is_deleted    = Column("IS_DELETED", Boolean, nullable=False, default=False) 
+    title         = Column("TITLE", String(200), nullable=False)
+    description   = Column("DESCRIPTION", String, nullable=True)
+    startDate    = Column("START_DATE", DateTime, nullable=False)
+    endDate      = Column("END_DATE", DateTime, nullable=True)
+    created_date  = Column("CREATED_DATE", DateTime, nullable=False,
+                           server_default=func.sysutcdatetime())
+    modified_date = Column("MODIFIED_DATE", DateTime, nullable=False,
+                           server_default=func.sysutcdatetime(),
+                           onupdate=func.sysutcdatetime())
+    created_by_id  = Column("CREATED_BY_ID", String(50), nullable=True)
+    modified_by_id = Column("MODIFIED_BY_ID", String(50), nullable=True)    
