@@ -18,7 +18,7 @@ class CentreActivity(Base):
     min_duration = Column(Integer, nullable=False, default=30)  
     max_duration = Column(Integer, nullable=False, default =60)
     min_people_req = Column(Integer, nullable=False, default=1)
-    fixed_time_slots = Column(String, nullable=True)
+    #fixed_time_slots = Column(String, nullable=True)
 
     created_date = Column(DateTime, nullable=False, default=datetime.now())
     modified_date = Column(DateTime, nullable=False, default=datetime.now(), onupdate=datetime.utcnow)

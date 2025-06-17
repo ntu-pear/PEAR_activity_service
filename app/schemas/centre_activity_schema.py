@@ -11,7 +11,7 @@ class CentreActivityBase(BaseModel):
     min_duration: int = Field(..., description="Minimum duration in minutes")
     max_duration: int = Field(..., description="Maximum duration in minutes")
     min_people_req: int = Field(..., description="Minimum number of people required")
-    fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
+    #fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
 
     @model_validator(mode='after')
     def validate_input(self):

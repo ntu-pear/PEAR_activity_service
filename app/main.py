@@ -49,9 +49,13 @@ app.add_middleware(
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"Validation error at {request.url}: {exc.errors()}")
+    errors = exc.errors()
+    for error in errors:
+        if "ctx" in error and "error" in error["ctx"]:
+            error["ctx"]["error"] = str(error["ctx"]["error"])
     return JSONResponse(
         status_code=400,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={"detail": errors, "body": exc.body},
     )
 
 @app.exception_handler(SQLAlchemyError)
@@ -71,9 +75,13 @@ except Exception as db_init_error:
 
 
 # Include routers
-app.include_router(
-    centre_activity_router.router, prefix=f"{API_VERSION_PREFIX}/centre-activities", tags=["Centre Activities"]
-)
+routers = [
+    (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
+]
+
+for router, prefix, tags, in routers:
+    app.include_router(router, prefix=prefix, tags=tags)
+
 
 @app.get("/")
 def read_root():

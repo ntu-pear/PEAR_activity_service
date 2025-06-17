@@ -13,7 +13,6 @@ CREATE TABLE [dbo].[CENTRE_ACTIVITY] (
     min_duration       INT           NOT NULL,
     max_duration       INT           NOT NULL,
     min_people_req     INT           NOT NULL CONSTRAINT df_centre_activity_min_people_req DEFAULT(1),
-    fixed_time_slots   NVARCHAR(255) NULL,
     start_date         DATETIME2(3)  NOT NULL,
     end_date           DATETIME2(3)  NULL,
     active             BIT           NOT NULL CONSTRAINT df_centre_activity_active DEFAULT(1),
