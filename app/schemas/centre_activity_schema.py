@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -13,13 +13,13 @@ class CentreActivityBase(BaseModel):
     min_people_req: int = Field(..., description="Minimum number of people required")
     fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
 
-    @root_validator
-    def validate_input(cls, values):
-        is_fixed = values.get('is_group')
-        is_group = values.get('is_fixed')
-        min_duration = values.get('min_duration')
-        max_duration = values.get('max_duration')
-        min_people_req = values.get('min_people_req')
+    @model_validator(mode='after')
+    def validate_input(self):
+        is_fixed = self.is_fixed
+        is_group = self.is_group
+        min_duration = self.min_duration
+        max_duration = self.max_duration
+        min_people_req = self.min_people_req
 
         if is_group and (min_people_req is None or min_people_req < 2):
             raise ValueError("Group activities must have a minimum of 2 people required.")
@@ -31,7 +31,7 @@ class CentreActivityBase(BaseModel):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
         if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
             raise ValueError("Duration must be either 30 or 60 minutes.")
-        return values
+        return self
 
 class CentreActivityCreate(CentreActivityBase):
     created_by_id: str = Field(..., description="ID of the user who created this activity")
@@ -51,6 +51,6 @@ class CentreActivityResponse(CentreActivityBase):
     modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
     
 

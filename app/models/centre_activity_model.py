@@ -1,9 +1,9 @@
-from sqlachemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
-class CentreActivityBase(Base):
+class CentreActivity(Base):
     __tablename__ = "CENTRE_ACTIVITY"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

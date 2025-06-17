@@ -1,4 +1,4 @@
-from sqlachemy.orm import Session
+from sqlalchemy.orm import Session
 from app.models.centre_activity_model import CentreActivity
 from app.schemas.centre_activity_schema import (
     CentreActivityCreate, 
