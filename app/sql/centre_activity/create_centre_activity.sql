@@ -1,4 +1,4 @@
-USE fyp_dev_cebelle;
+USE activity_service_dev;
 GO
 
 -- Create table

@@ -1,4 +1,4 @@
-USE fyp_dev_cebelle;
+USE activity_service_dev;
 GO
 
 -- Example seed data (assuming activity IDs for demonstration; update IDs to match your ACTIVITY table!)
