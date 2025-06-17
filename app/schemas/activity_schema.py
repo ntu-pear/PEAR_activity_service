@@ -8,8 +8,8 @@ class ActivityBase(BaseModel):
     description: Optional[str] = Field(
         None, example="Gentle stroll around the garden"
     )
-    start_date: datetime = Field(..., alias="startDate")
-    end_date: Optional[datetime] = Field(None, alias="endDate")
+    start_date: datetime = Field(..., alias="start_date")
+    end_date: Optional[datetime] = Field(None, alias="end_date")
 
     class Config:
         populate_by_name = True

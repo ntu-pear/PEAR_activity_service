@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError  # For handling database-related errors
 from sqlalchemy.orm import clear_mappers
 #from .database import engine, Base
-from app.routers.activity_router import router as activity_router
+from app.routers import (activity_router)
 
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -27,4 +27,4 @@ def read_root():
     logger.info("Root endpoint accessed")
     return {"message": "Welcome to the NTU FYP ACTIVITY SERVICE"}
 
-app.include_router(activity_router, prefix="/api/v1", tags=["activities"])
+app.include_router(activity_router.router, prefix="/api/v1", tags=["activities"])
