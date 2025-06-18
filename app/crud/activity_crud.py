@@ -30,7 +30,7 @@ def get_activities(db: Session, *, skip: int = 0, limit: int = 100) -> List[mode
     )
 
 def create_activity(db: Session, *, activity_in: schemas.ActivityCreate) -> models.Activity:
-    obj = models.Activity(**activity_in.model_dump()(by_alias=True))
+    obj = models.Activity(**activity_in.model_dump(by_alias=True))
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -44,7 +44,7 @@ def update_activity_by_id(db: Session, *, activity_id: int, activity_in: schemas
             detail="Activity not found"
         )
 
-    update_data = activity_in.model_dump()(by_alias=True, exclude_unset=True)
+    update_data = activity_in.model_dump(by_alias=True, exclude_unset=True)
     for field, value in update_data.items():
         setattr(obj, field, value)
 
