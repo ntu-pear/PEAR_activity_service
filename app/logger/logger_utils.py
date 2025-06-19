@@ -3,6 +3,7 @@ from .config import logger
 import json
 from enum import Enum
 from typing import Optional
+from sqlalchemy.orm import DeclarativeMeta
 
 class ActionType(Enum):
     CREATE = "create"
@@ -14,6 +15,27 @@ EXCLUDED_KEYS = {"CreatedById", "ModifiedById", "ModifiedDate", "CreatedDate", "
 def filter_data(data: dict) -> dict:
     """Removes unwanted keys from the given dictionary."""
     return {k: v for k, v in data.items() if k not in EXCLUDED_KEYS} if data else {}
+
+def model_to_dict(obj):
+    """Convert a SQLAlchemy model instance to a dict of its columns."""
+    if obj is None:
+        return None
+    return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+
+def serialize_data(data):
+    if isinstance(data, datetime):
+        return data.isoformat()
+    # Handle SQLAlchemy model instances
+    try:
+        if isinstance(data.__class__, DeclarativeMeta):
+            return serialize_data(model_to_dict(data))
+    except Exception:
+        pass
+    if isinstance(data, dict):
+        return {key: serialize_data(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [serialize_data(item) for item in data]
+    return data
 
 def log_crud_action(
     action: ActionType,
@@ -37,6 +59,8 @@ def log_crud_action(
     "updated_data": filter_data(updated_data),
 }
 
+    serializable_log_data = serialize_data(log_data)
+
     extra = {
         "table": table,
         "user": user,
@@ -44,13 +68,4 @@ def log_crud_action(
         "user_full_name": user_full_name,
         "log_text": message,
     }
-    logger.info(json.dumps(log_data), extra=extra)
-
-def serialize_data(data):
-    if isinstance(data, datetime):
-        return data.isoformat()
-    elif isinstance(data, dict):
-        return {key: serialize_data(value) for key, value in data.items()}
-    elif isinstance(data, list):
-        return [serialize_data(item) for item in data]
-    return data
+    logger.info(json.dumps(serializable_log_data), extra=extra)

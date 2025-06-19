@@ -6,10 +6,7 @@ import app.crud.activity_crud as crud
 import app.schemas.activity_schema as schemas
 from app.database import get_db
 
-router = APIRouter(
-    prefix="/activities",
-    tags=["activities"],
-)
+router = APIRouter()
 
 @router.post(
     "/",

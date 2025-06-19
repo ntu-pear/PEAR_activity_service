@@ -17,8 +17,9 @@ file_handler = logging.FileHandler(log_file)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
 
-# stream_handler = logging.StreamHandler()
-# stream_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+stream_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
 
 logging.basicConfig(level=logging.INFO, handlers=[file_handler])
 
