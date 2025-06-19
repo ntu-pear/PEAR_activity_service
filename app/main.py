@@ -5,8 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError  # For handling database-related errors
 from sqlalchemy.orm import clear_mappers
-#from .database import engine, Base
-from app.routers import (activity_router)
+from .database import engine, Base
 
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -18,6 +17,7 @@ from app.models import(
 
 from app.routers import(
     centre_activity_router,
+    activity_router
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -80,6 +80,7 @@ except Exception as db_init_error:
 # Include routers
 routers = [
     (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
+    (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
 ]
 
 for router, prefix, tags, in routers:
@@ -90,5 +91,3 @@ for router, prefix, tags, in routers:
 def read_root():
     logger.info("Root endpoint accessed")
     return {"message": "Welcome to the NTU FYP ACTIVITY SERVICE"}
-
-app.include_router(activity_router.router, prefix="/api/v1", tags=["activities"])
