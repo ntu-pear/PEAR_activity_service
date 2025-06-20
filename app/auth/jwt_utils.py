@@ -79,16 +79,26 @@ def get_current_user_with_flag(
 
 def get_user_id(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract userId from JWTPayload model."""
-    return payload.userId if payload else None
+    if not payload or not hasattr(payload, 'userId') or payload.userId == '':
+        return None
+    return getattr(payload, "userId", None)
 
 def get_full_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract fullName from JWTPayload model."""
-    return payload.fullName if payload else None
+    if not payload or not hasattr(payload, 'fullName') or payload.fullName == '':
+        return None
+    return getattr(payload, "fullName", None)
 
 def get_role_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract roleName from JWTPayload model."""
-    return payload.roleName if payload else None
+    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+        return None
+    
+    return getattr(payload, "roleName", None)
 
+# Centre Activity is only accessible to Supervisors
 def is_supervisor(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Supervisor role."""
-    return payload.roleName.lower() == "supervisor" if payload and payload.roleName else False
+    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+        return False
+    return getattr(payload, "roleName", "").upper() == "SUPERVISOR"
