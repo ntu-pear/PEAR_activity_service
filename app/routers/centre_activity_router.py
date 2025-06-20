@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_crud as crud 
 import app.schemas.centre_activity_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload
+from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
+from typing import Optional
 
 router = APIRouter()
 
@@ -16,14 +17,22 @@ router = APIRouter()
 def create_centre_activity(
     payload: schemas.CentreActivityCreate,
     db: Session = Depends(get_db),
-    #current_user = Depends(get_current_user_with_flag)  # Optional JWT for Swagger testing
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
 ):
-    #user_full_name = getattr(current_user, 'fullName', 'Anonymous User') if current_user else 'Anonymous User'
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to create a Centre Activity."
+        )
     
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous",
+    }
     return crud.create_centre_activity(
         db=db,
         centre_activity_data=payload,
-        #user_full_name=user_full_name
+        current_user_info=current_user_info,
     )
 
 
@@ -34,8 +43,13 @@ def create_centre_activity(
         response_model=list[schemas.CentreActivityResponse])
 def list_activities(
     db: Session = Depends(get_db),
-    #current_user = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
 ):
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view Centre Activities."
+        )
     return crud.get_centre_activities(db)
 
 
@@ -47,8 +61,13 @@ def list_activities(
 def get_by_id(
     centre_activity_id: int,
     db: Session = Depends(get_db),
-   # current_user = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
 ):
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view a Centre Activity."
+        )
     return crud.get_centre_activity_by_id(db, centre_activity_id)
 
 
@@ -60,13 +79,22 @@ def get_by_id(
 def update(
     centre_activity: schemas.CentreActivityUpdate,
     db: Session = Depends(get_db),
-    #current_user = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
 ):
-    #user_full_name = getattr(current_user, 'fullName', 'Anonymous User') if current_user else 'Anonymous User'
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update a Centre Activity."
+        )
+    
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous",
+    }
     return crud.update_centre_activity(
         db=db,
         centre_activity_data=centre_activity,
-        #user_full_name=user_full_name
+        current_user_info=current_user_info
     )
 
 
@@ -78,14 +106,23 @@ def update(
         )
 def delete(
     centre_activity_id: int,
-    modified_by_id: str = Query(..., description="ID of the user modifying the record"),    # To be replaced with JWT auth
-    #user_full_name: str = Query(..., description="Full name of the user"),                  # To be replaced with JWT auth
     db: Session = Depends(get_db),
-    #current_user = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
 ):
+    
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete a Centre Activity."
+        )
+    
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous",
+    }
+
     return crud.delete_centre_activity(
         db=db,
         centre_activity_id=centre_activity_id,
-        modified_by_id=modified_by_id,
-        #user_full_name=user_full_name
+        current_user_info=current_user_info
     )
