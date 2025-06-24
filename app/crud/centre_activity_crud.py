@@ -20,7 +20,24 @@ def create_centre_activity(
     
     db_centre_activity = models.CentreActivity(
         **centre_activity_data.model_dump(), 
+        modified_by_id=centre_activity_data.created_by_id,
         )
+    
+    # Check if the same centre_activity exists
+    essential_fields = {
+        "activity_id": centre_activity_data.activity_id,
+        "is_compulsory": centre_activity_data.is_compulsory,
+        "is_fixed": centre_activity_data.is_fixed,
+        "is_group": centre_activity_data.is_group,
+        "min_duration": centre_activity_data.min_duration,
+        "max_duration": centre_activity_data.max_duration,
+        "min_people_req": centre_activity_data.min_people_req,
+    }
+
+    existing_centre_activity = db.query(models.CentreActivity).filter_by(**essential_fields).first()
+
+    if existing_centre_activity:
+        raise HTTPException(status_code=400, detail="Centre Activity with these attributes already exists (including soft-deleted records).")
     
     db.add(db_centre_activity)
     db.commit()
@@ -139,9 +156,3 @@ def delete_centre_activity(
         updated_data=None
     )
     return db_centre_activity
-
-
-
-
-
-
