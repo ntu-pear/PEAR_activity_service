@@ -14,7 +14,7 @@ def get_db_session_mock():
 @pytest.fixture
 def mock_current_user():
     return {
-        "id": "1",
+        "id": "2",
         "fullName": "Test User",
         "email": "test@test.com",
         "roleName": "SUPERVISOR",
@@ -43,26 +43,54 @@ def existing_activity(base_activity_data):
 
 # --- Centre Activity Fixtures ---
 @pytest.fixture
-def base_centre_activity_data():
+def base_centre_activity_data_list():
     """Base data for Centre Activity"""
-    return {
-        "activity_id": 1,
-        "is_compulsory": True,
-        "is_fixed": False,
-        "is_group": False,
-        "min_duration": 30,
-        "max_duration": 60,
-        "min_people_req": 1,
-        #"centre_id": 1,        # To verify schema again
-        "created_by_id": "1",
-        "created_date": datetime.now(),
-        "modified_date": datetime.now()
-    }
+    return [
+        {
+            "id": 1,
+            "activity_id": 1,
+            "is_deleted": False,
+            "is_compulsory": True,
+            "is_fixed": False,
+            "is_group": False,
+            "min_duration": 30,
+            "max_duration": 60,
+            "min_people_req": 1,
+            "created_by_id": "1",
+            "modified_by_id": "1",
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+        },
+        {
+            "id": 1,
+            "activity_id": 2,
+            "is_deleted": False,
+            "is_compulsory": True,
+            "is_fixed": True,
+            "is_group": True,
+            "min_duration": 60,
+            "max_duration": 60,
+            "min_people_req": 4,
+            "created_by_id": "2",
+            "modified_by_id": "2",
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+        },
+    ]
+
+@pytest.fixture
+def base_centre_activity_data(base_centre_activity_data_list):
+    return base_centre_activity_data_list[0]
 
 @pytest.fixture
 def existing_centre_activity(base_centre_activity_data):
     """A CentreActivity instance for mocking DB data"""
-    return CentreActivity(**base_centre_activity_data, )
+    return CentreActivity(**base_centre_activity_data)
+
+@pytest.fixture
+def existing_centre_activities(base_centre_activity_data_list):
+    """A list of CentreActivity instance for mocking DB data"""
+    return [CentreActivity(**data) for data in base_centre_activity_data_list]
 
 @pytest.fixture
 def soft_deleted_centre_activity(base_centre_activity_data):

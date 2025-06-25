@@ -37,7 +37,7 @@ def create_centre_activity(
     existing_centre_activity = db.query(models.CentreActivity).filter_by(**essential_fields).first()
 
     if existing_centre_activity:
-        raise HTTPException(status_code=400, detail="Centre Activity with these attributes already exists (including soft-deleted records).")
+        raise HTTPException(status_code=400, detail="Centre Activity with these attributes already exists (including soft-deleted records)")
     
     db.add(db_centre_activity)
     db.commit()
@@ -84,7 +84,7 @@ def update_centre_activity(
         current_user_info: dict,
         ):
     
-    # Check if centre activity record exists
+    # Check if centre activity record exists. Allow update of is_deleted back to False.
     db_centre_activity = db.query(models.CentreActivity).filter(
         models.CentreActivity.id == centre_activity_data.id,
         ).first()
@@ -134,7 +134,7 @@ def delete_centre_activity(
         ).first()
     
     if not db_centre_activity:
-        raise HTTPException(status_code=404, detail="Centre Activity not found")
+        raise HTTPException(status_code=404, detail="Centre Activity not found (including soft-deleted records)")
     
     modified_by_id = current_user_info.get("id") or db_centre_activity.modified_by_id
     db_centre_activity.is_deleted = True
