@@ -35,7 +35,6 @@ class CentreActivityBase(BaseModel):
 
 class CentreActivityCreate(CentreActivityBase):
     created_by_id: str = Field(..., description="ID of the user who created this activity")
-    modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
 
 class CentreActivityUpdate(CentreActivityBase):
     modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
