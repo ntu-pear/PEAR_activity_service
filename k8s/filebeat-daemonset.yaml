@@ -49,6 +49,8 @@ data:
       enabled: true
       paths:
         - /home/VMadmin/FYP_microservices/PEAR_activity_service/logs/*.log
+      ignore_older: 24h 
 
+    logging.level: warning
     output.logstash:    
       hosts: ["192.168.188.184:5044"]
