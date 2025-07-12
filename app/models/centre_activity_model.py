@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -7,7 +7,6 @@ class CentreActivity(Base):
     __tablename__ = "CENTRE_ACTIVITY"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    active = Column(Integer, nullable=False, default=1)
     activity_id = Column(Integer, ForeignKey("ACTIVITY.id"), nullable=False)
 
     is_deleted = Column(Boolean, nullable=False, default=False)
@@ -15,6 +14,9 @@ class CentreActivity(Base):
     is_fixed = Column(Boolean, nullable=False, default=False)
     is_group = Column(Boolean, nullable=False, default=False)
 
+    start_date = Column(Date, nullable=False, default=datetime.now())
+    end_date = Column(Date, nullable=True)
+    
     min_duration = Column(Integer, nullable=False, default=30)  
     max_duration = Column(Integer, nullable=False, default =60)
     min_people_req = Column(Integer, nullable=False, default=1)

@@ -29,6 +29,8 @@ def create_centre_activity(
         "is_compulsory": centre_activity_data.is_compulsory,
         "is_fixed": centre_activity_data.is_fixed,
         "is_group": centre_activity_data.is_group,
+        "start_date": centre_activity_data.start_date,
+        "end_date": centre_activity_data.end_date,
         "min_duration": centre_activity_data.min_duration,
         "max_duration": centre_activity_data.max_duration,
         "min_people_req": centre_activity_data.min_people_req,
@@ -37,7 +39,12 @@ def create_centre_activity(
     existing_centre_activity = db.query(models.CentreActivity).filter_by(**essential_fields).first()
 
     if existing_centre_activity:
-        raise HTTPException(status_code=400, detail="Centre Activity with these attributes already exists (including soft-deleted records)")
+        raise HTTPException(status_code=400, 
+                            detail={
+                                "message": "Centre Activity with these attributes already exists (including soft-deleted records)",
+                                "existing_id": str(existing_centre_activity.id),
+                                "existing_is_deleted": existing_centre_activity.is_deleted
+                            })
     
     db.add(db_centre_activity)
     db.commit()
@@ -59,11 +66,10 @@ def create_centre_activity(
 
 def get_centre_activity_by_id(
         db: Session, 
-        centre_activity_id: int
+        centre_activity_id: int,
         ):
     db_centre_activity = db.query(models.CentreActivity).filter(
         models.CentreActivity.id == centre_activity_id, 
-        models.CentreActivity.is_deleted == False
         ).first()
     
     if not db_centre_activity:
@@ -71,11 +77,17 @@ def get_centre_activity_by_id(
     return db_centre_activity
 
 
-def get_centre_activities(db: Session):
-    db_centre_activities = db.query(models.CentreActivity).filter(
-        models.CentreActivity.is_deleted==False
-        ).all()
-    return db_centre_activities
+def get_centre_activities(
+        db: Session,
+        include_deleted: bool = False
+    ):
+    db_centre_activities = db.query(models.CentreActivity)
+
+    # Exclude is_deleted=True records, else show all records if include_deleted is True
+    if not include_deleted:
+        db_centre_activities = db_centre_activities.filter(models.CentreActivity.is_deleted == False)
+
+    return db_centre_activities.all()
 
 
 def update_centre_activity(
@@ -95,6 +107,33 @@ def update_centre_activity(
     activity = get_activity_by_id(db, activity_id=centre_activity_data.activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
+    
+    # Check if the same centre_activity exists
+    essential_fields = {
+        "activity_id": centre_activity_data.activity_id,
+        "is_compulsory": centre_activity_data.is_compulsory,
+        "is_fixed": centre_activity_data.is_fixed,
+        "is_group": centre_activity_data.is_group,
+        "start_date": centre_activity_data.start_date,
+        "end_date": centre_activity_data.end_date,
+        "min_duration": centre_activity_data.min_duration,
+        "max_duration": centre_activity_data.max_duration,
+        "min_people_req": centre_activity_data.min_people_req,
+    }
+
+    existing_centre_activity = db.query(models.CentreActivity).filter(
+        models.CentreActivity.id != centre_activity_data.id
+    ).filter_by(
+        **essential_fields
+    ).first()
+    
+    if existing_centre_activity:
+        raise HTTPException(status_code=400, 
+                            detail={
+                                "message": "Centre Activity with these attributes already exists (including soft-deleted records)",
+                                "existing_id": str(existing_centre_activity.id),
+                                "existing_is_deleted": existing_centre_activity.is_deleted
+                            })
     
     original_data_dict = serialize_data(model_to_dict(db_centre_activity))
     updated_data_dict = serialize_data(centre_activity_data.model_dump())
