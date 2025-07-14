@@ -3,13 +3,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 class ActivityBase(BaseModel):
-    active: bool = Field(True, example=True)
     title: str = Field(..., example="Morning Walk")
     description: Optional[str] = Field(
         None, example="Gentle stroll around the garden"
     )
-    start_date: datetime = Field(..., alias="start_date")
-    end_date: Optional[datetime] = Field(None, alias="end_date")
 
     class Config:
         populate_by_name = True
