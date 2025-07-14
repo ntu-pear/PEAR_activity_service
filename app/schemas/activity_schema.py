@@ -16,11 +16,11 @@ class ActivityCreate(ActivityBase):
 
 class ActivityRead(ActivityBase):
     id: int
-    is_deleted: bool = Field(False, alias="isDeleted")
-    created_date: datetime = Field(..., alias="createdDate")
-    modified_date: datetime = Field(..., alias="modifiedDate")
-    created_by_id: Optional[str] = Field(None, alias="createdById")
-    modified_by_id: Optional[str] = Field(None, alias="modifiedById")
+    is_deleted: bool = Field(False, description="Is the Activity deleted")
+    created_date: datetime = Field(..., description="Creation date of the Activity")
+    modified_date: datetime = Field(..., description="Last modification date of the Activity")
+    created_by_id: Optional[str] = Field(None, description="ID of the user who created this activity")
+    modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified this activity")
 
     class Config:
         from_attributes = True    
