@@ -71,10 +71,16 @@ def create_centre_activity(
 def get_centre_activity_by_id(
         db: Session, 
         centre_activity_id: int,
+        include_deleted: bool = False
         ):
-    db_centre_activity = db.query(models.CentreActivity).filter(
-        models.CentreActivity.id == centre_activity_id, 
-        ).first()
+    db_centre_activity = db.query(models.CentreActivity)
+
+    if not include_deleted:
+        db_centre_activity = db_centre_activity.filter(models.CentreActivity.is_deleted == False)
+
+    db_centre_activity = db_centre_activity.filter(
+        models.CentreActivity.id == centre_activity_id
+    ).first()
     
     if not db_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found")
@@ -93,6 +99,9 @@ def get_centre_activities(
     if not include_deleted:
         db_centre_activities = db_centre_activities.filter(models.CentreActivity.is_deleted == False)
 
+    if not db_centre_activities:
+        raise HTTPException(status_code=404, detail="No Centre Activities found")
+    
     return (
         db_centre_activities.order_by(models.CentreActivity.start_date.asc())
         .offset(skip)

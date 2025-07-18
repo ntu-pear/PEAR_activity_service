@@ -143,7 +143,7 @@ def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session
 def test_get_centre_acitivity_by_id_success(get_db_session_mock, existing_centre_activity):
     '''Gets when record is found'''
 
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity
+    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = existing_centre_activity
 
     result = get_centre_activity_by_id(
         db=get_db_session_mock, 
@@ -161,7 +161,7 @@ def test_get_centre_acitivity_by_id_success(get_db_session_mock, existing_centre
 def test_get_centre_activity_by_id_fail(get_db_session_mock):
     '''Fails when record is not found'''
 
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = None
 
     with pytest.raises(HTTPException) as exc:
         get_centre_activity_by_id(
