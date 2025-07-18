@@ -45,11 +45,15 @@ def create_centre_activity(
                                 "existing_id": str(existing_centre_activity.id),
                                 "existing_is_deleted": existing_centre_activity.is_deleted
                             })
-    
+ 
     db.add(db_centre_activity)
-    db.commit()
-    db.refresh(db_centre_activity)
-
+    try:
+        db.commit()
+        db.refresh(db_centre_activity)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating Centre Activity: {str(e)}")
+    
     updated_data_dict = serialize_data(centre_activity_data.model_dump())
     log_crud_action(
         action=ActionType.CREATE,
@@ -145,8 +149,13 @@ def update_centre_activity(
             setattr(db_centre_activity, field, getattr(centre_activity_data, field))
     db_centre_activity.modified_by_id = modified_by_id
     db_centre_activity.modified_date = datetime.now()
-    db.commit()
-    db.refresh(db_centre_activity)
+
+    try:
+        db.commit()
+        db.refresh(db_centre_activity)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating Centre Activity: {str(e)}")
 
     log_crud_action(
         action=ActionType.UPDATE,
@@ -180,8 +189,12 @@ def delete_centre_activity(
     db_centre_activity.modified_by_id = modified_by_id        
     db_centre_activity.modified_date = datetime.now()
     
-    db.commit()
-    db.refresh(db_centre_activity)
+    try:
+        db.commit()
+        db.refresh(db_centre_activity)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting Centre Activity: {str(e)}")
 
     original_data_dict = serialize_data(model_to_dict(db_centre_activity))
     log_crud_action(
