@@ -5,26 +5,27 @@ from sqlalchemy.orm import Session
 import app.models.activity_model as models
 import app.schemas.activity_schema as schemas
 
-def get_activity_by_id(db: Session, *, activity_id: int) -> Optional[models.Activity]:
-    return (
-        db.query(models.Activity)
-          .filter(
-              models.Activity.id == activity_id,
-              models.Activity.is_deleted == False,
-          )
-          .first()
-    )
+def get_activity_by_id(
+    db: Session, *, activity_id: int, include_deleted: bool = False
+) -> Optional[models.Activity]:
+    query = db.query(models.Activity).filter(models.Activity.id == activity_id)
+    if not include_deleted:
+        query = query.filter(models.Activity.is_deleted == False)
+    return query.first()
 
-def get_activities(db: Session, *, skip: int = 0, limit: int = 100) -> List[models.Activity]:
+def get_activities(
+    db: Session, *, skip: int = 0, limit: int = 100, include_deleted: bool = False
+) -> List[models.Activity]:
+    query = db.query(models.Activity)
+
+    # Exclude is_deleted=True records, else show all records if include_deleted is True
+    if not include_deleted:
+        query = query.filter(models.Activity.is_deleted == False)
     return (
-        db.query(models.Activity)
-          .filter(
-              models.Activity.is_deleted == False,
-          )
-          .order_by(models.Activity.id)       
-          .offset(skip)
-          .limit(limit)
-          .all()
+        query.order_by(models.Activity.id)
+             .offset(skip)
+             .limit(limit)
+             .all()
     )
 
 def create_activity(db: Session, *, activity_in: schemas.ActivityCreate) -> models.Activity:
@@ -45,8 +46,12 @@ def create_activity(db: Session, *, activity_in: schemas.ActivityCreate) -> mode
 
     obj = models.Activity(**activity_in.model_dump(by_alias=True))
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    try:    
+        db.commit()
+        db.refresh(obj)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database commit failed")
     return obj
 
 def update_activity_by_id(db: Session, *, activity_id: int, activity_in: schemas.ActivityCreate) -> models.Activity:
@@ -62,8 +67,12 @@ def update_activity_by_id(db: Session, *, activity_id: int, activity_in: schemas
     for field, value in update_data.items():
         setattr(obj, field, value)
 
-    db.commit()
-    db.refresh(obj)
+    try:
+        db.commit()
+        db.refresh(obj)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database commit failed")
     return obj
 
 def delete_activity_by_id(db: Session, *, activity_id: int) -> models.Activity:
@@ -75,6 +84,10 @@ def delete_activity_by_id(db: Session, *, activity_id: int) -> models.Activity:
         )
     obj.is_deleted = True
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    try:
+        db.commit()
+        db.refresh(obj)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database commit failed")
     return obj
