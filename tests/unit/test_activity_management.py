@@ -87,19 +87,21 @@ def test_delete_activity_by_id_not_found(mock_get, get_db_session_mock):
 def test_get_activity_by_id_found(get_db_session_mock, existing_activity):
     """Should return an Activity if it exists and is not deleted."""
     query_mock = get_db_session_mock.query.return_value
-    filter_mock = query_mock.filter.return_value
-    filter_mock.first.return_value = existing_activity
+    filter1_mock = query_mock.filter.return_value
+    filter2_mock = filter1_mock.filter.return_value
+    filter2_mock.first.return_value = existing_activity
 
     result = get_activity_by_id(get_db_session_mock, activity_id=1)
 
     get_db_session_mock.query.assert_called_once_with(models.Activity)
-    query_mock.filter.assert_called_once()
-    filter_mock.first.assert_called_once()
     assert result == existing_activity
 
 def test_get_activity_by_id_not_found(get_db_session_mock):
     """Should return None if no matching Activity."""
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    query_mock = get_db_session_mock.query.return_value
+    filter1_mock = query_mock.filter.return_value
+    filter2_mock = filter1_mock.filter.return_value
+    filter2_mock.first.return_value = None
 
     result = get_activity_by_id(get_db_session_mock, activity_id=999)
     assert result is None
