@@ -45,6 +45,8 @@ def list_activities(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
     include_deleted: bool = Query(False, description="Include soft-deleted records"),
+    skip: int = 0,
+    limit: int = 100,
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(

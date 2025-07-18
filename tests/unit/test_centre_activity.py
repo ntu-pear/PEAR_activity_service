@@ -174,7 +174,7 @@ def test_get_centre_activity_by_id_fail(get_db_session_mock):
 def test_get_centre_activities_success(get_db_session_mock, existing_centre_activities):
     '''Gets all Centre Activity records'''
 
-    get_db_session_mock.query.return_value.filter.return_value.all.return_value = existing_centre_activities
+    get_db_session_mock.query.return_value.filter.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = existing_centre_activities
 
     print("Existing Centre Activities:", existing_centre_activities)
     result = get_centre_activities(db=get_db_session_mock)

@@ -83,7 +83,9 @@ def get_centre_activity_by_id(
 
 def get_centre_activities(
         db: Session,
-        include_deleted: bool = False
+        include_deleted: bool = False,
+        skip: int = 0,
+        limit: int = 100,
     ):
     db_centre_activities = db.query(models.CentreActivity)
 
@@ -91,7 +93,12 @@ def get_centre_activities(
     if not include_deleted:
         db_centre_activities = db_centre_activities.filter(models.CentreActivity.is_deleted == False)
 
-    return db_centre_activities.all()
+    return (
+        db_centre_activities.order_by(models.CentreActivity.start_date.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def update_centre_activity(
