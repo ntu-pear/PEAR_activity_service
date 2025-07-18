@@ -62,10 +62,17 @@ def create_care_centre(
 def get_care_centre_by_id(
         db: Session, 
         care_centre_id: int,
+        include_deleted: bool = False
     ):
-    care_centre = db.query(models.CareCentre).filter(
-        models.CareCentre.id == care_centre_id, 
+    care_centre = db.query(models.CareCentre)
+
+    if not include_deleted:
+        care_centre = care_centre.filter(models.CareCentre.is_deleted == False)
+    
+    care_centre = care_centre.filter(
+        models.CareCentre.id == care_centre_id
         ).first()
+
     if not care_centre:
         raise HTTPException(status_code=404, detail="Care Centre not found")
     return care_centre

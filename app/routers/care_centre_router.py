@@ -72,9 +72,6 @@ def get_care_centre_by_id(
         )
     
     care_centre = crud.get_care_centre_by_id(db, care_centre_id, include_deleted=include_deleted)
-    if not care_centre:
-        raise HTTPException(status_code=404, detail="Care Centre not found")
-    
     return care_centre
 
 @router.put(
