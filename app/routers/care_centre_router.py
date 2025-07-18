@@ -43,13 +43,16 @@ def create_care_centre(
 def list_care_centres(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    skip: int = 0,
+    limit: int = 100,
+    include_deleted: bool = False,
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Care Centres."
         )
-    return crud.get_care_centres(db)
+    return crud.get_care_centres(db, skip=skip, limit=limit, include_deleted=include_deleted)
 
 @router.get(
         "/{care_centre_id}",
@@ -60,6 +63,7 @@ def get_care_centre_by_id(
     care_centre_id: int,
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    include_deleted: bool = False,
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -67,7 +71,7 @@ def get_care_centre_by_id(
             detail="You do not have permission to view this Care Centre."
         )
     
-    care_centre = crud.get_care_centre_by_id(db, care_centre_id)
+    care_centre = crud.get_care_centre_by_id(db, care_centre_id, include_deleted=include_deleted)
     if not care_centre:
         raise HTTPException(status_code=404, detail="Care Centre not found")
     

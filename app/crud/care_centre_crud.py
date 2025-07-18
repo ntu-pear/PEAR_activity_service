@@ -61,7 +61,7 @@ def create_care_centre(
 
 def get_care_centre_by_id(
         db: Session, 
-        care_centre_id: int
+        care_centre_id: int,
     ):
     care_centre = db.query(models.CareCentre).filter(
         models.CareCentre.id == care_centre_id, 
@@ -73,6 +73,8 @@ def get_care_centre_by_id(
 def get_care_centres(
         db: Session,
         include_deleted: bool = False,
+        skip: int = 0,
+        limit: int = 100,
     ):
     db_care_centres = db.query(models.CareCentre)
 
@@ -80,7 +82,11 @@ def get_care_centres(
     if not include_deleted:
         db_care_centres = db_care_centres.filter(models.CareCentre.is_deleted == False)
 
-    return db_care_centres.all()
+    return (db_care_centres.order_by(
+        models.CareCentre.name)
+        .offset(skip)
+        .limit(limit).all()
+        )
 
 def update_care_centre(
         db: Session,
