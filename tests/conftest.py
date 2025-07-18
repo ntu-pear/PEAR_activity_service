@@ -27,12 +27,9 @@ def base_activity_data():
     """Base data for Activity"""
     return {
         "id": 1,
-        "active": True,
         "is_deleted": False,
         "title": "Old Title",
-        "description": "Old Description",
-        "start_date": datetime(2025, 1, 1, 6, 0),
-        "end_date": datetime(2025, 1, 1, 7, 0),
+        "description": "Old Description"
     }
 
 @pytest.fixture

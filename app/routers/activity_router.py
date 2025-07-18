@@ -26,9 +26,10 @@ def create_activity(
 def list_activities(
     skip: int = 0,
     limit: int = 100,
+    include_deleted: bool = False,
     db: Session = Depends(get_db),
 ):
-    return crud.get_activities(db=db, skip=skip, limit=limit)
+    return crud.get_activities(db=db, skip=skip, limit=limit, include_deleted=include_deleted)
 
 @router.get(
     "/{activity_id}",
@@ -36,9 +37,10 @@ def list_activities(
 )
 def get_activity_by_id(
     activity_id: int,
+    include_deleted: bool = False,
     db: Session = Depends(get_db),
 ):
-    obj = crud.get_activity_by_id(db=db, activity_id=activity_id)
+    obj = crud.get_activity_by_id(db=db, activity_id=activity_id, include_deleted=include_deleted)
     if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
