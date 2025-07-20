@@ -5,12 +5,9 @@ GO
 CREATE TABLE [dbo].[ACTIVITY] (
     id              INT            IDENTITY(1,1) NOT NULL
        CONSTRAINT pk_activity PRIMARY KEY,
-    active          BIT            NOT NULL CONSTRAINT df_activity_active DEFAULT (1),
     is_deleted      BIT            NOT NULL CONSTRAINT df_activity_is_deleted DEFAULT (0),
     title           NVARCHAR(200)  NOT NULL,
     description     NVARCHAR(255)  NULL,
-    start_date      DATETIME2(3)   NOT NULL,
-    end_date        DATETIME2(3)   NULL,
     created_date    DATETIME2(3)   NOT NULL CONSTRAINT df_activity_created_date DEFAULT SYSUTCDATETIME(),
     modified_date   DATETIME2(3)   NOT NULL CONSTRAINT df_activity_modified_date DEFAULT SYSUTCDATETIME(),
     created_by_id   NVARCHAR(50)   NULL,

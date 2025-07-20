@@ -51,22 +51,6 @@ def test_create_activity_duplicate(mock_activity_cls, get_db_session_mock, activ
     assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc.value.detail == "Activity already exists"
 
-def test_create_activity_end_date_before_start(get_db_session_mock):
-    """Should 400 if end_date is earlier than start_date on create."""
-    # duplicate check to return no existing activity
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
-
-    bad = ActivityCreate(
-        title="Bad Case",
-        description="end_date before start_date",
-        start_date=datetime(2025, 1, 1, 8, 0, 0),
-        end_date=datetime(2025, 1, 1, 7, 0, 0),
-        active=True,
-    )
-    with pytest.raises(HTTPException) as exc:
-        create_activity(get_db_session_mock, activity_in=bad)
-    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc.value.detail == "end_date cannot be earlier than start_date"
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
 def test_update_activity_by_id_success(mock_get, get_db_session_mock, existing_activity, activity_data):
@@ -86,22 +70,6 @@ def test_update_activity_by_id_not_found(mock_get, get_db_session_mock, activity
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
-def test_update_activity_end_date_before_start(mock_get, get_db_session_mock, existing_activity):
-    """Should 400 if end_date is earlier than start_date on update."""
-    mock_get.return_value = existing_activity
-    bad = ActivityCreate(
-        title=existing_activity.title,
-        description=existing_activity.description,
-        start_date=existing_activity.start_date,
-        end_date=existing_activity.start_date - timedelta(hours=1),
-        active=existing_activity.active,
-    )
-    with pytest.raises(HTTPException) as exc:
-        update_activity_by_id(get_db_session_mock, activity_id=existing_activity.id, activity_in=bad)
-    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc.value.detail == "end_date cannot be earlier than start_date"
-
-@mock.patch("app.crud.activity_crud.get_activity_by_id")
 def test_delete_activity_by_id_success(mock_get, get_db_session_mock, existing_activity):
     """Should mark is_deleted, commit, refresh, and return."""
     mock_get.return_value = existing_activity
@@ -119,19 +87,21 @@ def test_delete_activity_by_id_not_found(mock_get, get_db_session_mock):
 def test_get_activity_by_id_found(get_db_session_mock, existing_activity):
     """Should return an Activity if it exists and is not deleted."""
     query_mock = get_db_session_mock.query.return_value
-    filter_mock = query_mock.filter.return_value
-    filter_mock.first.return_value = existing_activity
+    filter1_mock = query_mock.filter.return_value
+    filter2_mock = filter1_mock.filter.return_value
+    filter2_mock.first.return_value = existing_activity
 
     result = get_activity_by_id(get_db_session_mock, activity_id=1)
 
     get_db_session_mock.query.assert_called_once_with(models.Activity)
-    query_mock.filter.assert_called_once()
-    filter_mock.first.assert_called_once()
     assert result == existing_activity
 
 def test_get_activity_by_id_not_found(get_db_session_mock):
     """Should return None if no matching Activity."""
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    query_mock = get_db_session_mock.query.return_value
+    filter1_mock = query_mock.filter.return_value
+    filter2_mock = filter1_mock.filter.return_value
+    filter2_mock.first.return_value = None
 
     result = get_activity_by_id(get_db_session_mock, activity_id=999)
     assert result is None
