@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-import app.models.centre_activity_model as models
-import app.schemas.centre_activity_schema as schemas
+import app.models.care_centre_model as models
+import app.schemas.care_centre_schema as schemas
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, time
@@ -20,11 +20,7 @@ def create_care_centre(
         "contact_no": care_centre_data.contact_no,
         "email": care_centre_data.email,
         "no_of_devices_avail": care_centre_data.no_of_devices_avail,
-        # To be reconsidered
-        "working_day": care_centre_data.working_day,                
-        "opening_hours": care_centre_data.opening_hours,           
-        "closing_hours": care_centre_data.closing_hours,   
-        #==   
+        "working_hours": care_centre_data.working_hours,
         "remarks": care_centre_data.remarks
     }
 
@@ -118,11 +114,7 @@ def update_care_centre(
         "contact_no": care_centre_data.contact_no,
         "email": care_centre_data.email,
         "no_of_devices_avail": care_centre_data.no_of_devices_avail,
-        # To be reconsidered
-        "working_day": care_centre_data.working_day,                
-        "opening_hours": care_centre_data.opening_hours,           
-        "closing_hours": care_centre_data.closing_hours,   
-        #==   
+        "working_hours": care_centre_data.working_hours,
         "remarks": care_centre_data.remarks
     }
 
@@ -144,8 +136,8 @@ def update_care_centre(
     updated_data_dict = serialize_data(care_centre_data.model_dump())
 
     modified_by_id = current_user_info.get("id") or care_centre_data.modified_by_id
-    # Update the fields of the CentreActivity instance
-    for field in schemas.CentreActivityUpdate.__fields__:
+    # Update the fields of the CareCentre instance
+    for field in schemas.CareCentreUpdate.__fields__:
         if field != "Id" and hasattr(care_centre_data, field):
             setattr(db_care_centre, field, getattr(care_centre_data, field))
     db_care_centre.modified_by_id = modified_by_id

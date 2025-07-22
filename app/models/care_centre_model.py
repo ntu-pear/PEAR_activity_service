@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Time
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Time, JSON
 from datetime import datetime
 from app.database import Base
 
@@ -10,21 +10,26 @@ class CareCentre(Base):
     is_deleted = Column(Boolean, nullable=False, default=False)
 
     country_code = Column(String(3), nullable=False)            # ISO 3166-1 alpha-3 country code
-    address = Column(String(255), nullable=True)
-    postal_code = Column(String(20), nullable=True)
+    address = Column(String(255), nullable=False)
+    postal_code = Column(String(6), nullable=False)
 
-    contact_no = Column(String(50), nullable=True)
-    email = Column(String(100), nullable=True)
+    contact_no = Column(String(50), nullable=False)
+    email = Column(String(100), nullable=False)
     no_of_devices_avail = Column(Integer, nullable=False, default=0)
 
-    # To be reconsidered
-    working_day = Column(String(50), nullable=True)           
-    opening_hours = Column(Time, nullable=True)      
-    closing_hours = Column(Time, nullable=True)     
-    #====
+    working_hours = Column(JSON, nullable=False, default={
+        "monday": {"open": "09:00", "close": "17:00"},
+        "tuesday": {"open": "09:00", "close": "17:00"},
+        "wednesday": {"open": "09:00", "close": "17:00"},
+        "thursday": {"open": "09:00", "close": "17:00"},
+        "friday": {"open": "09:00", "close": "17:00"},
+        "saturday": {"open": None, "close": None},          
+        "sunday": {"open": None, "close": None}             
+    })
+
     remarks = Column(String(255), nullable=True)
 
-    created_date = Column(DateTime, nullable=False, default=datetime.now())
-    modified_date = Column(DateTime, nullable=False, default=datetime.now(), onupdate=datetime.utcnow)
+    created_date = Column(DateTime, nullable=False, default=datetime.now)
+    modified_date = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
     created_by_id = Column(String(50), nullable=True)
     modified_by_id = Column(String(50), nullable=True)
