@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
+from app.models.care_centre_model import CareCentre
 
 
 @pytest.fixture()
@@ -20,7 +21,90 @@ def mock_current_user():
         "roleName": "SUPERVISOR",
     }
 
-#====== Activity ======
+# ====== Care Centre Fixtures ======
+@pytest.fixture
+def base_care_centre_data_list():
+    '''Base data for Care Centre'''
+    return [
+        {
+            "id": 1,
+            "is_deleted": False,
+            "name": "Test Care Centre",
+            "country_code": "SGP",
+            "address": "123 Test St",
+            "postal_code": "123456",
+            "contact_no": "6512345678",
+            "email": "test@gmail.com",
+            "no_of_devices_avail": 10,
+            "working_hours": {
+                "monday": {"open": "09:00", "close": "17:00"},
+                "tuesday": {"open": "09:00", "close": "17:00"},
+                "wednesday": {"open": "09:00", "close": "17:00"},
+                "thursday": {"open": "09:00", "close": "17:00"},
+                "friday": {"open": "09:00", "close": "17:00"},
+                "saturday": {"open": None, "close": None},
+                "sunday": {"open": None, "close": None},
+            },
+            "remarks": "Test remarks",
+            "created_by_id": "1",
+            "created_date": datetime.now(),
+            "modified_by_id": "",
+            "modified_date": datetime.now(),
+        },
+        {   # For update test
+            "id": 1,
+            "is_deleted": True,
+            "name": "Test Care Centre",
+            "country_code": "SGP",
+            "address": "123 Test St",
+            "postal_code": "123456",
+            "contact_no": "6512345678",
+            "email": "UPDATETEST@gmail.com",
+            "no_of_devices_avail": 5,
+            "working_hours": {
+                "monday": {"open": "09:00", "close": "17:00"},
+                "tuesday": {"open": "09:00", "close": "17:00"},
+                "wednesday": {"open": "09:00", "close": "17:00"},
+                "thursday": {"open": "09:00", "close": "17:00"},
+                "friday": {"open": "09:00", "close": "17:00"},
+                "saturday": {"open": "09:00", "close": "14:00"},
+                "sunday": {"open": None, "close": None},
+            },
+            "remarks": "Test remarks",
+            "created_by_id": "1",
+            "created_date": datetime.now(),
+            "modified_by_id": "1",
+            "modified_date": datetime.now(),
+        },
+    ]
+
+@pytest.fixture
+def base_care_centre_data(base_care_centre_data_list):
+    return base_care_centre_data_list[0]
+
+@pytest.fixture
+def existing_care_centre(base_care_centre_data):
+    """A CareCentre instance for mocking DB data"""
+    return CareCentre(**base_care_centre_data)
+
+@pytest.fixture
+def existing_care_centres(base_care_centre_data_list):
+    """A list of CareCentre instance for mocking DB data"""
+    return [CareCentre(**data) for data in base_care_centre_data_list]
+
+@pytest.fixture
+def soft_deleted_care_centre(base_care_centre_data):
+    """Soft-deleted CareCentre instance"""
+    data = base_care_centre_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now()
+    })
+    return CareCentre(**data)
+
+
+#====== Activity Fixtures ======
 
 @pytest.fixture
 def base_activity_data():
@@ -38,7 +122,7 @@ def existing_activity(base_activity_data):
     return Activity(**base_activity_data)
 
 
-# --- Centre Activity Fixtures ---
+# ===Centre Activity Fixtures ===
 @pytest.fixture
 def base_centre_activity_data_list():
     """Base data for Centre Activity"""
@@ -60,7 +144,7 @@ def base_centre_activity_data_list():
             "created_date": datetime.now(),
             "modified_date": datetime.now(),
         },
-        {
+        {   # For update test
             "id": 1,
             "activity_id": 2,
             "is_deleted": False,
@@ -98,7 +182,7 @@ def soft_deleted_centre_activity(base_centre_activity_data):
     """Soft-deleted CentreActivity instance"""
     data = base_centre_activity_data.copy()
     data.update({
-        "id": 2,  # Different ID
+        "id": 1,  
         "is_deleted": True,
         "modified_date": datetime.now()
     })

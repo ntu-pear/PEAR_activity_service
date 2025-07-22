@@ -18,10 +18,7 @@ def create_centre_activity(
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
     
-    db_centre_activity = models.CentreActivity(
-        **centre_activity_data.model_dump(), 
-        modified_by_id=centre_activity_data.created_by_id,
-        )
+    db_centre_activity = models.CentreActivity(**centre_activity_data.model_dump())
     
     # Check if the same centre_activity exists
     essential_fields = {
@@ -45,7 +42,8 @@ def create_centre_activity(
                                 "existing_id": str(existing_centre_activity.id),
                                 "existing_is_deleted": existing_centre_activity.is_deleted
                             })
- 
+    current_user_id = current_user_info.get("id") or centre_activity_data.created_by_id
+    db_centre_activity.created_by_id = current_user_id
     db.add(db_centre_activity)
     try:
         db.commit()
@@ -57,7 +55,7 @@ def create_centre_activity(
     updated_data_dict = serialize_data(centre_activity_data.model_dump())
     log_crud_action(
         action=ActionType.CREATE,
-        user=current_user_info.get("id") or centre_activity_data.created_by_id,
+        user=current_user_id,
         user_full_name=current_user_info.get("fullname"),
         message="Created a new Centre Activity",
         table="CENTRE_ACTIVITY",

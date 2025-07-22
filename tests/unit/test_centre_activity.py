@@ -83,7 +83,6 @@ def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, 
         current_user_info=mock_current_user
     )
 
-    assert result.modified_by_id == create_centre_activity_schema.created_by_id
     assert result.is_compulsory == create_centre_activity_schema.is_compulsory
     assert result.is_fixed == create_centre_activity_schema.is_fixed
     assert result.is_group == create_centre_activity_schema.is_group
@@ -193,6 +192,21 @@ def test_get_centre_activities_success(get_db_session_mock, existing_centre_acti
         assert actual.min_people_req == expected.min_people_req
         assert actual.created_by_id == expected.created_by_id
         assert actual.modified_by_id == expected.modified_by_id
+
+def test_get_centre_activities_fail(get_db_session_mock):
+    '''Fails when no Centre Activity records found'''
+
+    get_db_session_mock.query.return_value.filter.return_value = None
+
+    with pytest.raises(HTTPException) as exc:
+        get_centre_activities(
+            db=get_db_session_mock, 
+            skip=0, 
+            limit=100
+        )
+    
+    assert exc.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc.value.detail == "No Centre Activities found"
 
 #======= UPDATE tests =====
 @patch("app.crud.centre_activity_crud.get_activity_by_id")

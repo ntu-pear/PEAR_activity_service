@@ -11,9 +11,9 @@ class CentreActivityBase(BaseModel):
     start_date: date = Field(..., description="Start date of the activity")
     end_date: Optional[date] = Field(None, description="End date of the activity. Nullable if till indefinite.")
 
-    min_duration: int = Field(..., description="Minimum duration in minutes")
-    max_duration: int = Field(..., description="Maximum duration in minutes")
-    min_people_req: int = Field(..., description="Minimum number of people required")
+    min_duration: int = Field(30, description="Minimum duration in minutes", ge=30, le=60)
+    max_duration: int = Field(30, description="Maximum duration in minutes", ge=30, le=60)
+    min_people_req: int = Field(1, description="Minimum number of people required", ge=1)
     #fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
 
     @model_validator(mode='after')
@@ -49,8 +49,9 @@ class CentreActivityCreate(CentreActivityBase):
 
 class CentreActivityUpdate(CentreActivityBase):
     id: int = Field(..., description="ID of the Centre Activity to update")
-    is_deleted: bool = Field(..., description="Is the Centre Activity deleted")
+    is_deleted: bool = Field(False, description="Is the Centre Activity deleted")
     modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
+    modified_date: datetime = Field(None, description="Last modification timestamp")
     
 
 class CentreActivityResponse(CentreActivityBase):
@@ -58,9 +59,9 @@ class CentreActivityResponse(CentreActivityBase):
     is_deleted: bool = Field(..., description="Is the Centre Activity deleted")
 
     created_date: datetime = Field(..., description="Creation date of the Centre Activity")
-    modified_date: datetime = Field(..., description="Last modification date of the Centre Activity")
+    modified_date: Optional[datetime] = Field(..., description="Last modification date of the Centre Activity")
     created_by_id: str = Field(..., description="ID of the user who created this activity")
-    modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
+    modified_by_id: Optional[str] = Field(..., description="ID of the user who last modified this activity")
 
     class Config:
         from_attributes = True
