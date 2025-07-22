@@ -135,7 +135,7 @@ def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session
     assert exc.value.detail == {
         'existing_id': '1', 
         'existing_is_deleted': False, 
-        'message': 'Centre Activity with these attributes already exists (including soft-deleted records)'
+        'message': 'Centre Activity with these attributes already exists or deleted'
         }
 
 #===== GET tests ======
@@ -244,7 +244,7 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_not_found(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_current_user,
                                         update_centre_activity_schema, existing_activity):
     """Test update fails when centre activity doesn't exist"""
 
@@ -263,7 +263,7 @@ def test_update_centre_activity_not_found(mock_get_activity, get_db_session_mock
     assert exc.value.detail == "Centre Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_invalid_activity(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_session_mock, mock_current_user,
                                         update_centre_activity_schema, existing_centre_activity):
     """Test update fails when activity doesn't exist"""
 
@@ -301,7 +301,7 @@ def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session
     assert exc.value.detail == {
         'existing_id': str(existing_centre_activity.id), 
         'existing_is_deleted': existing_centre_activity.is_deleted, 
-        'message': 'Centre Activity with these attributes already exists (including soft-deleted records)'
+        'message': 'Centre Activity with these attributes already exists or deleted'
     }
 
 #======= DELETE tests ==================
@@ -333,6 +333,6 @@ def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_current
         )
     
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
-    assert exc.value.detail == "Centre Activity not found (including soft-deleted records)"
+    assert exc.value.detail == "Centre Activity not found or deleted"
 
     

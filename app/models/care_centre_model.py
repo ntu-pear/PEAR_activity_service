@@ -30,6 +30,6 @@ class CareCentre(Base):
     remarks = Column(String(255), nullable=True)
 
     created_date = Column(DateTime, nullable=False, default=datetime.now)
-    modified_date = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
-    created_by_id = Column(String(50), nullable=True)
+    modified_date = Column(DateTime, nullable=True, default=datetime.now, onupdate=datetime.now)
+    created_by_id = Column(String(50), nullable=False)
     modified_by_id = Column(String(50), nullable=True)

@@ -41,11 +41,12 @@ class CareCentreBase(BaseModel):
         working_hours = self.working_hours
 
         if country_code not in VALID_COUNTRY_CODES:
-            raise ValueError(f"Invalid country code: {country_code}")
+            raise ValueError(f"Invalid country code: {country_code}. Must be 3 uppercase letters (ISO 3166-1 alpha-3)")
 
         missing_days = set(get_args(Day)) - set(working_hours)
+
         if missing_days:
-            raise ValueError(f"Missing working hours for: {', '.join(sorted(missing_days))}")
+            raise ValueError(f"Missing working hours for: {sorted(missing_days)}")
 
         errors = []
         for day, times in working_hours.items():
@@ -56,12 +57,16 @@ class CareCentreBase(BaseModel):
                 errors.append(f"Both open and close must be specified or null for {day}")
 
             # Validate format if present
+            open_valid = open_time is not None
+            close_valid = close_time is not None
             if open_time and not self._is_valid_time_format(open_time):
                 errors.append(f"Invalid time format for open on {day}: {open_time}")
+                open_valid = False
             if close_time and not self._is_valid_time_format(close_time):
                 errors.append(f"Invalid time format for close on {day}: {close_time}")
-            if open_time and close_time and close_time <= open_time:         # Assuming close time does not pass midnight
-                errors.append(f"Close time must be after open time for {day} ({open_time} ≥ {close_time})")
+                close_valid = False
+            if open_valid and close_valid and close_time <= open_time:         # Assuming close time does not pass midnight
+                errors.append(f"Close time must be after open time for {day} ({open_time} >= {close_time})")
 
         if errors:
             raise ValueError("working_hours errors:\n" + "\n".join(errors))
@@ -73,14 +78,15 @@ class CareCentreCreate(CareCentreBase):
 class CareCentreUpdate(CareCentreBase):
     id: int = Field(..., description="ID of the care centre to update")
     modified_by_id: str = Field(..., description="User ID who last modified the centre")
+    modified_date: datetime = Field(None, description="Last modification timestamp")
 
 class CareCentreResponse(CareCentreBase):
     id: int = Field(..., description="Care centre ID")
     is_deleted: bool = Field(..., description="Deletion status")
     created_date: datetime = Field(..., description="Timestamp of creation")
-    modified_date: datetime = Field(..., description="Last modification timestamp")
+    modified_date: Optional[datetime] = Field(..., description="Last modification timestamp")
     created_by_id: str = Field(..., description="User ID who created it")
-    modified_by_id: str = Field(..., description="User ID who modified it")
+    modified_by_id: Optional[str] = Field(..., description="User ID who modified it")
 
     class Config:
         from_attributes = True

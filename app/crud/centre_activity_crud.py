@@ -38,7 +38,7 @@ def create_centre_activity(
     if existing_centre_activity:
         raise HTTPException(status_code=400, 
                             detail={
-                                "message": "Centre Activity with these attributes already exists (including soft-deleted records)",
+                                "message": "Centre Activity with these attributes already exists or deleted",
                                 "existing_id": str(existing_centre_activity.id),
                                 "existing_is_deleted": existing_centre_activity.is_deleted
                             })
@@ -148,7 +148,7 @@ def update_centre_activity(
     if existing_centre_activity:
         raise HTTPException(status_code=400, 
                             detail={
-                                "message": "Centre Activity with these attributes already exists (including soft-deleted records)",
+                                "message": "Centre Activity with these attributes already exists or deleted",
                                 "existing_id": str(existing_centre_activity.id),
                                 "existing_is_deleted": existing_centre_activity.is_deleted
                             })
@@ -196,7 +196,7 @@ def delete_centre_activity(
         ).first()
     
     if not db_centre_activity:
-        raise HTTPException(status_code=404, detail="Centre Activity not found (including soft-deleted records)")
+        raise HTTPException(status_code=404, detail="Centre Activity not found or deleted")
     
     modified_by_id = current_user_info.get("id") or db_centre_activity.modified_by_id
     db_centre_activity.is_deleted = True

@@ -29,19 +29,23 @@ def create_care_centre(
     if existing_care_centre:
         raise HTTPException(status_code=400, 
                             detail={
-                                "message": "Care Centre with these attributes already exists (including soft-deleted records)",
+                                "message": "Care Centre with these attributes already exists or deleted",
                                 "existing_id": str(existing_care_centre.id),
                                 "existing_is_deleted": existing_care_centre.is_deleted
                             })
     
-    db_care_centre = models.CareCentre(
-        **care_centre_data.model_dump(), 
-        modified_by_id=care_centre_data.created_by_id,
-    )
+    db_care_centre = models.CareCentre(**care_centre_data.model_dump())
+    current_user_id = current_user_info.get("id") or care_centre_data.created_by_id
+    db_care_centre.created_by_id = current_user_id
     db.add(db_care_centre)
-    db.commit()
-    db.refresh(db_care_centre)
-
+    
+    try:
+        db.commit()
+        db.refresh(db_care_centre)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating Care Centre: {str(e)}")
+    
     updated_data_dict = serialize_data(care_centre_data.model_dump())
     log_crud_action(
         action=ActionType.CREATE,
@@ -85,6 +89,9 @@ def get_care_centres(
     if not include_deleted:
         db_care_centres = db_care_centres.filter(models.CareCentre.is_deleted == False)
 
+    if not db_care_centres:
+        raise HTTPException(status_code=404, detail="No Care Centres found")
+    
     return (db_care_centres.order_by(
         models.CareCentre.name)
         .offset(skip)
@@ -127,7 +134,7 @@ def update_care_centre(
     if existing_care_centre:
         raise HTTPException(status_code=400, 
                             detail={
-                                "message": "Care Centre with these attributes already exists (including soft-deleted records)",
+                                "message": "Care Centre with these attributes already exists or deleted",
                                 "existing_id": str(existing_care_centre.id),
                                 "existing_is_deleted": existing_care_centre.is_deleted
                             })
@@ -140,11 +147,17 @@ def update_care_centre(
     for field in schemas.CareCentreUpdate.__fields__:
         if field != "Id" and hasattr(care_centre_data, field):
             setattr(db_care_centre, field, getattr(care_centre_data, field))
+    
     db_care_centre.modified_by_id = modified_by_id
     db_care_centre.modified_date = datetime.now()
-    db.commit()
-    db.refresh(db_care_centre)
 
+    try:
+        db.commit()
+        db.refresh(db_care_centre)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating Care Centre: {str(e)}")
+    
     log_crud_action(
         action=ActionType.UPDATE,
         user=modified_by_id,
@@ -171,14 +184,18 @@ def delete_care_centre(
     
     # Check if Care Centre record is already deleted
     if not db_care_centre:
-        raise HTTPException(status_code=404, detail="Care Centre not found (including soft-deleted records)")
+        raise HTTPException(status_code=404, detail="Care Centre not found or already deleted")
 
     db_care_centre.is_deleted = True
     db_care_centre.modified_by_id = current_user_info.get("id") or db_care_centre.modified_by_id
     db_care_centre.modified_date = datetime.now()
-    db.commit()
-    db.refresh(db_care_centre)
-
+    try:
+        db.commit()
+        db.refresh(db_care_centre)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting Care Centre: {str(e)}")
+    
     original_data_dict = serialize_data(model_to_dict(db_care_centre))
     log_crud_action(
         action=ActionType.DELETE,
