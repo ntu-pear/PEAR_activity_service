@@ -25,3 +25,8 @@ class ActivityRead(ActivityBase):
     class Config:
         from_attributes = True    
         populate_by_name = True
+
+class ActivityUpdate(ActivityBase):
+    id: int = Field(..., description="ID of the Activity to update")
+    is_deleted: bool = Field(..., description="Is the Activity deleted")
+    modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified this activity")
