@@ -5,6 +5,7 @@ from datetime import datetime
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
+from app.auth.jwt_utils import JWTPayload
 
 
 @pytest.fixture()
@@ -13,13 +14,43 @@ def get_db_session_mock():
     return create_autospec(Session, instance=True)
 
 @pytest.fixture
-def mock_current_user():
+def mock_supervisor_user():
     return {
         "id": "2",
         "fullName": "Test User",
         "email": "test@test.com",
         "roleName": "SUPERVISOR",
     }
+
+@pytest.fixture
+def mock_supervisor_jwt():
+     return JWTPayload(
+        userId="2",
+        fullName="Test User",
+        email="test@test.com",
+        roleName="SUPERVISOR",
+        sessionId="abc321"
+    )
+
+@pytest.fixture
+def mock_admin_jwt():
+    return JWTPayload(
+        userId="123",
+        fullName="John Doe",
+        email="test@test.com",
+        roleName="ADMIN",
+        sessionId="abc123"
+    )
+
+@pytest.fixture
+def mock_doctor_jwt():
+    return JWTPayload(
+        userId="456",
+        fullName="Jane Smith",
+        email="doctor@test.com",
+        roleName="DOCTOR",
+        sessionId="def456"
+    )
 
 # ====== Care Centre Fixtures ======
 @pytest.fixture

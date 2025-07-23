@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
 import time
-from app.auth.jwt_utils import decode_jwt_token, JWTPayload, get_user_id, get_full_name, get_role_name, is_supervisor
+from app.auth.jwt_utils import decode_jwt_token, JWTPayload, get_user_id, get_full_name, get_role_name, is_supervisor, is_admin
 from fastapi import HTTPException, status
 
 
@@ -108,9 +108,8 @@ def test_get_full_name_fail():
     )
     assert get_full_name(invalid_payload) is None
     
-
+#==== Role Tests ====
 def test_is_supervisor_pass(mock_valid_payload):
-
     assert is_supervisor(mock_valid_payload) is True
 
 @pytest.mark.parametrize("role_name",
@@ -123,4 +122,18 @@ def test_is_supervisor_pass(mock_valid_payload):
 def test_is_supervisor_fail(mock_valid_payload, role_name):
     mock_valid_payload.roleName = role_name
     assert is_supervisor(mock_valid_payload) is False
-    
+
+def test_is_admin_pass(mock_valid_payload):
+    mock_valid_payload.roleName = "ADMIN"
+    assert is_admin(mock_valid_payload) is True
+
+@pytest.mark.parametrize("role_name",
+    ["SUPERVISOR",
+     "DOCTOR",
+     "GUARDIAN",
+     "GAME THERAPIST",
+     "CAREGIVER",
+     ])
+def test_is_admin_fail(mock_valid_payload, role_name):
+    mock_valid_payload.roleName = role_name
+    assert is_admin(mock_valid_payload) is False

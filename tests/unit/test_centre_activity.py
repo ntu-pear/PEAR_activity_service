@@ -67,7 +67,7 @@ def test_centre_activity_schema_validation_fails(base_centre_activity_data, sche
 
 #======= CREATE tests ===========
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, mock_current_user, 
+def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, mock_supervisor_user, 
                                      create_centre_activity_schema, existing_activity):
     '''Creates when activity exists and no dulpicate centre activity exists.'''
 
@@ -80,7 +80,7 @@ def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, 
     result = create_centre_activity(
         db=get_db_session_mock,
         centre_activity_data=create_centre_activity_schema,
-        current_user_info=mock_current_user
+        current_user_info=mock_supervisor_user
     )
 
     assert result.is_compulsory == create_centre_activity_schema.is_compulsory
@@ -94,7 +94,7 @@ def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, 
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_create_centre_activity_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_create_centre_activity_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                           create_centre_activity_schema):
     '''Fails to create when invalid Activity ID given'''
 
@@ -108,13 +108,13 @@ def test_create_centre_activity_activity_not_found_fail(mock_get_activity, get_d
         create_centre_activity(
             db=get_db_session_mock,
             centre_activity_data=create_centre_activity_schema,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
         )
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
     assert exc.value.detail == "Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_current_user, 
+def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user, 
                                      create_centre_activity_schema, existing_activity, existing_centre_activity):
     
     '''Fails to create when an identical record of Centre Activity already exists'''
@@ -129,7 +129,7 @@ def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session
         create_centre_activity(
             db=get_db_session_mock,
             centre_activity_data=create_centre_activity_schema,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
             )
     assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc.value.detail == {
@@ -210,7 +210,7 @@ def test_get_centre_activities_fail(get_db_session_mock):
 
 #======= UPDATE tests =====
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Updates Centre Activity if target to be updated exists and activity id provided exists"""
@@ -225,7 +225,7 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
     result = update_centre_activity(
         db=get_db_session_mock,
         centre_activity_data=update_centre_activity_schema,
-        current_user_info=mock_current_user
+        current_user_info=mock_supervisor_user
     )
     
     # Fields that should not be updated
@@ -244,7 +244,7 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                         update_centre_activity_schema, existing_activity):
     """Test update fails when centre activity doesn't exist"""
 
@@ -257,13 +257,13 @@ def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session
         update_centre_activity(
             db=get_db_session_mock,
             centre_activity_data=update_centre_activity_schema,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
         )
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
     assert exc.value.detail == "Centre Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                         update_centre_activity_schema, existing_centre_activity):
     """Test update fails when activity doesn't exist"""
 
@@ -274,13 +274,13 @@ def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_
         update_centre_activity(
             db=get_db_session_mock,
             centre_activity_data=update_centre_activity_schema,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
         )
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
     assert exc.value.detail == "Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_current_user,
+def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Test update fails when an identical record of Centre Activity already exists"""
@@ -295,7 +295,7 @@ def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session
         update_centre_activity(
             db=get_db_session_mock,
             centre_activity_data=update_centre_activity_schema,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
         )
     assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc.value.detail == {
@@ -305,7 +305,7 @@ def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session
     }
 
 #======= DELETE tests ==================
-def test_delete_centre_activity_success(get_db_session_mock, mock_current_user,
+def test_delete_centre_activity_success(get_db_session_mock, mock_supervisor_user,
                                 existing_centre_activity):
     """Deletes when Centre Activity record exists and is_deleted is false"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity    # Centre Activity record exists
@@ -313,14 +313,14 @@ def test_delete_centre_activity_success(get_db_session_mock, mock_current_user,
     result = delete_centre_activity(
         db=get_db_session_mock,
         centre_activity_id=existing_centre_activity.id,
-        current_user_info=mock_current_user
+        current_user_info=mock_supervisor_user
     )
     
     assert result.id == existing_centre_activity.id
     assert result.is_deleted == True
-    assert result.modified_by_id == mock_current_user.get("id")
+    assert result.modified_by_id == mock_supervisor_user.get("id")
 
-def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_current_user,
+def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervisor_user,
                                 existing_centre_activity):
     """Deletes when Centre Activity record exists and is_deleted is false"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None    # Centre Activity record not found (including is_deleted=True)
@@ -329,7 +329,7 @@ def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_current
         delete_centre_activity(
             db=get_db_session_mock,
             centre_activity_id=existing_centre_activity.id,
-            current_user_info=mock_current_user
+            current_user_info=mock_supervisor_user
         )
     
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
