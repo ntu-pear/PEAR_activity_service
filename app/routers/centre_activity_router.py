@@ -44,13 +44,16 @@ def create_centre_activity(
 def list_activities(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    include_deleted: bool = Query(False, description="Include soft-deleted records"),
+    skip: int = 0,
+    limit: int = 100,
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Centre Activities."
         )
-    return crud.get_centre_activities(db)
+    return crud.get_centre_activities(db, include_deleted=include_deleted)
 
 
 @router.get(
@@ -62,13 +65,14 @@ def get_by_id(
     centre_activity_id: int,
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    include_deleted: bool = Query(False, description="Include soft-deleted records")
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view a Centre Activity."
         )
-    return crud.get_centre_activity_by_id(db, centre_activity_id)
+    return crud.get_centre_activity_by_id(db, centre_activity_id, include_deleted=include_deleted)
 
 
 @router.put(
