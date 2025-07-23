@@ -18,6 +18,11 @@ import app.models.activity_model as models
 
 from conftest import get_db_session_mock, existing_activity
 
+# Stub out real logging so we don’t try to JSON‑serialize MagicMocks
+@pytest.fixture(autouse=True)
+def disable_crud_logging(monkeypatch):
+    from app.crud import activity_crud
+    monkeypatch.setattr(activity_crud, "log_crud_action", lambda *args, **kwargs: None)
 
 @pytest.fixture
 def activity_data():
@@ -37,7 +42,7 @@ def test_create_activity(mock_activity_cls, get_db_session_mock, activity_data):
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
 
     fake_obj = mock_activity_cls.return_value
-    result = create_activity(get_db_session_mock, activity_in=activity_data)
+    result = create_activity(get_db_session_mock, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert result is fake_obj
 
 @mock.patch("app.models.activity_model.Activity")
@@ -47,7 +52,7 @@ def test_create_activity_duplicate(mock_activity_cls, get_db_session_mock, activ
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = fake_existing
 
     with pytest.raises(HTTPException) as exc:
-        create_activity(get_db_session_mock, activity_in=activity_data)
+        create_activity(get_db_session_mock, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc.value.detail == "Activity already exists"
 
@@ -57,7 +62,7 @@ def test_update_activity_by_id_success(mock_get, get_db_session_mock, existing_a
     """Should update fields, commit, refresh, and return the Activity."""
     mock_get.return_value = existing_activity
     result = update_activity_by_id(
-        get_db_session_mock, activity_id=existing_activity.id, activity_in=activity_data
+        get_db_session_mock, activity_id=existing_activity.id, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"}
     )
     assert result is existing_activity
 
@@ -66,14 +71,14 @@ def test_update_activity_by_id_not_found(mock_get, get_db_session_mock, activity
     """Should 404 if the Activity does not exist."""
     mock_get.return_value = None
     with pytest.raises(HTTPException) as exc:
-        update_activity_by_id(get_db_session_mock, activity_id=999, activity_in=activity_data)
+        update_activity_by_id(get_db_session_mock, activity_id=999, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
 def test_delete_activity_by_id_success(mock_get, get_db_session_mock, existing_activity):
     """Should mark is_deleted, commit, refresh, and return."""
     mock_get.return_value = existing_activity
-    result = delete_activity_by_id(get_db_session_mock, activity_id=existing_activity.id)
+    result = delete_activity_by_id(get_db_session_mock, activity_id=existing_activity.id, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert result.is_deleted
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
@@ -81,7 +86,7 @@ def test_delete_activity_by_id_not_found(mock_get, get_db_session_mock):
     """Should 404 if trying to delete a missing Activity."""
     mock_get.return_value = None
     with pytest.raises(HTTPException) as exc:
-        delete_activity_by_id(get_db_session_mock, activity_id=999)
+        delete_activity_by_id(get_db_session_mock, activity_id=999, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
 
 def test_get_activity_by_id_found(get_db_session_mock, existing_activity):
