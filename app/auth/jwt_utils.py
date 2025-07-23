@@ -102,3 +102,10 @@ def is_supervisor(payload: Optional[JWTPayload]) -> bool:
     if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
         return False
     return getattr(payload, "roleName", "").upper() == "SUPERVISOR"
+
+# Care Centre is accessible to Supervisors and Admins
+def is_admin(payload: Optional[JWTPayload]) -> bool:
+    """Check if the user has the Admin role."""
+    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+        return False
+    return getattr(payload, "roleName", "").upper() == "ADMIN"
