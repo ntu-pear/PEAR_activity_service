@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, model_validator, ValidationInfo
+from pydantic import BaseModel, Field, model_validator, ValidationInfo
 from typing import Optional, Dict, Literal, get_args
 from datetime import datetime
 from pycountry import countries
@@ -77,6 +77,7 @@ class CareCentreCreate(CareCentreBase):
 
 class CareCentreUpdate(CareCentreBase):
     id: int = Field(..., description="ID of the care centre to update")
+    is_deleted: bool = Field(False, description="Is the care centre deleted")
     modified_by_id: str = Field(..., description="User ID who last modified the centre")
     modified_date: datetime = Field(None, description="Last modification timestamp")
 
