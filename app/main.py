@@ -40,6 +40,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     os.getenv("WEB_FE_ORIGIN"),
+    os.getenv("PATIENT_BE_ORIGIN"),
 ]
 
 app.add_middleware(
