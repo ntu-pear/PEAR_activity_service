@@ -33,9 +33,7 @@ def create_centre_activity_availability(
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
-    
 
-    
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
     db_centre_activity_availability.created_by_id = current_user_id
     db.add(db_centre_activity_availability)
@@ -120,7 +118,7 @@ def update_centre_activity_availability(
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
     update_data_dict = serialize_data(centre_activity_availability_data.model_dump())
 
-    modified_by_id = current_user_info.get("id")
+    modified_by_id = current_user_info.get("id") or centre_activity_availability_data.modified_by_id
     
     for field in schemas.CentreActivityAvailabilityUpdate.__fields__:
         if field != "Id" and hasattr(centre_activity_availability_data, field):
@@ -161,7 +159,7 @@ def delete_centre_activity_availability(
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
     
     db_centre_activity_availability.is_deleted = True
-    db_centre_activity_availability.modified_by_id = current_user_info.get("id")       
+    db_centre_activity_availability.modified_by_id = current_user_info.get("id")
     db_centre_activity_availability.modified_date = datetime.now()
 
     try:
