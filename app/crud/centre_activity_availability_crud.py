@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 import app.models.centre_activity_availability_model as models
 import app.schemas.centre_activity_availability_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
-from app.crud.care_centre_crud import get_care_centre_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, timezone
