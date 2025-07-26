@@ -7,6 +7,26 @@ from app.logger.logger_utils import log_crud_action, ActionType, serialize_data,
 from fastapi import HTTPException
 from datetime import datetime, timezone
 
+def check_for_existing_availability(
+        db:Session,
+        centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
+    ):
+    
+    essential_fields = {
+        "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
+        "start_time": centre_activity_availability_data.start_time,
+        "end_time": centre_activity_availability_data.end_time
+    }
+    
+    existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
+    if existing_availability:
+        raise HTTPException(status_code=400,
+                detail = {
+                    "message": "Centre Activity Availability with these attributes already exists or soft deleted",
+                    "existing_id": str(existing_availability.id),
+                    "existing_is_deleted": existing_availability.is_deleted
+                })
+
 def create_centre_activity_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
@@ -19,20 +39,22 @@ def create_centre_activity_availability(
     
     db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
 
-    essential_fields = {
-        "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
-        "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time
-    }
+    # essential_fields = {
+    #     "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
+    #     "start_time": centre_activity_availability_data.start_time,
+    #     "end_time": centre_activity_availability_data.end_time
+    # }
 
-    existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    if existing_availability:
-        raise HTTPException(status_code=400,
-                detail = {
-                    "message": "Centre Activity Availability with these attributes already exists or soft deleted",
-                    "existing_id": str(existing_availability.id),
-                    "existing_is_deleted": existing_availability.is_deleted
-                })
+    # existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
+    # if existing_availability:
+    #     raise HTTPException(status_code=400,
+    #             detail = {
+    #                 "message": "Centre Activity Availability with these attributes already exists or soft deleted",
+    #                 "existing_id": str(existing_availability.id),
+    #                 "existing_is_deleted": existing_availability.is_deleted
+    #             })
+
+    check_for_existing_availability(db, centre_activity_availability_data)
 
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
     db_centre_activity_availability.created_by_id = current_user_id
@@ -100,21 +122,23 @@ def update_centre_activity_availability(
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
     
-    essential_fields = {
-        "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
-        "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time
-    }
+    # essential_fields = {
+    #     "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
+    #     "start_time": centre_activity_availability_data.start_time,
+    #     "end_time": centre_activity_availability_data.end_time
+    # }
 
-    existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    if existing_availability:
-        raise HTTPException(status_code=400,
-                detail = {
-                    "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
-                    "existing_id": str(existing_availability.id),
-                    "existing_is_deleted": existing_availability.is_deleted
-                })
+    # existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
+    # if existing_availability:
+    #     raise HTTPException(status_code=400,
+    #             detail = {
+    #                 "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
+    #                 "existing_id": str(existing_availability.id),
+    #                 "existing_is_deleted": existing_availability.is_deleted
+    #             })
     
+    check_for_existing_availability(db, centre_activity_availability_data)
+
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
     update_data_dict = serialize_data(centre_activity_availability_data.model_dump())
 
