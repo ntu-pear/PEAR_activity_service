@@ -12,7 +12,7 @@ router = APIRouter()
     "/",
     response_model = schemas.CentreActivityAvailabilityResponse,
     summary = "Create Centre Activity Availability",
-    description = "Create Centre Activity Availability.",
+    description = "Create a Centre Activity Availability record.",
     status_code = status.HTTP_201_CREATED
 )
 
@@ -82,7 +82,7 @@ def get_centre_activity_availability_by_id(
 @router.put(
     "/",
     summary = "Update Centre Activity Availability",
-    description = "Update an existing Centre Activity Availability that is not soft deleted.",
+    description = "Update an existing Centre Activity Availability record that is not soft deleted.",
     response_model = schemas.CentreActivityAvailabilityResponse
 )
 

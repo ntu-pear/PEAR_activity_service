@@ -22,7 +22,7 @@ def check_for_existing_availability(
     if existing_availability:
         raise HTTPException(status_code=400,
                 detail = {
-                    "message": "Centre Activity Availability with these attributes already exists or soft deleted",
+                    "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
@@ -38,21 +38,6 @@ def create_centre_activity_availability(
         raise HTTPException(status_code=404, detail="Centre Activity not found.")
     
     db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
-
-    # essential_fields = {
-    #     "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
-    #     "start_time": centre_activity_availability_data.start_time,
-    #     "end_time": centre_activity_availability_data.end_time
-    # }
-
-    # existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    # if existing_availability:
-    #     raise HTTPException(status_code=400,
-    #             detail = {
-    #                 "message": "Centre Activity Availability with these attributes already exists or soft deleted",
-    #                 "existing_id": str(existing_availability.id),
-    #                 "existing_is_deleted": existing_availability.is_deleted
-    #             })
 
     check_for_existing_availability(db, centre_activity_availability_data)
 
@@ -81,13 +66,18 @@ def create_centre_activity_availability(
     )
     return db_centre_activity_availability
 
+
 def get_centre_activity_availability_by_id(
         db: Session,
         centre_activity_availability_id: int,
         include_deleted: bool = False
     ):
 
-    db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(models.CentreActivityAvailability.is_deleted == include_deleted).first()
+    db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
+        models.CentreActivityAvailability.id == centre_activity_availability_id,
+        models.CentreActivityAvailability.is_deleted == include_deleted
+        ).first()
+    
     if not db_centre_activity_availability:
         raise HTTPException(status_code=404, detail="Centre Activity Availability not found.")
 
@@ -109,6 +99,7 @@ def get_centre_activity_availabilities(
         .all()
     )
 
+
 def update_centre_activity_availability(
         db: Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityUpdate,
@@ -121,21 +112,6 @@ def update_centre_activity_availability(
         ).first())
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
-    
-    # essential_fields = {
-    #     "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
-    #     "start_time": centre_activity_availability_data.start_time,
-    #     "end_time": centre_activity_availability_data.end_time
-    # }
-
-    # existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    # if existing_availability:
-    #     raise HTTPException(status_code=400,
-    #             detail = {
-    #                 "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
-    #                 "existing_id": str(existing_availability.id),
-    #                 "existing_is_deleted": existing_availability.is_deleted
-    #             })
     
     check_for_existing_availability(db, centre_activity_availability_data)
 
@@ -168,6 +144,7 @@ def update_centre_activity_availability(
         updated_data = update_data_dict
     )
     return db_centre_activity_availability
+
 
 def delete_centre_activity_availability(
         db: Session,

@@ -20,7 +20,7 @@ class CentreActivityAvailabilityBase(BaseModel):
             raise ValueError("The end date cannot be before the start date.")
         if end_time and end_time > (datetime.now(timezone.utc) + timedelta(days=365)).date():
             raise ValueError("End date cannot be more than 1 year in the future.")
-        if date(self.start_time) != date(self.end_time):
+        if start_time.fromisocalendar != end_time.fromisocalendar:
             raise ValueError("Both the start date and end date are not the same.")
         return self
 
