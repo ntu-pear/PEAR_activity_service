@@ -76,7 +76,7 @@ def get_centre_activity_availability_by_id(
             detail = "You do not have permission to view a Centre Activity Availability."
         )
     
-    return crud.get_care_centre_by_id(db, centre_activity_availability_id, include_deleted = include_deleted)
+    return crud.get_centre_activity_availability_by_id(db, centre_activity_availability_id, include_deleted = include_deleted)
 
 
 @router.put(

@@ -12,7 +12,7 @@ def check_for_existing_availability(
     ):
     
     essential_fields = {
-        "centre_activity_availability_id": centre_activity_availability_data.centre_activity_id,
+        "centre_activity_id": centre_activity_availability_data.centre_activity_id,
         "start_time": centre_activity_availability_data.start_time,
         "end_time": centre_activity_availability_data.end_time
     }
