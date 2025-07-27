@@ -111,8 +111,6 @@ def update_centre_activity_availability(
         ).first())
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
-    
-    check_for_existing_availability(db, centre_activity_availability_data)
 
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
     update_data_dict = serialize_data(centre_activity_availability_data.model_dump())
