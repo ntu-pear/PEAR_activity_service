@@ -1,79 +1,165 @@
 USE activity_service_dev;
 GO
 
--- Example seed data (assuming activity IDs for demonstration; update IDs to match your ACTIVITY table!)
--- You can get actual IDs with: SELECT id, title FROM [dbo].[ACTIVITY];
-
 -- Lunch (compulsory, group, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 1, 1, 1, 60, 60, 4, '2025-06-10T12:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Lunch';
+SELECT id, 0, 1, 1, 1, '2025-07-28T12:00:00', NULL, 60, 60, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'lunch';
 
--- Breathing Exercise (compulsory, group, flexible)
+-- Breathing exercise AM (compulsory, group, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 1, 0, 1, 30, 30, 4, '2025-06-10T11:30:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Breathing Exercise';
+SELECT id, 0, 1, 0, 1, '2025-07-28T11:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'breathing exercise AM';
 
--- Vital Check (compulsory, individual, fixed)
+-- Vital check (compulsory, individual, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 1, 1, 0, 30, 30, 1, '2025-06-10T09:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Vital Check';
+SELECT id, 0, 1, 1, 0, '2025-07-28T09:00:00', NULL, 30, 30, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'Vital check';
 
--- Routine Test (compulsory, individual, fixed)
+-- Routine Test One (compulsory, individual, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 1, 1, 0, 30, 30, 1, '2025-06-10T13:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test';
+SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', NULL, 30, 30, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test One';
 
--- Tablet Game (compulsory, individual, flexible)
+-- Routine Test Two (compulsory, individual, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 1, 0, 0, 30, 30, 1, '2025-06-10T10:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Tablet Game';
+SELECT id, 0, 1, 1, 0, '2025-07-28T11:00:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test Two';
 
--- Tea Break (optional, group, fixed)
+-- Tablet game (compulsory, individual, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 1, 30, 30, 4, '2025-06-10T15:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Tea Break';
+SELECT id, 0, 1, 0, 0, '2025-07-28T10:00:00', NULL, 30, 30, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'tablet game';
 
--- Simple Exercise (optional, group, flexible)
+-- Tea break (optional, group, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 30, 30, 4, '2025-06-10T14:30:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Simple Exercise';
+SELECT id, 0, 0, 1, 1, '2025-07-28T15:00:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'tea break';
 
--- Physio (optional, individual, fixed) - Monday session
+-- Simple exercise PM (optional, group, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 0, 60, 60, 1, '2025-06-09T11:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Physio';
+SELECT id, 0, 0, 0, 1, '2025-07-28T14:30:00', NULL, 30, 60, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'Simple exercise PM';
 
--- Physio (optional, individual, fixed) - Tuesday session
+-- sing along AM (optional, group, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 0, 60, 60, 1, '2025-06-10T11:00:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Physio';
+SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'sing along AM';
 
--- Free & Easy (optional, individual, flexible)
+-- sing along PM (optional, group, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_compulsory, is_fixed, is_group, min_duration, max_duration, min_people_req, start_date, end_date, active, created_by_id, modified_by_id
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 0, 30, 30, 1, '2025-06-10T10:30:00', NULL, 1, NULL, NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Free & Easy';
+SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'sing along PM';
 
--- Add similar INSERTs for other activities as needed...
+-- art & craft AM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'art & craft AM';
+
+-- art & craft PM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'art & craft PM';
+
+-- reminiscence AM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'reminiscence AM';
+
+-- reminiscence PM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'reminiscence PM';
+
+-- board game AM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'board game AM';
+
+-- board game PM (optional, group, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', NULL, 30, 30, 4, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'board game PM';
+
+-- physio Mon 11am (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-28T11:00:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Mon 11am';
+
+-- physio Tue 11am (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-29T11:00:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Tue 11am';
+
+-- physio Wed 2pm (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-30T14:00:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Wed 2pm';
+
+-- physio Thu 130pm (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-31T13:30:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Thu 130pm';
+
+-- physio Thu 230pm (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-31T14:30:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Thu 230pm';
+
+-- physio Thu 330pm (optional, individual, fixed)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 1, 0, '2025-07-31T15:30:00', NULL, 60, 60, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'physio Thu 330pm';
+
+-- free & easy (optional, individual, flexible)
+INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, 0, 0, '2025-07-28T10:30:00', NULL, 30, 30, 1, SYSDATETIME(), SYSDATETIME(), 'system', NULL
+FROM [dbo].[ACTIVITY] WHERE title = N'free & easy';
 
 GO
