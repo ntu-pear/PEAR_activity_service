@@ -13,12 +13,14 @@ from app.models import(
     activity_model,
     centre_activity_model,
     care_centre_model,
+    adhoc_model,
 )
 
 from app.routers import(
     centre_activity_router,
     activity_router,
     care_centre_router,
+    adhoc_router,
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -83,6 +85,7 @@ routers = [
     (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
     (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
+    (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
 ]
 
 for router, prefix, tags, in routers:
