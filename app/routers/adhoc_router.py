@@ -18,7 +18,7 @@ router = APIRouter()
 def create_adhoc(
     adhoc: schemas.AdhocCreate,
     db: Session = Depends(get_db),
-    current_user: JWTPayload = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -26,8 +26,8 @@ def create_adhoc(
             detail="You do not have permission to create an Adhoc record."
         )
     user_info = {
-        "id": current_user.userId,
-        "fullname": current_user.fullName
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous"
     }
     return crud.create_adhoc(db=db, adhoc_data=adhoc, current_user_info=user_info)
 
@@ -90,7 +90,7 @@ def list_adhocs_by_patient(
     patient_id: int,
     include_deleted: bool = Query(False, description="Include soft‑deleted"),
     db: Session = Depends(get_db),
-    current_user: JWTPayload = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
 ):
     if not is_supervisor(current_user):
         raise HTTPException(
@@ -108,7 +108,7 @@ def list_adhocs_by_patient(
 def update_adhoc(
     adhoc: schemas.AdhocUpdate,
     db: Session = Depends(get_db),
-    current_user: JWTPayload = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -116,8 +116,8 @@ def update_adhoc(
             detail="You do not have permission to update Adhoc records."
         )
     user_info = {
-        "id": current_user.userId,
-        "fullname": current_user.fullName
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous"
     }
     return crud.update_adhoc(db=db, adhoc_data=adhoc, current_user_info=user_info)
 
@@ -131,7 +131,7 @@ def update_adhoc(
 def delete_adhoc(
     adhoc_id: int,
     db: Session = Depends(get_db),
-    current_user: JWTPayload = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -139,7 +139,7 @@ def delete_adhoc(
             detail="You do not have permission to delete Adhoc records."
         )
     user_info = {
-        "id": current_user.userId,
-        "fullname": current_user.fullName
+        "id": current_user.userId if current_user else None,
+        "fullname": current_user.fullName if current_user else "Anonymous"
     }
     return crud.delete_adhoc(db=db, adhoc_id=adhoc_id, current_user_info=user_info)
