@@ -102,8 +102,8 @@ def update_adhoc(
         get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
         db_adhoc.new_centre_activity_id = adhoc_data.new_centre_activity_id
     db_adhoc.status = adhoc_data.status
-    db_adhoc.start_time = adhoc_data.start_time
-    db_adhoc.end_time   = adhoc_data.end_time
+    db_adhoc.start_date = adhoc_data.start_date
+    db_adhoc.end_date = adhoc_data.end_date
     db_adhoc.is_deleted = adhoc_data.is_deleted
     # stamp modification
     db_adhoc.modified_date = datetime.utcnow()
