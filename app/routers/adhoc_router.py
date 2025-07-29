@@ -4,7 +4,7 @@ from app.database import get_db
 import app.crud.adhoc_crud as crud
 import app.schemas.adhoc_schema as schemas
 from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
-from typing import Optional
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -81,6 +81,23 @@ def get_adhoc_by_id(
         include_deleted=include_deleted
     )
 
+@router.get(
+    "/patient/{patient_id}",
+    response_model=List[schemas.AdhocResponse],
+    summary="List Adhoc by patient"
+)
+def list_adhocs_by_patient(
+    patient_id: int,
+    include_deleted: bool = Query(False, description="Include soft‑deleted"),
+    db: Session = Depends(get_db),
+    current_user: JWTPayload = Depends(get_current_user_with_flag)
+):
+    if not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to retrieve Adhoc records from patient."
+        )
+    return crud.get_adhocs_by_patient_id(db, patient_id, include_deleted)
 
 @router.put(
     "/",

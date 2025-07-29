@@ -7,29 +7,18 @@ class Adhoc(Base):
     __tablename__ = "ADHOC"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    old_centre_activity_id = Column(
-        Integer,
-        ForeignKey("CENTRE_ACTIVITY.id"),
-        nullable=False
-    )
-    new_centre_activity_id = Column(
-        Integer,
-        ForeignKey("CENTRE_ACTIVITY.id"),
-        nullable=False
-    )
-
+    old_centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
+    new_centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
+    patient_id = Column(Integer, nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     status = Column(String, nullable=False)
-
-    start_time = Column(DateTime, nullable=False)
-    end_time   = Column(DateTime, nullable=False)
-
+    start_date = Column(DateTime, nullable=False)
+    end_date   = Column(DateTime, nullable=False)
     created_date  = Column(DateTime, nullable=False, default=datetime.now())
     modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.utcnow)
-
     created_by_id  = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
 
     # relationships back to centre_activity
-    old_activity = relationship("CentreActivity", foreign_keys=[old_centre_activity_id])
-    new_activity = relationship("CentreActivity", foreign_keys=[new_centre_activity_id])
+    old_centre_activity = relationship("CentreActivity", foreign_keys=[old_centre_activity_id])
+    new_centre_activity = relationship("CentreActivity", foreign_keys=[new_centre_activity_id])

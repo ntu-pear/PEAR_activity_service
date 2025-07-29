@@ -1,23 +1,32 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 class AdhocBase(BaseModel):
     old_centre_activity_id: int = Field(..., description="CentreActivity being replaced")
     new_centre_activity_id: int = Field(..., description="CentreActivity replacement")
+    patient_id: Optional[int] = Field(None, description="")
     status: str = Field(..., description="Adhoc request status (e.g. PENDING, APPROVED, REJECTED)")
-    start_time: datetime = Field(..., description="When the adhoc starts")
-    end_time: datetime = Field(..., description="When the adhoc ends")
+    start_date: datetime = Field(..., description="When the adhoc starts")
+    end_date: datetime = Field(..., description="When the adhoc ends")
 
     @model_validator(mode='after')
     def validate_input(self):
         if self.old_centre_activity_id == self.new_centre_activity_id:
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")
-        if self.start_time >= self.end_time:
-            raise ValueError("Start time must be before end time.")
+        if self.start_date >= self.end_date:
+            raise ValueError("Start date must be before end date.")
         now = datetime.now(timezone.utc)
-        if self.start_time < now:
-            raise ValueError("Start time cannot be in the past.")
+        if self.start_date < now:
+            raise ValueError("Start date cannot be in the past.")
+        days_to_sunday = 6 - now.weekday()
+        end_of_week = (
+            now
+            .replace(hour=23, minute=59, second=59, microsecond=0)
+            + timedelta(days=days_to_sunday)
+        )
+        if self.end_date > end_of_week:
+            raise ValueError("end_date cannot go beyond the end of the current week.")
         return self
 
 class AdhocCreate(AdhocBase):

@@ -20,6 +20,20 @@ def get_adhoc_by_id(
         raise HTTPException(status_code=404, detail="Adhoc record not found")
     return adhoc
 
+def get_adhocs_by_patient_id(
+    db: Session,
+    patient_id: int,
+    include_deleted: bool = False,
+) -> list[models.Adhoc]:
+    q = db.query(models.Adhoc).filter(models.Adhoc.patient_id == patient_id)
+    if not include_deleted:
+        q = q.filter(models.Adhoc.is_deleted == False)
+    q = q.order_by(models.Adhoc.id)
+    results = q.all()
+    if not results:
+        raise HTTPException(status_code=404, detail="No Adhoc records for this patient")
+    return results
+
 def get_adhocs(
     db: Session,
     include_deleted: bool = False,
@@ -41,8 +55,13 @@ def create_adhoc(
     current_user_info: dict
 ) -> models.Adhoc:
     # validate referenced centre_activities
-    get_centre_activity_by_id(db, centre_activity_id=adhoc_data.old_centre_activity_id)
-    get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
+    old_ca = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.old_centre_activity_id)
+    if not old_ca:
+        raise HTTPException(status_code=404, detail="Old centre activity not found")
+
+    new_ca = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
+    if not new_ca:
+        raise HTTPException(status_code=404, detail="New centre activity not found")
 
     db_adhoc = models.Adhoc(**adhoc_data.model_dump())
     try:
