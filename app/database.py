@@ -38,26 +38,14 @@ if not DB_PASSWORD_DEV:
 ##### Note that this connection is to the DEV environment ####
 # COMMMENT out this section when doing local development
 # OR change your env var accordingly to point to your db
-# connection_url = sa.URL.create(
-#     "mssql+pyodbc",
-#     database=DB_DATABASE_DEV,
-#     username=DB_USERNAME_DEV,
-#     password=DB_PASSWORD_DEV,
-#     host=DB_SERVER_DEV,
-#     port=DB_DATABASE_PORT,
-#     query={"driver": DB_DRIVER_DEV, "TrustServerCertificate": "yes"},
-# )
-
-# Local Development Connection
 connection_url = sa.URL.create(
     "mssql+pyodbc",
     database=DB_DATABASE_DEV,
+    username=DB_USERNAME_DEV,
+    password=DB_PASSWORD_DEV,
     host=DB_SERVER_DEV,
-    query={
-        "driver": DB_DRIVER_DEV,
-        "Trusted_Connection": "yes",  # <-- This enables Windows Auth
-        "TrustServerCertificate": "yes" 
-    }
+    port=DB_DATABASE_PORT,
+    query={"driver": DB_DRIVER_DEV, "TrustServerCertificate": "yes"},
 )
 
 ###############################################################
