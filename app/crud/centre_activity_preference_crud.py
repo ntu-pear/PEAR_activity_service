@@ -133,6 +133,28 @@ def get_centre_activity_preference_by_id(
     
     return centre_activity_preference
 
+def get_centre_activity_preferences_by_patient_id(
+        db: Session,
+        patient_id: int,
+        include_deleted: bool = False,
+        skip: int = 0,
+        limit: int = 100,
+    ):
+    
+    centre_activity_preferences = db.query(models.CentreActivityPreference)
+    if not include_deleted:
+        centre_activity_preferences = centre_activity_preferences.filter(models.CentreActivityPreference.is_deleted == False)
+
+    patient_centre_activity_preference = centre_activity_preferences.filter(
+        models.CentreActivityPreference.patient_id == patient_id
+    ).all()
+
+    if not patient_centre_activity_preference:
+        raise HTTPException(status_code=404, detail="No Centre Activity Preferences found for this Patient")
+
+    patient_centre_activity_preference = patient_centre_activity_preference.order_by(models.CentreActivityPreference.created_date).offset(skip).limit(limit).all()
+    return patient_centre_activity_preference
+
 def get_centre_activity_preferences(
         db: Session,
         include_deleted: bool = False,
@@ -144,27 +166,29 @@ def get_centre_activity_preferences(
     if not include_deleted:
         centre_activity_preferences = centre_activity_preferences.filter(models.CentreActivityPreference.is_deleted == False)
 
-    centre_activity_preferences = centre_activity_preferences.offset(skip).limit(limit).all()
+    centre_activity_preferences = centre_activity_preferences.order_by(models.CentreActivityPreference.patient_id).offset(skip).limit(limit).all()
 
     return centre_activity_preferences
 
-def update_centre_activity_preference(
+def update_centre_activity_preference_by_id(
         db: Session,
         centre_activity_preference_data: schemas.CentreActivityPreferenceUpdate,
         current_user_info: dict,
-        centre_activity_preference_id: int
         ):
+    
+    centre_activity_preference_id = centre_activity_preference_data.centre_activity_preference_id
+
     # Check if the Centre Activity Preference exists
     existing_centre_activity_preference = db.query(models.CentreActivityPreference).filter(
         models.CentreActivityPreference.id == centre_activity_preference_id,
-        models.CentreActivityPreference.is_deleted == False
     ).first()
-
+    
     if not existing_centre_activity_preference:
-        raise HTTPException(status_code=404, detail="Centre Activity Preference not found or deleted")
+        raise HTTPException(status_code=404, detail="Centre Activity Preference not found")
     
     # Check if the Centre Activity exists
     existing_centre_activity = get_centre_activity_by_id(db, centre_activity_id=centre_activity_preference_data.centre_activity_id)
+
     if not existing_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found")
     
@@ -201,7 +225,7 @@ def update_centre_activity_preference(
             (current_user_info.get('role_name') == "SUPERVISOR" and current_user_info.get('id') != get_patient_allocation_data.json().get('supervisorId')):
             raise HTTPException(
                 status_code=403,
-                detail="You do not have permission to create a Centre Activity Preference for this Patient. \n" \
+                detail="You do not have permission to create a Centre Activity Preference for this Patient." \
                 f"Role: {current_user_info.get('role_name')}, " \
                 f"User ID: {current_user_info.get('id')}, " \
             )
@@ -233,11 +257,10 @@ def update_centre_activity_preference(
     # Update the Centre Activity Preference
     db_centre_activity_preference = db.query(models.CentreActivityPreference).filter(
         models.CentreActivityPreference.id == centre_activity_preference_id,
-        models.CentreActivityPreference.is_deleted == False
     ).first()
 
     if not db_centre_activity_preference:
-        raise HTTPException(status_code=404, detail="Centre Activity Preference not found or deleted")
+        raise HTTPException(status_code=404, detail="Centre Activity Preference not found")
     
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_preference))
     modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
@@ -268,6 +291,46 @@ def update_centre_activity_preference(
         entity_id=db_centre_activity_preference.id,
         original_data=original_data_dict,
         updated_data=updated_data_dict
+    )
+    
+    return db_centre_activity_preference
+
+
+def delete_centre_activity_preference_by_id(
+    centre_activity_preference_id: int,
+    db: Session,
+    current_user_info: dict,
+):
+    # Check if the Centre Activity Preference exists
+    db_centre_activity_preference = db.query(models.CentreActivityPreference).filter(
+        models.CentreActivityPreference.id == centre_activity_preference_id,
+        models.CentreActivityPreference.is_deleted == False
+    ).first()
+
+    if not db_centre_activity_preference:
+        raise HTTPException(status_code=404, detail="Centre Activity Preference not found or deleted")
+    
+    # Soft delete the Centre Activity Preference
+    db_centre_activity_preference.is_deleted = True
+    db_centre_activity_preference.modified_by_id = current_user_info.get("id")
+    db_centre_activity_preference.modified_date = datetime.now()
+
+    try:
+        db.commit()
+        db.refresh(db_centre_activity_preference)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting Centre Activity Preference: {str(e)}")
+    
+    log_crud_action(
+        action=ActionType.DELETE,
+        user=current_user_info.get("id"),
+        user_full_name=current_user_info.get("fullname"),
+        message="Deleted Centre Activity Preference",
+        table="CENTRE_ACTIVITY_PREFERENCE",
+        entity_id=db_centre_activity_preference.id,
+        original_data=model_to_dict(db_centre_activity_preference),
+        updated_data=None
     )
     
     return db_centre_activity_preference

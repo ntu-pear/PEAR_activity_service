@@ -7,16 +7,12 @@ from fastapi import HTTPException
 load_dotenv()
 logger = logging.getLogger("uvicorn")
 
-# TO CLEAN UP AFTER TESTING
+# Server internal IPs: For server use only
 PATIENT_BE_ORIGIN = os.getenv("PATIENT_BE_ORIGIN")
-PATIENT_BE_ORIGIN_NAT = os.getenv("PATIENT_BE_ORIGIN_NAT")
-LOCAL_PATIENT_BE_ORIGIN = os.getenv("LOCAL_PATIENT_BE_ORIGIN")
 BASE_URL = f'{PATIENT_BE_ORIGIN}/api/v1'
-BASE_URL_NAT = f'{PATIENT_BE_ORIGIN_NAT}/api/v1'
-BASE_URL_LOCAL = f'{LOCAL_PATIENT_BE_ORIGIN}/api/v1'
 
 def get_patient_by_id(require_auth: bool, bearer_token: str, patient_id: int):
-    url = f'{BASE_URL_NAT}/patients/{patient_id}'   # TO CLEAN UP AFTER TESTING
+    url = f'{BASE_URL}/patients/{patient_id}'
     params = {"require_auth": f"{require_auth}", "mask": "true"}
     headers = None
     if require_auth:
@@ -32,7 +28,7 @@ def get_patient_by_id(require_auth: bool, bearer_token: str, patient_id: int):
     return response
 
 def get_patient_allocation_by_patient_id(require_auth: bool, bearer_token: str, patient_id: int):
-    url = f'{BASE_URL_LOCAL}/allocation/patient/{patient_id}?'      # TO CLEAN UP AFTER TESTING
+    url = f'{BASE_URL}/allocation/patient/{patient_id}?' 
     params = {"require_auth": f"{require_auth}"}
     headers = None
     if require_auth:

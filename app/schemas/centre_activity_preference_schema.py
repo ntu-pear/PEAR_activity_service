@@ -11,15 +11,19 @@ class CentreActivityPreferenceCreate(CentreActivityPreferenceBase):
     created_by_id: str = Field(..., description="ID of the user who created this preference")
 
 class CentreActivityPreferenceUpdate(CentreActivityPreferenceBase):
-    id: int = Field(..., description="ID of the Centre Activity Preference to update")
+    centre_activity_preference_id: int = Field(..., description="ID of the Centre Activity Preference to update", alias="id")
     is_deleted: bool = Field(False, description="Is the Centre Activity Preference deleted")
     modified_by_id: str = Field(..., description="ID of the user who last modified this preference")
     modified_date: datetime = Field(None, description="Last modification timestamp")
 
 class CentreActivityPreferenceResponse(CentreActivityPreferenceBase):
-    id: int = Field(..., description="ID of the Centre Activity Preference")
+    centre_activity_preference_id: int = Field(..., description="ID of the Centre Activity Preference", alias='id')
     is_deleted: bool = Field(..., description="Is the Centre Activity Preference deleted")
     created_date: datetime = Field(..., description="Timestamp of creation")
     modified_date: Optional[datetime] = Field(None, description="Last modification timestamp")
     created_by_id: str = Field(..., description="ID of the user who created it")
     modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified it")
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True  # Optional, but good for flexibility!
