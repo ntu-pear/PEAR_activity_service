@@ -27,7 +27,7 @@ jobs:
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
-      PATIENT_BE_ORIGIN: ${{ secrets.PATIENT_BE_ORIGIN}}
+      PATIENT_BE_ORIGIN: ${{ secrets.PATIENT_BE_ORIGIN }}
 
     steps:
       - uses: actions/checkout@v4

@@ -84,7 +84,7 @@ def get_centre_activity_preference_by_id(
     )
 
 @router.get(
-        "/{patient_id}",
+        "/patient/{patient_id}",
         response_model=list[schemas.CentreActivityPreferenceResponse],
         summary="Get Centre Activity Preference by Patient ID",
         description="Get Centre Activity Preference by Patient ID",
