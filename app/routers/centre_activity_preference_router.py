@@ -56,7 +56,7 @@ def get_centre_activity_preferences(
             detail="You do not have permission to view Centre Activity Preferences"
         )
 
-    return crud.get_centre_activity_preferences(db=db)
+    return crud.get_centre_activity_preferences(db=db, include_deleted=include_deleted)
 
 @router.get(
     "/{centre_activity_preference_id}",
