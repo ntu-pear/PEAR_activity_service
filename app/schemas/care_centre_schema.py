@@ -35,6 +35,10 @@ class CareCentreBase(BaseModel):
             import re
             return bool(re.fullmatch(r"^([01][0-9]|2[0-3]):[0-5][0-9]$", time_str))
     
+
+class ValidatedCareCentre(CareCentreBase):
+    """Mixin class that adds validation to CareCentreBase - used by Create and Update classes"""
+    
     @model_validator(mode="after")
     def validate_centre(self):
         country_code = self.country_code
@@ -72,10 +76,10 @@ class CareCentreBase(BaseModel):
             raise ValueError("working_hours errors:\n" + "\n".join(errors))
         return self
 
-class CareCentreCreate(CareCentreBase):
+class CareCentreCreate(ValidatedCareCentre):
     created_by_id: str = Field(..., description="User ID who created the centre")
 
-class CareCentreUpdate(CareCentreBase):
+class CareCentreUpdate(ValidatedCareCentre):
     id: int = Field(..., description="ID of the care centre to update")
     is_deleted: bool = Field(False, description="Is the care centre deleted")
     modified_by_id: str = Field(..., description="User ID who last modified the centre")
