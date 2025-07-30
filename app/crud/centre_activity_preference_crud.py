@@ -252,7 +252,7 @@ def update_centre_activity_preference_by_id(
     
     # Update the fields of the CentreActivityPreference instance
     for field in schemas.CentreActivityPreferenceUpdate.__fields__:
-        if field != "Id" and hasattr(centre_activity_preference_data, field):
+        if field != "id" and hasattr(centre_activity_preference_data, field):
             setattr(db_centre_activity_preference, field, getattr(centre_activity_preference_data, field))
 
     db_centre_activity_preference.modified_by_id = modified_by_id
