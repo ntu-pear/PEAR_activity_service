@@ -72,21 +72,6 @@ def create_centre_activity_preference(
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
-    # Check if the Centre Activity Preference already exists
-    essential_fields = {
-        "centre_activity_id": centre_activity_preference_data.centre_activity_id,
-        "patient_id": centre_activity_preference_data.patient_id,
-        "is_like": centre_activity_preference_data.is_like,
-    }
-    existing_centre_activity_preference = db.query(models.CentreActivityPreference).filter_by(**essential_fields).first()
-    
-    if existing_centre_activity_preference:
-        raise HTTPException(status_code=400, 
-                            detail={
-                                "message": "Centre Activity Preference with these attributes already exists or deleted",
-                                "existing_id": str(existing_centre_activity_preference.id),
-                                "existing_is_deleted": existing_centre_activity_preference.is_deleted
-                            })
     
     # Create Centre Activity Preference
     db_centre_activity_preference = models.CentreActivityPreference(**centre_activity_preference_data.model_dump())

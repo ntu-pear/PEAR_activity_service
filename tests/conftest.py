@@ -23,6 +23,16 @@ def mock_supervisor_user():
     }
 
 @pytest.fixture
+def mock_caregiver_user():
+    return {
+        "id": "3",
+        "fullName": "Test Caregiver",
+        "email": "caregiver@test.com",
+        "role_name": "CAREGIVER",
+        "bearer_token": "test-bearer-token",
+    }
+
+@pytest.fixture
 def mock_supervisor_jwt():
      return JWTPayload(
         userId="2",
@@ -30,6 +40,16 @@ def mock_supervisor_jwt():
         email="test@test.com",
         roleName="SUPERVISOR",
         sessionId="abc321"
+    )
+
+@pytest.fixture
+def mock_caregiver_jwt():
+    return JWTPayload(
+        userId="3",
+        fullName="Test Caregiver",
+        email="caregiver@test.com",
+        roleName="CAREGIVER",
+        sessionId="abc456"
     )
 
 @pytest.fixture
@@ -52,6 +72,30 @@ def mock_doctor_jwt():
         sessionId="def456"
     )
 
+@pytest.fixture
+def mock_allocation_response():
+    """Mock response for patient service calls"""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "patientId": 1,
+        "caregiverId": "3",
+        "supervisorId": "2"
+    }
+    return mock_response
+
+@pytest.fixture
+def mock_patient_service_response():
+    """Mock response for patient service calls"""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "patientId": 1,
+        "address": "Singapore",
+        "gender": "F",
+        "patientName": "Test Patient"
+    }
+    return mock_response
 # ====== Care Centre Fixtures ======
 @pytest.fixture
 def base_care_centre_data_list():
@@ -218,3 +262,78 @@ def soft_deleted_centre_activity(base_centre_activity_data):
         "modified_date": datetime.now()
     })
     return CentreActivity(**data)
+
+# === Centre Activity Preference Fixtures ===
+@pytest.fixture
+def base_centre_activity_preference_data_list():
+    """Base data for Centre Activity Preference"""
+    return [
+        {
+            "id": 1,
+            "centre_activity_id": 1,
+            "patient_id": 1,
+            "is_like": True,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+            "created_by_id": "3",
+            "modified_by_id": "3",
+        },
+        {   # For update test - use id for schema (aliased to centre_activity_preference_id)
+            "id": 1,
+            "centre_activity_id": 2,
+            "patient_id": 1,
+            "is_like": False,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+            "created_by_id": "3",
+            "modified_by_id": "3",
+        },
+    ]
+
+@pytest.fixture
+def base_centre_activity_preference_data(base_centre_activity_preference_data_list):
+    return base_centre_activity_preference_data_list[0]
+
+@pytest.fixture
+def existing_centre_activity_preference(base_centre_activity_preference_data):
+    """A CentreActivityPreference instance for mocking DB data"""
+    from app.models.centre_activity_preference_model import CentreActivityPreference
+    # Convert back to model field names
+    model_data = base_centre_activity_preference_data.copy()
+    # Remove any schema-specific fields that don't exist in the model
+    if "centre_activity_preference_id" in model_data:
+        del model_data["centre_activity_preference_id"]
+    return CentreActivityPreference(**model_data)
+
+@pytest.fixture
+def existing_centre_activity_preferences(base_centre_activity_preference_data_list):
+    """A list of CentreActivityPreference instance for mocking DB data"""
+    from app.models.centre_activity_preference_model import CentreActivityPreference
+    # Create model data with proper field names
+    model_data_1 = base_centre_activity_preference_data_list[0].copy()
+    model_data_2 = {
+        "id": 2,
+        "centre_activity_id": 2,
+        "patient_id": 1,
+        "is_like": False,
+        "is_deleted": False,
+        "created_date": datetime.now(),
+        "modified_date": datetime.now(),
+        "created_by_id": "3",
+        "modified_by_id": "3",
+    }
+    return [CentreActivityPreference(**model_data_1), CentreActivityPreference(**model_data_2)]
+
+@pytest.fixture
+def soft_deleted_centre_activity_preference(base_centre_activity_preference_data):
+    """Soft-deleted CentreActivityPreference instance"""
+    from app.models.centre_activity_preference_model import CentreActivityPreference
+    data = base_centre_activity_preference_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now()
+    })
+    return CentreActivityPreference(**data)
