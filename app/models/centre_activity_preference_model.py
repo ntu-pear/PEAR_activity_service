@@ -13,8 +13,8 @@ class CentreActivityPreference(Base):
     is_like = Column(Boolean, nullable=False, default=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
 
-    created_date = Column(DateTime, nullable=False, default=datetime.now())
-    modified_date = Column(DateTime, nullable=True, onupdate=datetime.now())
+    created_date = Column(DateTime, nullable=False, default=datetime.now)
+    modified_date = Column(DateTime, nullable=True, onupdate=datetime.now)
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
 

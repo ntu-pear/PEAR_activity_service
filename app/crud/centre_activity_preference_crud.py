@@ -225,9 +225,9 @@ def update_centre_activity_preference_by_id(
             (current_user_info.get('role_name') == "SUPERVISOR" and current_user_info.get('id') != get_patient_allocation_data.json().get('supervisorId')):
             raise HTTPException(
                 status_code=403,
-                detail="You do not have permission to update a Centre Activity Preference for this Patient." \
-                f"Role: {current_user_info.get('role_name')}, " \
-                f"User ID: {current_user_info.get('id')}, " \
+                detail="You do not have permission to update a Centre Activity Preference for this Patient.\n" \
+                f"Role: {current_user_info.get('role_name')},\n" \
+                f"User ID: {current_user_info.get('id')},\n" \
             )
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

@@ -1,6 +1,6 @@
 # This script is used to test the patient service by fetching a patient by ID.
 # "python -m scripts.test_patient_service"
-# Note: Ensure to inclide BEARER_TOKEN in your own .env file!
+# Note: Ensure to include BEARER_TOKEN in your own .env file
 
 import app.services.patient_service as patient_service
 import os
