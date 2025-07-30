@@ -4,7 +4,6 @@ import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-import conftest
 from app.models.centre_activity_preference_model import CentreActivityPreference as CentreActivityPreferenceModel
 from app.schemas.centre_activity_preference_schema import CentreActivityPreferenceCreate, CentreActivityPreferenceUpdate, CentreActivityPreferenceResponse
 from app.crud.centre_activity_preference_crud import (
