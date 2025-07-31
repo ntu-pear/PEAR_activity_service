@@ -13,12 +13,19 @@ class AdhocBase(BaseModel):
 class ValidatedAdhoc(AdhocBase):
     @model_validator(mode="after")
     def validate_adhoc(self):
+        sd = self.start_date
+        ed = self.end_date
+        if sd.tzinfo is None:
+            sd = sd.replace(tzinfo=timezone.utc)
+        if ed.tzinfo is None:
+            ed = ed.replace(tzinfo=timezone.utc)
+
         if self.old_centre_activity_id == self.new_centre_activity_id:
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")
-        if self.start_date >= self.end_date:
+        if sd >= ed:
             raise ValueError("Start date must be before end date.")
         now = datetime.now(timezone.utc) 
-        if self.start_date < now:
+        if sd < now:
             raise ValueError("Start date cannot be in the past.")
         days_to_sunday = 6 - now.weekday()
         end_of_week = (
@@ -26,7 +33,7 @@ class ValidatedAdhoc(AdhocBase):
             .replace(hour=23, minute=59, second=59, microsecond=0)
             + timedelta(days=days_to_sunday)
         )
-        if self.end_date > end_of_week:
+        if ed > end_of_week:
             raise ValueError("end_date cannot go beyond the end of the current week.")
         return self
 
