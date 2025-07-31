@@ -14,7 +14,7 @@ END
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'breathing exercise AM')
 BEGIN
     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
-    VALUES (0, N'breathing exercise AM', N'daily 30 minutes before lunch', NULL, NULL);
+    VALUES (0, N'breathing exercise AM', N'daily 30 minutes', NULL, NULL);
 END
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Vital check')

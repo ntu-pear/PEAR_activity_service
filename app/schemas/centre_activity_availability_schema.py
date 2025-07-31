@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 class CentreActivityAvailabilityBase(BaseModel):
     centre_activity_id: int = Field(..., description="Reference to Centre Activity")
-    is_deleted: bool = Field(default=False, description="Indicates whether the record is soft-deleted.")
+    
     start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability.")
     end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date.")
 
