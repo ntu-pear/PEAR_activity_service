@@ -1,17 +1,18 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime, timedelta
 
 class AdhocBase(BaseModel):
     old_centre_activity_id: int = Field(..., description="CentreActivity being replaced")
     new_centre_activity_id: int = Field(..., description="CentreActivity replacement")
     patient_id: Optional[int] = Field(None, description="")
-    status: str = Field(..., description="Adhoc request status (e.g. PENDING, APPROVED, REJECTED)")
+    status: Literal["PENDING", "APPROVED", "REJECTED"] = Field(..., description="Adhoc request status")
     start_date: datetime = Field(..., description="When the adhoc starts")
     end_date: datetime = Field(..., description="When the adhoc ends")
 
-    @model_validator(mode='after')
-    def validate_input(self):
+class ValidatedAdhoc(AdhocBase):
+    @model_validator(mode="after")
+    def validate_adhoc(self):
         if self.old_centre_activity_id == self.new_centre_activity_id:
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")
         if self.start_date >= self.end_date:
@@ -29,10 +30,10 @@ class AdhocBase(BaseModel):
             raise ValueError("end_date cannot go beyond the end of the current week.")
         return self
 
-class AdhocCreate(AdhocBase):
+class AdhocCreate(ValidatedAdhoc):
     created_by_id: str = Field(..., description="User who creates this record")
 
-class AdhocUpdate(AdhocBase):
+class AdhocUpdate(ValidatedAdhoc):
     id: int = Field(..., description="ID of the record to update")
     is_deleted: bool = Field(False, description="Soft-delete flag")
     modified_by_id: str = Field(..., description="User who last modified this record")
