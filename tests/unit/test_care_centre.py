@@ -4,7 +4,6 @@ import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-import conftest
 from app.models.care_centre_model import CareCentre as CareCentreModel
 from app.schemas.care_centre_schema import CareCentreCreate, CareCentreUpdate, CareCentreResponse
 from app.crud.care_centre_crud import (
