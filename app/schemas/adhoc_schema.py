@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Literal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 class AdhocBase(BaseModel):
     old_centre_activity_id: int = Field(..., description="CentreActivity being replaced")
@@ -17,7 +17,7 @@ class ValidatedAdhoc(AdhocBase):
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")
         if self.start_date >= self.end_date:
             raise ValueError("Start date must be before end date.")
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc) 
         if self.start_date < now:
             raise ValueError("Start date cannot be in the past.")
         days_to_sunday = 6 - now.weekday()
