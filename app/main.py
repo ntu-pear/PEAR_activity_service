@@ -13,6 +13,7 @@ from app.models import(
     activity_model,
     centre_activity_model,
     care_centre_model,
+    centre_activity_preference_model,
     adhoc_model,
 )
 
@@ -20,6 +21,7 @@ from app.routers import(
     centre_activity_router,
     activity_router,
     care_centre_router,
+    centre_activity_preference_router,
     adhoc_router,
 )
 
@@ -42,6 +44,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     os.getenv("WEB_FE_ORIGIN"),
+    os.getenv("PATIENT_BE_ORIGIN"),
 ]
 
 app.add_middleware(
@@ -85,6 +88,7 @@ routers = [
     (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
     (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
+    (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
 ]
 

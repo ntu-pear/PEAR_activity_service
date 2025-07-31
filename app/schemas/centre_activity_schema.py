@@ -16,6 +16,10 @@ class CentreActivityBase(BaseModel):
     min_people_req: int = Field(1, description="Minimum number of people required", ge=1)
     #fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
 
+
+class ValidatedCentreActivity(CentreActivityBase):
+    """Mixin class that adds validation to CentreActivityBase - used by Create and Update classes"""
+    
     @model_validator(mode='after')
     def validate_input(self):
         is_fixed = self.is_fixed
@@ -44,10 +48,10 @@ class CentreActivityBase(BaseModel):
             raise ValueError("End date cannot be more than 1 year in the future.")
         return self
 
-class CentreActivityCreate(CentreActivityBase):
+class CentreActivityCreate(ValidatedCentreActivity):
     created_by_id: str = Field(..., description="ID of the user who created this activity")
 
-class CentreActivityUpdate(CentreActivityBase):
+class CentreActivityUpdate(ValidatedCentreActivity):
     id: int = Field(..., description="ID of the Centre Activity to update")
     is_deleted: bool = Field(False, description="Is the Centre Activity deleted")
     modified_by_id: str = Field(..., description="ID of the user who last modified this activity")

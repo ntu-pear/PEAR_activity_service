@@ -109,3 +109,10 @@ def is_admin(payload: Optional[JWTPayload]) -> bool:
     if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
         return False
     return getattr(payload, "roleName", "").upper() == "ADMIN"
+
+# Centre Activity Preference is accessible to Supervisors and Caregivers
+def is_caregiver(payload: Optional[JWTPayload]) -> bool:
+    """Check if the user has the Caregiver role."""
+    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+        return False
+    return getattr(payload, "roleName", "").upper() == "CAREGIVER"
