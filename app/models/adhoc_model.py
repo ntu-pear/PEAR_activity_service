@@ -9,7 +9,7 @@ class Adhoc(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     old_centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
     new_centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
-    patient_id = Column(Integer, nullable=True)
+    patient_id = Column(Integer, nullable=False)
     is_deleted = Column(Boolean, nullable=False, default=False)
     status = Column(String, nullable=False)
     start_date = Column(DateTime, nullable=False)

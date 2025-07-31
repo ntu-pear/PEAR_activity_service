@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 class AdhocBase(BaseModel):
     old_centre_activity_id: int = Field(..., description="CentreActivity being replaced")
     new_centre_activity_id: int = Field(..., description="CentreActivity replacement")
-    patient_id: Optional[int] = Field(None, description="")
+    patient_id: int = Field(..., description="ID of the patient to apply this ad-hoc")
     status: Literal["PENDING", "APPROVED", "REJECTED"] = Field(..., description="Adhoc request status")
     start_date: datetime = Field(..., description="When the adhoc starts")
     end_date: datetime = Field(..., description="When the adhoc ends")

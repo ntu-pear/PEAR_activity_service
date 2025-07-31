@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 import app.models.adhoc_model as models
 import app.schemas.adhoc_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
+#from app.services.patient_service import get_patient_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from typing import List
@@ -12,10 +13,10 @@ def get_adhoc_by_id(
     adhoc_id: int,
     include_deleted: bool = False
 ) -> models.Adhoc:
-    query = db.query(models.Adhoc).filter(models.Adhoc.id == adhoc_id)
-    if not include_deleted:
-        query = query.filter(models.Adhoc.is_deleted == False)
-    adhoc = query.first()
+    if include_deleted:
+        adhoc = (db.query(models.Adhoc).filter(models.Adhoc.id == adhoc_id).first())
+    else:
+        adhoc = (db.query(models.Adhoc).filter(models.Adhoc.id == adhoc_id, models.Adhoc.is_deleted == False).first())
     if not adhoc:
         raise HTTPException(status_code=404, detail="Adhoc record not found")
     return adhoc
@@ -62,6 +63,12 @@ def create_adhoc(
     new_ca = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
     if not new_ca:
         raise HTTPException(status_code=404, detail="New centre activity not found")
+    
+    # validate patient
+    try:
+        get_patient_by_id(require_auth=False, bearer_token="", patient_id=adhoc_data.patient_id)
+    except HTTPException as e:
+        raise HTTPException(status_code=400, detail="Invalid Patient ID") from e
 
     db_adhoc = models.Adhoc(**adhoc_data.model_dump())
     try:
@@ -101,13 +108,21 @@ def update_adhoc(
     if adhoc_data.new_centre_activity_id is not None:
         get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
         db_adhoc.new_centre_activity_id = adhoc_data.new_centre_activity_id
+
+    # validate patient
+    try:
+        get_patient_by_id(require_auth=False, bearer_token="", patient_id=adhoc_data.patient_id)
+    except HTTPException as e:
+        raise HTTPException(status_code=400, detail="Invalid Patient ID") from e
+    db_adhoc.patient_id = adhoc_data.patient_id
+
     db_adhoc.status = adhoc_data.status
     db_adhoc.start_date = adhoc_data.start_date
     db_adhoc.end_date = adhoc_data.end_date
     db_adhoc.is_deleted = adhoc_data.is_deleted
     # stamp modification
-    db_adhoc.modified_date = datetime.utcnow()
-    db_adhoc.modified_by_id = current_user_info.get("id")
+    db_adhoc.modified_date = adhoc_data.modified_date or datetime.utcnow()
+    db_adhoc.modified_by_id = adhoc_data.modified_by_id
 
     try:
         db.commit()
