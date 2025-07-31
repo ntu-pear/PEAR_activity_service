@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 import app.models.adhoc_model as models
 import app.schemas.adhoc_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
-#from app.services.patient_service import get_patient_by_id
+from app.services.patient_service import get_patient_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from typing import List
