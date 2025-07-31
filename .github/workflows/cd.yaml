@@ -35,6 +35,7 @@ jobs:
       DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
       DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
       WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
+      PATIENT_BE_ORIGIN: ${{ secrets.PATIENT_BE_ORIGIN }}
 
 
     steps:
@@ -55,6 +56,7 @@ jobs:
           echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
           echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
           echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+          echo "PATIENT_BE_ORIGIN=${{ secrets.PATIENT_BE_ORIGIN }}" >> .env
 
       - name: Apply Kubernetes ConfigMap
         run: |
