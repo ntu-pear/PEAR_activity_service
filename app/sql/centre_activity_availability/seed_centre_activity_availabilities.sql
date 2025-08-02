@@ -53,22 +53,6 @@ BEGIN
 END
 SET @i = 0;
 
--- Simple Exercise PM 2PM to 2:30PM
-WHILE @i < 7
-BEGIN
-    SET @startTime = DATEADD(HOUR, 14, CAST(DATEADD(DAY, @i, CAST(@startDate AS DATE)) AS DATETIME));
-    SET @endTime = DATEADD(MINUTE, 30, @startTime); -- 30 minute duration
-
-    INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
-        centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
-    )
-    SELECT id, 0, @startTime, @endTime, @CreateDate, NULL, 'supervisor1', NULL
-    FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 7
-
-    SET @i = @i + 1;
-END
-SET @i = 0;
-
 -- Tea Break 3pm to 3:30pm
 WHILE @i < 7
 BEGIN
@@ -85,7 +69,7 @@ BEGIN
 END
 SET @i = 0;
 
--- Dinner Monday to Sunday 5pm to 6pm
+-- -- Dinner Monday to Sunday 5pm to 6pm
 WHILE @i < 7
 BEGIN
     SET @startTime = DATEADD(HOUR, 17, CAST(DATEADD(DAY, @i, CAST(@startDate AS DATE)) AS DATETIME));
@@ -102,6 +86,82 @@ END
 SET @i = 0;
 
 -- Monday timetable
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-02T10:00:00', '2025-12-02T10:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T10:30:00', '2025-12-01T11:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Physio 11AM - 12PM monday session
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T11:00:00', '2025-12-01T12:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 16
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T13:00:00', '2025-12-01T13:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Tablet Game
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T13:30:00', '2025-12-01T14:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 5
+
+-- Simple Exercise PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T14:00:00', '2025-12-01T14:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 7
+
+-- Reminiscence PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T14:30:00', '2025-12-01T15:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 13
+
+-- Tea Break
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T15:00:00', '2025-12-01T15:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 6
+
+-- Sing Along PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T15:30:00', '2025-12-01T16:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 9
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-01T16:30:00', '2025-12-01T17:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Dinner
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T17:00:00', '2025-12-03T18:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 2
 
 
 -- Tuesday timetable
@@ -109,10 +169,17 @@ SET @i = 0;
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, '2025-12-02T9:30:00', '2025-12-02T10:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+SELECT id, 0, '2025-12-02T10:00:00', '2025-12-02T10:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 5
 
--- Physio 11AM tuesday session
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-02T10:30:00', '2025-12-02T11:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Physio 11AM - 12PM tuesday session
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
@@ -133,12 +200,26 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, '2025-12-02T13:30:00', '2025-12-02T14:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 11
 
--- Board Game PM
+-- Simple Exercise PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-02T14:00:00', '2025-12-02T14:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 7
+
+-- Free & Easy
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
 SELECT id, 0, '2025-12-02T14:30:00', '2025-12-02T15:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
-FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 15
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Tea Break
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-02T15:00:00', '2025-12-02T15:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 6
 
 -- Sing Along PM
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
@@ -154,25 +235,88 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, '2025-12-02T16:30:00', '2025-12-02T17:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
 
+-- Dinner
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-02T17:00:00', '2025-12-02T18:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 2
+
 
 -- Wednesday timetable
 -- Free & Easy
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, '2025-12-01T09:30:00', '2025-12-01T10:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+SELECT id, 0, '2025-12-03T10:00:00', '2025-12-03T10:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
 
 -- Tablet Game
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, '2025-12-01T10:30:00', '2025-12-01T11:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+SELECT id, 0, '2025-12-03T10:30:00', '2025-12-03T11:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 5
 
 -- Free & Easy
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, '2025-12-01T11:00:00', '2025-12-01T11:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+SELECT id, 0, '2025-12-03T11:00:00', '2025-12-03T11:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Reminiscence AM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T11:30:00', '2025-12-03T12:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 12
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T13:00:00', '2025-12-03T13:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Sing Along PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T13:30:00', '2025-12-03T14:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 9
+
+-- Physio 2pm wednesday session
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T14:00:00', '2025-12-03T15:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 18
+
+-- Tea Break
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T15:00:00', '2025-12-03T15:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 6
+
+-- Board Game PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T15:30:00', '2025-12-03T16:30:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 15
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T16:30:00', '2025-12-03T17:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+
+-- Dinner
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, '2025-12-03T17:00:00', '2025-12-03T18:00:00', '2025-05-10T12:00:00', NULL, supervisor1, NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 2

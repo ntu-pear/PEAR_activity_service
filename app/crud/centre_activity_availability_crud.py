@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import app.models.centre_activity_availability_model as models
 import app.schemas.centre_activity_availability_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
@@ -6,7 +7,7 @@ from app.logger.logger_utils import log_crud_action, ActionType, serialize_data,
 from fastapi import HTTPException
 from datetime import datetime, timezone
 
-def check_for_existing_availability(
+def check_for_duplicate_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
     ):
@@ -25,6 +26,23 @@ def check_for_existing_availability(
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
+    
+def check_availability_time_clash(
+        db: Session,
+        centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
+    ):
+
+    centre_activity_date = centre_activity_availability_data.start_time.date()
+    centre_activity_timetable = db.query(models.CentreActivityAvailability).filter(
+                                        func.date(models.CentreActivityAvailability.start_time) == centre_activity_date
+                                    ).all()
+    
+    for timeslot in centre_activity_timetable:
+        if centre_activity_availability_data.end_time <= timeslot.end_time and centre_activity_availability_data.start_time >= timeslot.start_time:
+            raise HTTPException(status_code=400,
+                detail = {
+                    "message": "The centre activity availability you wish to create is clashing with another centre activity availability timing."
+                })
 
 def create_centre_activity_availability(
         db:Session,
@@ -38,7 +56,7 @@ def create_centre_activity_availability(
     
     db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
 
-    check_for_existing_availability(db, centre_activity_availability_data)
+    check_for_duplicate_availability(db, centre_activity_availability_data)
 
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
     db_centre_activity_availability.created_by_id = current_user_id
