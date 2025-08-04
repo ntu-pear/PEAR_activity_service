@@ -14,7 +14,7 @@ class CentreActivityBase(BaseModel):
     min_duration: int = Field(30, description="Minimum duration in minutes", ge=30, le=60)
     max_duration: int = Field(30, description="Maximum duration in minutes", ge=30, le=60)
     min_people_req: int = Field(1, description="Minimum number of people required", ge=1)
-    #fixed_time_slots: Optional[List[str]] = Field(None, description="Fixed time slots if any")
+    fixed_time_slots: Optional[str] = Field(None, description="Fixed time slots if any")
 
 
 class ValidatedCentreActivity(CentreActivityBase):
