@@ -1,5 +1,5 @@
-use activity_service_dev
-go
+USE activity_service_dev;
+GO
 
 -- Daily centre activity availabilities
 DECLARE @startDate DATE = '2025-12-01';

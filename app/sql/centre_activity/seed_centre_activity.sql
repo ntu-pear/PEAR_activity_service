@@ -22,19 +22,19 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 1, 1, 0, '2025-07-28T09:00:00', NULL, 30, 30, 1, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY] WHERE title = N'Vital check';
 
--- Routine Test One (compulsory, individual, fixed)
-INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
-)
-SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', NULL, 30, 30, 1, '', SYSDATETIME(), NULL, 'system', NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test One';
+-- -- Routine Test One (compulsory, individual, fixed)
+-- INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+--     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
+-- )
+-- SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', NULL, 30, 30, 1, '', SYSDATETIME(), NULL, 'system', NULL
+-- FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test One';
 
--- Routine Test Two (compulsory, individual, fixed)
-INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
-)
-SELECT id, 0, 1, 1, 0, '2025-07-28T11:00:00', NULL, 60, 60, 1, '0-6,1-6,2-6,3-6,4-6', SYSDATETIME(), NULL, 'system', NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test Two';
+-- -- Routine Test Two (compulsory, individual, fixed)
+-- INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+--     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
+-- )
+-- SELECT id, 0, 1, 1, 0, '2025-07-28T11:00:00', NULL, 60, 60, 1, '0-6,1-6,2-6,3-6,4-6', SYSDATETIME(), NULL, 'system', NULL
+-- FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test Two';
 
 -- Tablet game (compulsory, individual, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (

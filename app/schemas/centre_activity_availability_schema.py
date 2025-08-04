@@ -10,6 +10,10 @@ class CentreActivityAvailabilityBase(BaseModel):
 
     @model_validator(mode='after')
     def validate_input(self):
+        #Clean datetime variable
+        self.start_time = self.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0)
+        self.end_time = self.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0)
+
         start_time = self.start_time
         end_time = self.end_time
 
@@ -25,6 +29,8 @@ class CentreActivityAvailabilityBase(BaseModel):
             raise ValueError("Start time cannot be after end time.")
         if end_time.time() < start_time.time():
             raise ValueError("End time cannot be before start time.")
+        if start_time.time() == end_time.time():
+            raise ValueError("Both the start time and end time are the same.")
         return self
 
 class CentreActivityAvailabilityCreate(CentreActivityAvailabilityBase):
