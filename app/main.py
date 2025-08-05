@@ -15,6 +15,7 @@ from app.models import(
     care_centre_model,
     centre_activity_preference_model,
     adhoc_model,
+    activity_exclusion_model,
 )
 
 from app.routers import(
@@ -23,6 +24,7 @@ from app.routers import(
     care_centre_router,
     centre_activity_preference_router,
     adhoc_router,
+    activity_exclusion_router,
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -90,6 +92,7 @@ routers = [
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
     (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
+    (activity_exclusion_router.router, f"{API_VERSION_PREFIX}/activity_exclusions", ["Activity Exclusions"]),
 ]
 
 for router, prefix, tags, in routers:
