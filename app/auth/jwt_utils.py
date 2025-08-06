@@ -116,3 +116,10 @@ def is_caregiver(payload: Optional[JWTPayload]) -> bool:
     if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
         return False
     return getattr(payload, "roleName", "").upper() == "CAREGIVER"
+
+# Activity Recommendation is accessible to Doctors
+def is_doctor(payload: Optional[JWTPayload]) -> bool:
+    """Check if the user has the Doctor role."""
+    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+        return False
+    return getattr(payload, "roleName", "").upper() == "DOCTOR"

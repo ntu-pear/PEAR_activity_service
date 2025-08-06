@@ -201,9 +201,17 @@ def test_update_care_centre_success(get_db_session_mock, mock_supervisor_user,
     """ Successfully updates Care Centre """
 
     # Valid existing Care Centre
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_care_centre
+    mock_query_find = MagicMock()
+    mock_query_find.filter.return_value.first.return_value = existing_care_centre
+    
     # No duplicate Care Centre
-    get_db_session_mock.query.return_value.filter.return_value.filter_by.return_value.first.return_value = None
+    mock_query_duplicate = MagicMock()
+    mock_filter_by = MagicMock()
+    mock_filter_by.filter.return_value.first.return_value = None
+    mock_query_duplicate.filter_by.return_value = mock_filter_by
+    
+    # Set up side_effect to return different mock objects for different calls
+    get_db_session_mock.query.side_effect = [mock_query_find, mock_query_duplicate]
     
     result = update_care_centre(
         db=get_db_session_mock,
@@ -246,10 +254,17 @@ def test_update_care_centre_duplicate_fail(get_db_session_mock, mock_supervisor_
     """ Raises HTTPException when duplicate Care Centre exists """
 
     # Valid existing Care Centre
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_care_centre
-
-    # Update creates a duplicate Care Centre
-    get_db_session_mock.query.return_value.filter.return_value.filter_by.return_value.first.return_value = existing_care_centre
+    mock_query_find = MagicMock()
+    mock_query_find.filter.return_value.first.return_value = existing_care_centre
+    
+    # Duplicate Care Centre exists
+    mock_query_duplicate = MagicMock()
+    mock_filter_by = MagicMock()
+    mock_filter_by.filter.return_value.first.return_value = existing_care_centre
+    mock_query_duplicate.filter_by.return_value = mock_filter_by
+    
+    # Set up side_effect to return different mock objects for different calls
+    get_db_session_mock.query.side_effect = [mock_query_find, mock_query_duplicate]
 
     with pytest.raises(HTTPException) as exc_info:
         update_care_centre(
