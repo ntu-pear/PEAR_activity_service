@@ -1,12 +1,15 @@
 from sqlalchemy.orm import Session
 import app.models.centre_activity_availability_model as models
 import app.schemas.centre_activity_availability_schema as schemas
+import app.models.care_centre_model as care_centre_model
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, timezone
+import json
+from enum import Enum
 
-def check_for_duplicate_availability(
+def _check_for_duplicate_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
     ):
@@ -25,16 +28,54 @@ def check_for_duplicate_availability(
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
-    
-def check_availability_timeslot_clash(
+
+def _check_centre_activity_availability_validity(
         db: Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
     ):
 
-    centre_activity_date = centre_activity_availability_data.start_time.date()
+    availability_date = centre_activity_availability_data.start_time.date()
+    day_of_the_week = centre_activity_availability_data.start_time.strftime('%A').lower()
+    print(centre_activity_availability_data.start_time.isoweekday())
+    if centre_activity_availability_data.start_time.isoweekday() == 6 or centre_activity_availability_data.start_time.isoweekday() == 7:
+        raise HTTPException(status_code=400,
+                detail = {
+                    "message": "Centre Activity Availability date cannot be on saturdays and sundays as the Care Centre is closed."
+                })
+
+    care_centre_info = db.query(care_centre_model.CareCentre).first()
+    care_centre_working_hours = care_centre_info.working_hours[day_of_the_week]
+    care_centre_opening_hours = datetime.strptime(care_centre_working_hours["open"], "%H:%M").time()
+    care_centre_closing_hours = datetime.strptime(care_centre_working_hours["close"], "%H:%M").time()
+
+    if centre_activity_availability_data.start_time.time() < care_centre_opening_hours or centre_activity_availability_data.end_time.time() > care_centre_closing_hours:
+        raise HTTPException(status_code=400,
+                detail = {
+                    "message": "The selected Centre Activity Availability timing is outside of working hours. Care centre working hours on " 
+                                + f"{day_of_the_week} is from {care_centre_opening_hours} to {care_centre_closing_hours}."
+                })
+
+    centre_activity = get_centre_activity_by_id(db, centre_activity_id=centre_activity_availability_data.centre_activity_id)
+    if not centre_activity:
+        raise HTTPException(status_code=404, detail="Centre Activity not found.")
+    elif centre_activity:
+        selected_availability_duration = (centre_activity_availability_data.start_time - centre_activity_availability_data.end_time).total_seconds() / 60
+
+        if centre_activity.min_duration == centre_activity.max_duration and selected_availability_duration != centre_activity.min_duration and selected_availability_duration != centre_activity.max_duration:
+            raise HTTPException(status_code=400,
+                detail = {
+                    "message": f"Centre Activity Availability selected duration must be the fixed duration of {centre_activity.max_duration} minutes."
+                })
+        elif centre_activity.min_duration < centre_activity.max_duration and selected_availability_duration < centre_activity.min_duration:
+            raise HTTPException(status_code=400,
+                detail = {
+                    "message": f"Centre Activity Availability selected duration cannot be less than the minimum duration of {centre_activity.min_duration} minutes."
+                })
+
+    #Check availability against centre activity schedule for timeslot clashing.
     centre_activity_timetable = db.query(models.CentreActivityAvailability).filter(
-                                        models.CentreActivityAvailability.start_time >= datetime.combine(centre_activity_date, datetime.min.time()),
-                                        models.CentreActivityAvailability.end_time <= datetime.combine(centre_activity_date, datetime.max.time()),
+                                        models.CentreActivityAvailability.start_time >= datetime.combine(availability_date, datetime.min.time()),
+                                        models.CentreActivityAvailability.end_time <= datetime.combine(availability_date, datetime.max.time()),
                                     ).all()
     
     for centre_activity in centre_activity_timetable:
@@ -53,15 +94,11 @@ def create_centre_activity_availability(
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
         current_user_info: dict
     ):
-
-    centre_activity = get_centre_activity_by_id(db, centre_activity_id=centre_activity_availability_data.centre_activity_id)
-    if not centre_activity:
-        raise HTTPException(status_code=404, detail="Centre Activity not found.")
     
-    db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
+    _check_for_duplicate_availability(db, centre_activity_availability_data)
+    _check_centre_activity_availability_validity(db, centre_activity_availability_data)
 
-    check_for_duplicate_availability(db, centre_activity_availability_data)
-    check_availability_timeslot_clash(db, centre_activity_availability_data)
+    db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
 
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
     db_centre_activity_availability.created_by_id = current_user_id
@@ -133,8 +170,8 @@ def update_centre_activity_availability(
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
     
-    check_for_duplicate_availability(db, centre_activity_availability_data)
-    check_availability_timeslot_clash(db, centre_activity_availability_data)
+    _check_for_duplicate_availability(db, centre_activity_availability_data)
+    _check_centre_activity_availability_validity(db, centre_activity_availability_data)
 
     original_data = serialize_data(model_to_dict(db_centre_activity_availability))
     updated_data = serialize_data(centre_activity_availability_data.model_dump())
