@@ -36,7 +36,6 @@ def _check_centre_activity_availability_validity(
 
     availability_date = centre_activity_availability_data.start_time.date()
     day_of_the_week = centre_activity_availability_data.start_time.strftime('%A').lower()
-    print(centre_activity_availability_data.start_time.isoweekday())
     if centre_activity_availability_data.start_time.isoweekday() == 6 or centre_activity_availability_data.start_time.isoweekday() == 7:
         raise HTTPException(status_code=400,
                 detail = {
