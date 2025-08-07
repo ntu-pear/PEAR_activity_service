@@ -163,9 +163,9 @@ SELECT id, 0, 0, 0, 0, '2025-07-28T10:30:00', NULL, 30, 30, 1, '', SYSDATETIME()
 FROM [dbo].[ACTIVITY] WHERE title = N'free & easy';
 
 -- dinner (compulsory, group, fixed)
-INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
-)
-SELECT id, 0, 1, 1, 1, '2025-07-31T19:30:00', NULL, 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
-FROM [dbo].[ACTIVITY] WHERE title = N'dinner';
-GO
+-- INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+--     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
+-- )
+-- SELECT id, 0, 1, 1, 1, '2025-07-31T19:30:00', NULL, 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
+-- FROM [dbo].[ACTIVITY] WHERE title = N'dinner';
+-- GO

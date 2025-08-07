@@ -4,11 +4,11 @@ from datetime import datetime, timedelta, timezone
 
 class CentreActivityAvailabilityBase(BaseModel):
     centre_activity_id: int = Field(..., description="Reference to Centre Activity")
-    
-    start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability.")
-    end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date.")
+    start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability. If recurring every day, it will hold the specific start time of the Centre Activity Availability.")
+    end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date. If recurring every day, it will hold the specific end time of the Centre Activity Availability.")
 
 class CentreActivityAvailabilityCreate(CentreActivityAvailabilityBase):
+    is_recurring_every_day: bool = Field(False, description="Is the Centre Activity Availability recurring every day from Monday to Friday")
     created_by_id: str = Field(..., description="ID of the user who created this Centre Activity Availability")
 
     @model_validator(mode='after')

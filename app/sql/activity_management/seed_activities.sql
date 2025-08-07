@@ -5,11 +5,11 @@ BEGIN
     VALUES (0, N'lunch', N'daily lunch 12nn-1pm', NULL, NULL);
 END
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'dinner')
-BEGIN
-    INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
-    VALUES (0, N'dinner', N'daily dinner 5pm-6pm', NULL, NULL);
-END
+-- IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'dinner')
+-- BEGIN
+--     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
+--     VALUES (0, N'dinner', N'daily dinner 5pm-6pm', NULL, NULL);
+-- END
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'breathing exercise AM')
 BEGIN
