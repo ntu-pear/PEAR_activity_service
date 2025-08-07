@@ -11,42 +11,44 @@ import app.services.patient_service as patient_service
 def _validate_patient_exists(patient_id: int, current_user_info: dict):
     """Validate that patient exists and is accessible"""
     try:
-        patient_data = patient_service.get_patient_by_id(
-            require_auth=True,         
-            bearer_token=current_user_info.get('bearer_token', ''),
-            patient_id=patient_id
-        )
-        
-        if patient_data.status_code != 200:
-            raise HTTPException(
-                status_code=404,
-                detail="Patient not found or not accessible"
+        if current_user_info.get('bearer_token'):   # Required_auth is false
+            patient_data = patient_service.get_patient_by_id(
+                require_auth=True,         
+                bearer_token=current_user_info.get('bearer_token', ''),
+                patient_id=patient_id
             )
+            
+            if patient_data.status_code != 200:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Patient not found or not accessible"
+                )
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 def _validate_doctor_allocation(patient_id: int, current_user_info: dict, action: str = "perform action on"):
     """Validate that doctor is assigned to the patient"""
     try:
-        get_patient_allocation_data = patient_service.get_patient_allocation_by_patient_id(
-            require_auth=True, 
-            bearer_token=current_user_info.get('bearer_token', ''), 
-            patient_id=patient_id
-        )
-        if get_patient_allocation_data.status_code != 200:
-            raise HTTPException(
-                status_code=404,
-                detail="Patient allocation not found or not accessible"
+        if current_user_info.get('bearer_token'):   # Required_auth is false
+            get_patient_allocation_data = patient_service.get_patient_allocation_by_patient_id(
+                require_auth=True, 
+                bearer_token=current_user_info.get('bearer_token', ''), 
+                patient_id=patient_id
             )
-        
-        if (current_user_info.get('role_name') == "DOCTOR" and 
-            current_user_info.get('id') != get_patient_allocation_data.json().get('doctorId')):
-            raise HTTPException(
-                status_code=403,
-                detail=f"You do not have permission to {action} a Centre Activity Recommendation for this Patient. \n" \
-                f"Role: {current_user_info.get('role_name')}, " \
-                f"User ID: {current_user_info.get('id')}, " \
-            )
+            if get_patient_allocation_data.status_code != 200:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Patient allocation not found or not accessible"
+                )
+            
+            if (current_user_info.get('role_name') == "DOCTOR" and 
+                current_user_info.get('id') != get_patient_allocation_data.json().get('doctorId')):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"You do not have permission to {action} a Centre Activity Recommendation for this Patient. \n" \
+                    f"Role: {current_user_info.get('role_name')}, " \
+                    f"User ID: {current_user_info.get('id')}, " \
+                )
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 

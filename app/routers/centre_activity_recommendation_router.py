@@ -24,7 +24,7 @@ def create_centre_activity_recommendation(
     if current_user and not is_doctor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to create a Centre Activity Recommendation"
+            detail=f"You do not have permission to create a Centre Activity Recommendation {current_user.roleName if current_user else 'Anonymous'}"
         )
     current_user_info = {
         "id": current_user.userId if current_user else None,
