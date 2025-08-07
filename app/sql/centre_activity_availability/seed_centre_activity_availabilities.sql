@@ -57,20 +57,20 @@ END
 SET @i = 0;
 
 -- Dinner Monday to Sunday 5pm to 6pm
-WHILE @i < 7
-BEGIN
-    SET @startTime = DATEADD(HOUR, 17, CAST(DATEADD(DAY, @i, CAST(@startDate AS DATE)) AS DATETIME));
-    SET @endTime = DATEADD(HOUR, 1, @startTime); -- 1 hour duration
+-- WHILE @i < 7
+-- BEGIN
+--     SET @startTime = DATEADD(HOUR, 17, CAST(DATEADD(DAY, @i, CAST(@startDate AS DATE)) AS DATETIME));
+--     SET @endTime = DATEADD(HOUR, 1, @startTime); -- 1 hour duration
 
-    INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
-        centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
-    )
-    SELECT id, 0, @startTime, @endTime, @CreateDate, NULL, 'supervisor1', NULL
-    FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 2
+--     INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+--         centre_activity_id, is_deleted, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+--     )
+--     SELECT id, 0, @startTime, @endTime, @CreateDate, NULL, 'supervisor1', NULL
+--     FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 2
 
-    SET @i = @i + 1;
-END
-SET @i = 0;
+--     SET @i = @i + 1;
+-- END
+-- SET @i = 0;
 
 
 -- Monday timetable
