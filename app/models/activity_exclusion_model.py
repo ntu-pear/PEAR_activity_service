@@ -6,7 +6,7 @@ class ActivityExclusion(Base):
     __tablename__ = "ACTIVITY_EXCLUSION"
 
     id                = Column(Integer, primary_key=True, autoincrement=True)
-    activity_id       = Column(Integer, ForeignKey("ACTIVITY.id"), nullable=False)
+    centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
     patient_id        = Column(Integer, nullable=False)
     is_deleted        = Column(Boolean, nullable=False, default=False)
     exclusion_remarks = Column(String,  nullable=True)
@@ -19,5 +19,5 @@ class ActivityExclusion(Base):
     created_by_id     = Column(String(50), nullable=True)
     modified_by_id    = Column(String(50), nullable=True)
 
-    # relationship back to Activity
-    activity = relationship("Activity", lazy="joined")
+    # relationship back to CentreActivity
+    centre_activity = relationship("CentreActivity", lazy="joined")

@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import date, datetime
 
 class ActivityExclusionBase(BaseModel):
-    activity_id: int = Field(..., description="ID of the Activity to exclude")
+    centre_activity_id: int = Field(..., description="ID of the Centre Activity to exclude")
     patient_id:  int = Field(..., description="ID of the Patient")
     exclusion_remarks: Optional[str] = Field(None, description="Why this exclusion")
     start_date: date = Field(..., description="Date to start excluding")

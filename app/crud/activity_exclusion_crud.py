@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 import app.models.activity_exclusion_model as models
 import app.schemas.activity_exclusion_schema as schemas
-from app.crud.activity_crud import get_activity_by_id
+from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.services.patient_service import get_patient_by_id
 from app.logger.logger_utils import (
     log_crud_action, ActionType, serialize_data, model_to_dict
@@ -43,9 +43,9 @@ def create_exclusion(
     exclusion_data: schemas.ActivityExclusionCreate,
     current_user_info: dict
 ) -> models.ActivityExclusion:
-    # 1) Validate activity exists
-    if not get_activity_by_id(db, activity_id=exclusion_data.activity_id):
-        raise HTTPException(status_code=404, detail="Activity not found")
+    # 1) Validate centre activity exists
+    if not get_centre_activity_by_id(db, centre_activity_id=exclusion_data.centre_activity_id):
+        raise HTTPException(status_code=404, detail="Centre Activity not found")
 
     # 2) Validate patient exists (via external service)
     try:
@@ -84,10 +84,10 @@ def update_exclusion(
     db_obj = get_exclusion_by_id(db, exclusion_data.id, include_deleted=True)
     original = serialize_data(model_to_dict(db_obj))
 
-    if exclusion_data.activity_id is not None:
-        if not get_activity_by_id(db, activity_id=exclusion_data.activity_id):
-            raise HTTPException(status_code=404, detail="Activity not found")
-        db_obj.activity_id = exclusion_data.activity_id
+    if exclusion_data.centre_activity_id is not None:
+        if not get_centre_activity_by_id(db, centre_activity_id=exclusion_data.centre_activity_id):
+            raise HTTPException(status_code=404, detail="Centre Activity not found")
+        db_obj.centre_activity_id = exclusion_data.centre_activity_id
 
     if exclusion_data.patient_id is not None:
         try:
