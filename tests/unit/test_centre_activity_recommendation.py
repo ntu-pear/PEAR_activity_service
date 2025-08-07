@@ -428,7 +428,7 @@ def test_create_centre_activity_recommendation_role_access_fail(get_db_session_m
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
-    assert exc_info.value.detail == "You do not have permission to create a Centre Activity Recommendation"
+    assert exc_info.value.detail == f"You do not have permission to create a Centre Activity Recommendation {mock_user_roles.roleName}"
 
 @patch("app.crud.centre_activity_recommendation_crud.get_all_centre_activity_recommendations")
 def test_get_all_centre_activity_recommendations_role_access_success(mock_crud_get, get_db_session_mock, 
