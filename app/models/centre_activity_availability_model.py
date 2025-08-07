@@ -8,7 +8,6 @@ class CentreActivityAvailability(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
-    is_recurring_every_day = Column(Boolean, nullable=False, default=False)
     is_deleted = Column(Boolean, nullable=False, default=False)
     start_time = Column(DateTime, nullable=False, default=None)
     end_time = Column(DateTime, nullable=False, default=None)

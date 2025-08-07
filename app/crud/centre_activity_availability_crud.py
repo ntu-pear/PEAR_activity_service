@@ -13,37 +13,21 @@ def _check_for_duplicate_availability(
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
     ):
     
-    if centre_activity_availability_data.is_recurring_every_day:
-        list_existing_availability = db.query(models.CentreActivityAvailability).filter(
-                                    models.CentreActivityAvailability.centre_activity_id == centre_activity_availability_data.centre_activity_id,
-                                    models.CentreActivityAvailability.is_recurring_every_day == centre_activity_availability_data.is_recurring_every_day
-                                ).all()
-        
-        for availability in list_existing_availability:
-            if centre_activity_availability_data.start_time.time() == availability.start_time.time() and centre_activity_availability_data.end_time.time() == availability.end_time.time():
-                raise HTTPException(status_code=400,
-                    detail = {
-                        "message": "Centre Activity Availability with these attributes already exists or is soft deleted.",
-                        "existing_id": str(availability.id),
-                        "existing_is_deleted": availability.is_deleted
-                    })
-    else:
-        essential_fields = {
-            "centre_activity_id": centre_activity_availability_data.centre_activity_id,
-            "start_time": centre_activity_availability_data.start_time,
-            "end_time": centre_activity_availability_data.end_time,
-            "is_recurring_every_day": centre_activity_availability_data.is_recurring_every_day
-        }
-
-        existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-        if existing_availability:
-            raise HTTPException(status_code=400,
-                    detail = {
-                        "message": "Centre Activity Availability with these attributes already exists or is soft deleted.",
-                        "existing_id": str(existing_availability.id),
-                        "existing_is_deleted": existing_availability.is_deleted
-                    })
+    essential_fields = {
+        "centre_activity_id": centre_activity_availability_data.centre_activity_id,
+        "start_time": centre_activity_availability_data.start_time,
+        "end_time": centre_activity_availability_data.end_time
+    }
     
+    existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
+    if existing_availability:
+        raise HTTPException(status_code=400,
+                detail = {
+                    "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
+                    "existing_id": str(existing_availability.id),
+                    "existing_is_deleted": existing_availability.is_deleted
+                })
+
 def _check_centre_activity_availability_validity(
         db: Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
@@ -72,10 +56,8 @@ def _check_centre_activity_availability_validity(
     centre_activity = get_centre_activity_by_id(db, centre_activity_id=centre_activity_availability_data.centre_activity_id)
     if not centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found.")
-    
     elif centre_activity:
-        selected_availability_duration = (centre_activity_availability_data.end_time - centre_activity_availability_data.start_time).total_seconds() / 60
-        print(selected_availability_duration)
+        selected_availability_duration = (centre_activity_availability_data.start_time - centre_activity_availability_data.end_time).total_seconds() / 60
 
         if centre_activity.min_duration == centre_activity.max_duration and selected_availability_duration != centre_activity.min_duration and selected_availability_duration != centre_activity.max_duration:
             raise HTTPException(status_code=400,
@@ -91,24 +73,25 @@ def _check_centre_activity_availability_validity(
     #Check availability against centre activity schedule for timeslot clashing.
     centre_activity_timetable = db.query(models.CentreActivityAvailability).filter(
                                         models.CentreActivityAvailability.start_time >= datetime.combine(availability_date, datetime.min.time()),
-                                        models.CentreActivityAvailability.end_time <= datetime.combine(availability_date, datetime.max.time())
+                                        models.CentreActivityAvailability.end_time <= datetime.combine(availability_date, datetime.max.time()),
                                     ).all()
-    if centre_activity_timetable:
-        for centre_activity_availability in centre_activity_timetable:
-            #Change datetime variables from timezone-naive to timezone-aware
-            timeslot_start_time =  centre_activity_availability.start_time.replace(tzinfo=timezone.utc)
-            timeslot_end_time =  centre_activity_availability.end_time.replace(tzinfo=timezone.utc)
+    
+    for centre_activity in centre_activity_timetable:
+        #Change datetime variables from timezone-naive to timezone-aware
+        timeslot_start_time =  centre_activity.start_time.replace(tzinfo=timezone.utc)
+        timeslot_end_time =  centre_activity.end_time.replace(tzinfo=timezone.utc)
 
-            if centre_activity_availability_data.end_time <= timeslot_end_time and centre_activity_availability_data.start_time >= timeslot_start_time:
-                raise HTTPException(status_code=400,
-                    detail = {
-                        "message": "The centre activity availability you wish to create is clashing with another centre activity availability timing."
-                    })
+        if centre_activity_availability_data.end_time <= timeslot_end_time and centre_activity_availability_data.start_time >= timeslot_start_time:
+            raise HTTPException(status_code=400,
+                detail = {
+                    "message": "The centre activity availability you wish to create is clashing with another centre activity availability timing."
+                })
 
 def create_centre_activity_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
-        current_user_info: dict
+        current_user_info: dict,
+        recurring_centre_activity: bool
     ):
     
     _check_for_duplicate_availability(db, centre_activity_availability_data)
