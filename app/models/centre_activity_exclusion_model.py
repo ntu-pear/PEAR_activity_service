@@ -2,12 +2,12 @@ from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, Foreign
 from sqlalchemy.orm import relationship
 from app.database import Base
 
-class ActivityExclusion(Base):
-    __tablename__ = "ACTIVITY_EXCLUSION"
+class CentreActivityExclusion(Base):
+    __tablename__ = "CENTRE_ACTIVITY_EXCLUSION"
 
-    id                = Column(Integer, primary_key=True, autoincrement=True)
-    centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
-    patient_id        = Column(Integer, nullable=False)
+    id                    = Column(Integer, primary_key=True, autoincrement=True)
+    centre_activity_id    = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
+    patient_id            = Column(Integer, nullable=False)
     is_deleted        = Column(Boolean, nullable=False, default=False)
     exclusion_remarks = Column(String,  nullable=True)
     start_date        = Column(Date,    nullable=False)
