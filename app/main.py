@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from app.models import(
     activity_model,
+    centre_activity_exclusion_model,
     centre_activity_model,
     care_centre_model,
     centre_activity_preference_model,
@@ -18,6 +19,7 @@ from app.models import(
 )
 
 from app.routers import(
+    centre_activity_exclusion_router,
     centre_activity_router,
     activity_router,
     care_centre_router,
@@ -90,6 +92,7 @@ routers = [
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
     (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
+    (centre_activity_exclusion_router.router, f"{API_VERSION_PREFIX}/centre_activity_exclusions", ["Centre Activity Exclusions"]),
 ]
 
 for router, prefix, tags, in routers:
