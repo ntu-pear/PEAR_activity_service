@@ -286,11 +286,11 @@ def test_update_centre_activity_preference_success(mock_get_centre_activity, moc
     mock_filter_exists = MagicMock()
     mock_filter_exists.first.return_value = existing_centre_activity_preference
     
-    # Check for duplicates
+    # Check for duplicates - this uses db.query().filter().filter().first()
     mock_filter_duplicates = MagicMock()
-    mock_filter_by_duplicates = MagicMock()
-    mock_filter_by_duplicates.first.return_value = None  # No duplicates
-    mock_filter_duplicates.filter_by.return_value = mock_filter_by_duplicates
+    mock_filter_duplicates_chain = MagicMock()
+    mock_filter_duplicates_chain.first.return_value = None  # No duplicates
+    mock_filter_duplicates.filter.return_value = mock_filter_duplicates_chain
     
     # Get preference for final update
     mock_filter_update = MagicMock()

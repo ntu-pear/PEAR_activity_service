@@ -4,23 +4,22 @@ import app.schemas.centre_activity_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
-from typing import List
+from typing import List, Union
 from datetime import datetime
 
-def create_centre_activity(
-        db: Session, 
-        centre_activity_data: schemas.CentreActivityCreate, 
-        current_user_info: dict,
-        ):
-    
-    # Check if the activity exists
-    activity = get_activity_by_id(db, activity_id=centre_activity_data.activity_id)
+# Helper validation functions
+def _validate_activity_exists(db: Session, activity_id: int):
+    """Validate that activity exists"""
+    activity = get_activity_by_id(db, activity_id=activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    
-    db_centre_activity = models.CentreActivity(**centre_activity_data.model_dump())
-    
-    # Check if the same centre_activity exists
+
+def _check_centre_activity_duplicate(
+    db: Session,
+    centre_activity_data: Union[schemas.CentreActivityCreate, schemas.CentreActivityUpdate],
+    exclude_id: int = None
+):
+    """Check if Centre Activity with same essential fields already exists"""
     essential_fields = {
         "activity_id": centre_activity_data.activity_id,
         "is_compulsory": centre_activity_data.is_compulsory,
@@ -33,15 +32,32 @@ def create_centre_activity(
         "min_people_req": centre_activity_data.min_people_req,
     }
 
-    existing_centre_activity = db.query(models.CentreActivity).filter_by(**essential_fields).first()
-
+    query = db.query(models.CentreActivity).filter_by(**essential_fields)
+    
+    if exclude_id is not None:
+        query = query.filter(models.CentreActivity.id != exclude_id)
+    
+    existing_centre_activity = query.first()
+    
     if existing_centre_activity:
-        raise HTTPException(status_code=400, 
+        raise HTTPException(status_code=400,
                             detail={
                                 "message": "Centre Activity with these attributes already exists or deleted",
                                 "existing_id": str(existing_centre_activity.id),
                                 "existing_is_deleted": existing_centre_activity.is_deleted
                             })
+
+def create_centre_activity(
+        db: Session, 
+        centre_activity_data: schemas.CentreActivityCreate, 
+        current_user_info: dict,
+        ):
+    
+    # Validate dependencies and check for duplicates
+    _validate_activity_exists(db, centre_activity_data.activity_id)
+    _check_centre_activity_duplicate(db, centre_activity_data)
+    
+    db_centre_activity = models.CentreActivity(**centre_activity_data.model_dump())
     current_user_id = current_user_info.get("id") or centre_activity_data.created_by_id
     db_centre_activity.created_by_id = current_user_id
     db.add(db_centre_activity)
@@ -121,44 +137,16 @@ def update_centre_activity(
     if not db_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found")
     
-    # Check if the activity to be updated exists
-    activity = get_activity_by_id(db, activity_id=centre_activity_data.activity_id)
-    if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    
-    # Check if the same centre_activity exists
-    essential_fields = {
-        "activity_id": centre_activity_data.activity_id,
-        "is_compulsory": centre_activity_data.is_compulsory,
-        "is_fixed": centre_activity_data.is_fixed,
-        "is_group": centre_activity_data.is_group,
-        "start_date": centre_activity_data.start_date,
-        "end_date": centre_activity_data.end_date,
-        "min_duration": centre_activity_data.min_duration,
-        "max_duration": centre_activity_data.max_duration,
-        "min_people_req": centre_activity_data.min_people_req,
-    }
-
-    existing_centre_activity = db.query(models.CentreActivity).filter(
-        models.CentreActivity.id != centre_activity_data.id
-    ).filter_by(
-        **essential_fields
-    ).first()
-    
-    if existing_centre_activity:
-        raise HTTPException(status_code=400, 
-                            detail={
-                                "message": "Centre Activity with these attributes already exists or deleted",
-                                "existing_id": str(existing_centre_activity.id),
-                                "existing_is_deleted": existing_centre_activity.is_deleted
-                            })
+    # Validate dependencies and check for duplicates (excluding current record)
+    _validate_activity_exists(db, centre_activity_data.activity_id)
+    _check_centre_activity_duplicate(db, centre_activity_data, exclude_id=centre_activity_data.id)
     
     original_data_dict = serialize_data(model_to_dict(db_centre_activity))
     updated_data_dict = serialize_data(centre_activity_data.model_dump())
 
     modified_by_id = current_user_info.get("id") or centre_activity_data.modified_by_id
     # Update the fields of the CentreActivity instance
-    for field in schemas.CentreActivityUpdate.__fields__:
+    for field in schemas.CentreActivityUpdate.model_fields:
         if field != "Id" and hasattr(centre_activity_data, field):
             setattr(db_centre_activity, field, getattr(centre_activity_data, field))
     db_centre_activity.modified_by_id = modified_by_id

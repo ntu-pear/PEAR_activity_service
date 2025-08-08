@@ -214,12 +214,21 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
                                      existing_centre_activity):
     """Updates Centre Activity if target to be updated exists and activity id provided exists"""
 
-    # Valid Centre Activity
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity
+    # Valid existing Centre Activity
+    mock_query_find = MagicMock()
+    mock_query_find.filter.return_value.first.return_value = existing_centre_activity
+    
+    # No duplicate Centre Activity
+    mock_query_duplicate = MagicMock()
+    mock_filter_by = MagicMock()
+    mock_filter_by.filter.return_value.first.return_value = None
+    mock_query_duplicate.filter_by.return_value = mock_filter_by
+    
+    # Set up side_effect to return different mock objects for different calls
+    get_db_session_mock.query.side_effect = [mock_query_find, mock_query_duplicate]
+    
     # Valid Activity    
-    mock_get_activity.return_value = existing_activity
-    # No duplicate Centre Activity                                                          
-    get_db_session_mock.query.return_value.filter.return_value.filter_by.return_value.first.return_value = None     
+    mock_get_activity.return_value = existing_activity     
 
     result = update_centre_activity(
         db=get_db_session_mock,
@@ -283,12 +292,23 @@ def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Test update fails when an identical record of Centre Activity already exists"""
-    # Valid Centre Activity
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity        
+    
+    # Set up separate mock query objects for different calls
+    # First call: finding existing centre activity
+    mock_query_find = MagicMock()
+    mock_query_find.filter.return_value.first.return_value = existing_centre_activity
+    
+    # Second call: checking for duplicates (should return the duplicate)
+    mock_query_duplicate = MagicMock()
+    mock_filter_by = MagicMock()
+    mock_filter_by.filter.return_value.first.return_value = existing_centre_activity
+    mock_query_duplicate.filter_by.return_value = mock_filter_by
+    
+    # Set up side_effect to return different mock objects for different calls
+    get_db_session_mock.query.side_effect = [mock_query_find, mock_query_duplicate]
+           
     # Valid Activity
-    mock_get_activity.return_value = existing_activity
-    # Duplicate Centre Activity                                                          
-    get_db_session_mock.query.return_value.filter.return_value.filter_by.return_value.first.return_value = existing_centre_activity     
+    mock_get_activity.return_value = existing_activity     
 
     with pytest.raises(HTTPException) as exc:
         update_centre_activity(

@@ -15,6 +15,7 @@ from app.models import(
     centre_activity_model,
     care_centre_model,
     centre_activity_preference_model,
+    centre_activity_recommendation_model,
     adhoc_model,
 )
 
@@ -24,6 +25,7 @@ from app.routers import(
     activity_router,
     care_centre_router,
     centre_activity_preference_router,
+    centre_activity_recommendation_router,
     adhoc_router,
 )
 
@@ -91,6 +93,7 @@ routers = [
     (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
     (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
+    (centre_activity_recommendation_router.router, f"{API_VERSION_PREFIX}/centre_activity_recommendations", ["Centre Activity Recommendations"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
     (centre_activity_exclusion_router.router, f"{API_VERSION_PREFIX}/centre_activity_exclusions", ["Centre Activity Exclusions"]),
 ]

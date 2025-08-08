@@ -337,3 +337,104 @@ def soft_deleted_centre_activity_preference(base_centre_activity_preference_data
         "modified_date": datetime.now()
     })
     return CentreActivityPreference(**data)
+
+
+# ====== Centre Activity Recommendation Fixtures ======
+@pytest.fixture
+def mock_doctor_allocation_response():
+    """Mock response for patient allocation with doctor"""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "patientId": 1,
+        "caregiverId": "3",
+        "supervisorId": "2",
+        "doctorId": "456"  # matches mock_doctor_jwt userId
+    }
+    return mock_response
+
+@pytest.fixture
+def mock_doctor_user():
+    return {
+        "id": "456",
+        "fullname": "Dr. Jane Smith",
+        "role_name": "DOCTOR",
+        "bearer_token": "test-doctor-token",
+    }
+
+@pytest.fixture
+def base_centre_activity_recommendation_data_list():
+    """Base data for Centre Activity Recommendation"""
+    return [
+        {
+            "id": 1,
+            "centre_activity_id": 1,
+            "patient_id": 1,
+            "doctor_id": 456,
+            "doctor_remarks": "Recommended for cognitive improvement",
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+            "created_by_id": "456",
+            "modified_by_id": "456",
+        },
+        {   # For update test - use id for schema (aliased to centre_activity_recommendation_id)
+            "id": 1,
+            "centre_activity_id": 2,
+            "patient_id": 1,
+            "doctor_id": 456,
+            "doctor_remarks": "Good for physical therapy",
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": datetime.now(),
+            "created_by_id": "456",
+            "modified_by_id": "456",
+        },
+    ]
+
+@pytest.fixture
+def base_centre_activity_recommendation_data(base_centre_activity_recommendation_data_list):
+    return base_centre_activity_recommendation_data_list[0]
+
+@pytest.fixture
+def existing_centre_activity_recommendation(base_centre_activity_recommendation_data):
+    """A CentreActivityRecommendation instance for mocking DB data"""
+    from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
+    # Convert back to model field names
+    model_data = base_centre_activity_recommendation_data.copy()
+    # Remove any schema-specific fields that don't exist in the model
+    if "centre_activity_recommendation_id" in model_data:
+        del model_data["centre_activity_recommendation_id"]
+    return CentreActivityRecommendation(**model_data)
+
+@pytest.fixture
+def existing_centre_activity_recommendations(base_centre_activity_recommendation_data_list):
+    """A list of CentreActivityRecommendation instance for mocking DB data"""
+    from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
+    # Create model data with proper field names
+    model_data_1 = base_centre_activity_recommendation_data_list[0].copy()
+    model_data_2 = {
+        "id": 2,
+        "centre_activity_id": 2,
+        "patient_id": 1,
+        "doctor_id": 456,
+        "doctor_remarks": "Recommended for social interaction",
+        "is_deleted": False,
+        "created_date": datetime.now(),
+        "modified_date": datetime.now(),
+        "created_by_id": "456",
+        "modified_by_id": "456",
+    }
+    return [CentreActivityRecommendation(**model_data_1), CentreActivityRecommendation(**model_data_2)]
+
+@pytest.fixture
+def soft_deleted_centre_activity_recommendation(base_centre_activity_recommendation_data):
+    """Soft-deleted CentreActivityRecommendation instance"""
+    from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
+    data = base_centre_activity_recommendation_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now()
+    })
+    return CentreActivityRecommendation(**data)

@@ -4,14 +4,15 @@ import app.schemas.care_centre_schema as schemas
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, time
+from typing import Union
 
-def create_care_centre(
-        db: Session, 
-        care_centre_data: schemas.CareCentreCreate, 
-        current_user_info: dict,
-        ):
-    
-    # Check if the same care centre exists
+# Helper validation functions
+def _check_care_centre_duplicate(
+    db: Session,
+    care_centre_data: Union[schemas.CareCentreCreate, schemas.CareCentreUpdate],
+    exclude_id: int = None
+):
+    """Check if Care Centre with same essential fields already exists"""
     essential_fields = {
         "name": care_centre_data.name,
         "country_code": care_centre_data.country_code,
@@ -24,15 +25,29 @@ def create_care_centre(
         "remarks": care_centre_data.remarks
     }
 
-    existing_care_centre = db.query(models.CareCentre).filter_by(**essential_fields).first()
-
+    query = db.query(models.CareCentre).filter_by(**essential_fields)
+    
+    if exclude_id is not None:
+        query = query.filter(models.CareCentre.id != exclude_id)
+    
+    existing_care_centre = query.first()
+    
     if existing_care_centre:
-        raise HTTPException(status_code=400, 
+        raise HTTPException(status_code=400,
                             detail={
                                 "message": "Care Centre with these attributes already exists or deleted",
                                 "existing_id": str(existing_care_centre.id),
                                 "existing_is_deleted": existing_care_centre.is_deleted
                             })
+
+def create_care_centre(
+        db: Session, 
+        care_centre_data: schemas.CareCentreCreate, 
+        current_user_info: dict,
+        ):
+    
+    # Validate no duplicates exist
+    _check_care_centre_duplicate(db, care_centre_data)
     
     db_care_centre = models.CareCentre(**care_centre_data.model_dump())
     current_user_id = current_user_info.get("id") or care_centre_data.created_by_id
@@ -112,39 +127,15 @@ def update_care_centre(
     if not db_care_centre:
         raise HTTPException(status_code=404, detail="Care Centre not found")
     
-    # Check if update creates a duplicate record
-    essential_fields = {
-        "name": care_centre_data.name,
-        "country_code": care_centre_data.country_code,
-        "address": care_centre_data.address,
-        "postal_code": care_centre_data.postal_code,
-        "contact_no": care_centre_data.contact_no,
-        "email": care_centre_data.email,
-        "no_of_devices_avail": care_centre_data.no_of_devices_avail,
-        "working_hours": care_centre_data.working_hours,
-        "remarks": care_centre_data.remarks
-    }
-
-    existing_care_centre = db.query(models.CareCentre).filter(
-        models.CareCentre.id != care_centre_data.id,  # Exclude current record
-    ).filter_by(
-        **essential_fields
-    ).first()
-
-    if existing_care_centre:
-        raise HTTPException(status_code=400, 
-                            detail={
-                                "message": "Care Centre with these attributes already exists or deleted",
-                                "existing_id": str(existing_care_centre.id),
-                                "existing_is_deleted": existing_care_centre.is_deleted
-                            })
+    # Check for duplicates (excluding current record)
+    _check_care_centre_duplicate(db, care_centre_data, exclude_id=care_centre_data.id)
     
     original_data_dict = serialize_data(model_to_dict(db_care_centre))
     updated_data_dict = serialize_data(care_centre_data.model_dump())
 
     modified_by_id = current_user_info.get("id") or care_centre_data.modified_by_id
     # Update the fields of the CareCentre instance
-    for field in schemas.CareCentreUpdate.__fields__:
+    for field in schemas.CareCentreUpdate.model_fields:
         if field != "Id" and hasattr(care_centre_data, field):
             setattr(db_care_centre, field, getattr(care_centre_data, field))
     
