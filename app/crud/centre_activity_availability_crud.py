@@ -6,7 +6,7 @@ import app.models.care_centre_model as care_centre_models
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 def _check_for_duplicate_availability(
         db:Session,
@@ -16,7 +16,8 @@ def _check_for_duplicate_availability(
     essential_fields = {
         "centre_activity_id": centre_activity_availability_data.centre_activity_id,
         "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time
+        "end_time": centre_activity_availability_data.end_time,
+        "is_deleted": False
     }
     
     existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
@@ -33,14 +34,13 @@ def _check_centre_activity_availability_validity(
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
     ):
 
-    availability_date = centre_activity_availability_data.start_time.date()
     if centre_activity_availability_data.start_time.isoweekday() == 6 or centre_activity_availability_data.start_time.isoweekday() == 7:
         raise HTTPException(status_code=400,
                 detail = {
                     "message": "Centre Activity Availability date cannot be on saturdays and sundays as the Care Centre is closed."
                 })
 
-    care_centre_info = db.query(care_centre_models.CareCentre).first()
+    care_centre_info = db.query(care_centre_models.CareCentre).filter(care_centre_models.CareCentre.is_deleted == False).first()
     day_of_the_week = centre_activity_availability_data.start_time.strftime('%A').lower()
     care_centre_working_hours = care_centre_info.working_hours[day_of_the_week]
     care_centre_opening_hours = datetime.strptime(care_centre_working_hours["open"], "%H:%M").time()
@@ -57,7 +57,9 @@ def _check_centre_activity_availability_validity(
     if not centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found.")
     elif centre_activity:
-        selected_availability_duration = (centre_activity_availability_data.start_time - centre_activity_availability_data.end_time).total_seconds() / 60
+        print(centre_activity_availability_data.start_time)
+        print(centre_activity_availability_data.end_time)
+        selected_availability_duration = (centre_activity_availability_data.end_time - centre_activity_availability_data.start_time).total_seconds() / 60
 
         if centre_activity.min_duration == centre_activity.max_duration and selected_availability_duration != centre_activity.min_duration and selected_availability_duration != centre_activity.max_duration:
             raise HTTPException(status_code=400,
@@ -70,38 +72,36 @@ def _check_centre_activity_availability_validity(
                     "message": f"Centre Activity Availability selected duration cannot be less than the minimum duration of {centre_activity.min_duration} minutes."
                 })
 
-    #Check availability against centre activity schedule for timeslot clashing.
-    centre_activity_timetable = db.query(models.CentreActivityAvailability).filter(
-                                        models.CentreActivityAvailability.start_time >= datetime.combine(availability_date, datetime.min.time()),
-                                        models.CentreActivityAvailability.end_time <= datetime.combine(availability_date, datetime.max.time()),
-                                    ).all()
-    
-    for centre_activity in centre_activity_timetable:
-        #Change datetime variables from timezone-naive to timezone-aware
-        timeslot_start_time =  centre_activity.start_time.replace(tzinfo=timezone.utc)
-        timeslot_end_time =  centre_activity.end_time.replace(tzinfo=timezone.utc)
-
-        if centre_activity_availability_data.end_time <= timeslot_end_time and centre_activity_availability_data.start_time >= timeslot_start_time:
-            raise HTTPException(status_code=400,
-                detail = {
-                    "message": "The centre activity availability you wish to create is clashing with another centre activity availability timing."
-                })
-
 def create_centre_activity_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
         current_user_info: dict,
-        recurring_centre_activity: bool
+        is_recurring_everyday: bool = False
     ):
-    
-    _check_for_duplicate_availability(db, centre_activity_availability_data)
-    _check_centre_activity_availability_validity(db, centre_activity_availability_data)
-
-    db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
-
+    list_db_centre_activity_availability = []
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
-    db_centre_activity_availability.created_by_id = current_user_id
-    db.add(db_centre_activity_availability)
+    
+    if not is_recurring_everyday:
+        _check_for_duplicate_availability(db, centre_activity_availability_data)
+        _check_centre_activity_availability_validity(db, centre_activity_availability_data)
+
+        db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
+        db_centre_activity_availability.created_by_id = current_user_id
+        db.add(db_centre_activity_availability)
+        
+    else:
+        monday = centre_activity_availability_data.start_time - timedelta(days=centre_activity_availability_data.start_time.weekday())
+        extracted_start_time = centre_activity_availability_data.start_time.time()
+        extracted_end_time = centre_activity_availability_data.end_time.time()
+
+        for i in range(5):
+            db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
+            db_centre_activity_availability.created_by_id = current_user_id
+            db_centre_activity_availability.start_time = datetime.combine(monday + timedelta(days=i), extracted_start_time)
+            db_centre_activity_availability.end_time = datetime.combine(monday + timedelta(days=i), extracted_end_time)
+            list_db_centre_activity_availability.append(db_centre_activity_availability)
+
+        db.add_all(list_db_centre_activity_availability)
 
     try:
         db.commit()
@@ -110,19 +110,38 @@ def create_centre_activity_availability(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating Centre Activity Availability: {str(e)}")
     
-    updated_data_dict = serialize_data(centre_activity_availability_data.model_dump())
+    if not is_recurring_everyday:
+        updated_data_dict = serialize_data(centre_activity_availability_data.model_dump())
 
-    log_crud_action(
-        action = ActionType.CREATE,
-        user = current_user_id,
-        user_full_name = current_user_info.get("fullname"),
-        message = "Created a new record.",
-        table = "CENTRE_ACTIVITY_AVAILABILITY",
-        entity_id = db_centre_activity_availability.id,
-        original_data = None,
-        updated_data = updated_data_dict
-    )
-    return db_centre_activity_availability
+        log_crud_action(
+            action = ActionType.CREATE,
+            user = current_user_id,
+            user_full_name = current_user_info.get("fullname"),
+            message = "Created a new record.",
+            table = "CENTRE_ACTIVITY_AVAILABILITY",
+            entity_id = db_centre_activity_availability.id,
+            original_data = None,
+            updated_data = updated_data_dict
+        )
+        list_db_centre_activity_availability.append(db_centre_activity_availability)
+        return list_db_centre_activity_availability
+    else:
+        for record in list_db_centre_activity_availability:
+            updated_data_dict = serialize_data(record)
+
+            log_crud_action(
+                action = ActionType.CREATE,
+                user = current_user_id,
+                user_full_name = current_user_info.get("fullname"),
+                message = "Created a new record.",
+                table = "CENTRE_ACTIVITY_AVAILABILITY",
+                entity_id = record.id,
+                original_data = None,
+                updated_data = updated_data_dict
+            )
+
+        return list_db_centre_activity_availability
+
 
 def get_centre_activity_availability_by_id(
         db: Session,

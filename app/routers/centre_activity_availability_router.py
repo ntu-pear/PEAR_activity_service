@@ -10,16 +10,17 @@ router = APIRouter()
 
 @router.post(
     "/",
-    response_model = schemas.CentreActivityAvailabilityResponse,
     summary = "Create Centre Activity Availability",
     description = "Create a Centre Activity Availability record.",
-    status_code = status.HTTP_201_CREATED
+    status_code = status.HTTP_201_CREATED,
+    response_model = list[schemas.CentreActivityAvailabilityResponse]
 )
 
 def create_centre_activity_availability(
     payload: schemas.CentreActivityAvailabilityCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    is_recurring_everyday: bool = False
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -32,9 +33,9 @@ def create_centre_activity_availability(
     return crud.create_centre_activity_availability(
         db = db,
         centre_activity_availability_data = payload,
-        current_user_info = current_user_info
+        current_user_info = current_user_info,
+        is_recurring_everyday = is_recurring_everyday
     )
-
 
 @router.get(
     "/",
@@ -42,7 +43,6 @@ def create_centre_activity_availability(
     description = "Get all Centre Activity Availability records",
     response_model = list[schemas.CentreActivityAvailabilityResponse]
 )
-
 def get_all_centre_activity_availabilities(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
@@ -63,7 +63,6 @@ def get_all_centre_activity_availabilities(
     description = "Get a specific Centre Activity Availability record by its ID.",
     response_model = schemas.CentreActivityAvailabilityResponse
 )
-
 def get_centre_activity_availability_by_id(
     centre_activity_availability_id: int,
     db: Session = Depends(get_db),
@@ -85,7 +84,6 @@ def get_centre_activity_availability_by_id(
     description = "Update an existing Centre Activity Availability record that is not soft deleted.",
     response_model = schemas.CentreActivityAvailabilityResponse
 )
-
 def update_centre_activity_availability(
     centre_activity_availability: schemas.CentreActivityAvailabilityUpdate,
     db: Session = Depends(get_db),
@@ -112,7 +110,6 @@ def update_centre_activity_availability(
     description = "Delete a specific Centre Activity Availability record by its ID.",
     response_model = schemas.CentreActivityAvailabilityResponse
 )
-
 def delete_centre_activity_availability(
     centre_activity_availability_id: int,
     db: Session = Depends(get_db),
