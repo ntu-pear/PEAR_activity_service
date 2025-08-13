@@ -54,8 +54,15 @@ def get_all_centre_activity_availabilities(
             detail = "You do not have permission to view Centre Activity Availabilities."
         )
     
-    return crud.get_centre_activity_availabilities(db, include_deleted = include_deleted)
-
+    result = crud.get_centre_activity_availabilities(db, include_deleted = include_deleted)
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail = {
+                "message": "Centre Activity Availabilities cannot be found based on parameters provided."
+            })
+    else:
+        return result
 
 @router.get(
     "/{centre_activity_availability_id}",
@@ -75,7 +82,15 @@ def get_centre_activity_availability_by_id(
             detail = "You do not have permission to view a Centre Activity Availability."
         )
     
-    return crud.get_centre_activity_availability_by_id(db, centre_activity_availability_id, include_deleted = include_deleted)
+    result = crud.get_centre_activity_availability_by_id(db, centre_activity_availability_id, include_deleted = include_deleted)
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail = {
+                "message": "Centre Activity Availability cannot be found based on parameters provided."
+            })
+    else:
+        return result
 
 
 @router.put(

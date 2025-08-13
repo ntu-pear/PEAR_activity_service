@@ -148,25 +148,30 @@ def get_centre_activity_availability_by_id(
         centre_activity_availability_id: int,
         include_deleted: bool = False
     ):
-
-    db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
-        models.CentreActivityAvailability.id == centre_activity_availability_id,
-        models.CentreActivityAvailability.is_deleted == include_deleted
-        ).first()
     
+    db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
+        models.CentreActivityAvailability.id == centre_activity_availability_id)
     if not db_centre_activity_availability:
         raise HTTPException(status_code=404, detail="Centre Activity Availability not found.")
-
-    return db_centre_activity_availability
+    
+    if not include_deleted:
+        db_centre_activity_availability = db_centre_activity_availability.filter(models.CentreActivityAvailability.is_deleted == False)
+        
+    return db_centre_activity_availability.first()
 
 def get_centre_activity_availabilities(
         db: Session,
         include_deleted: bool = False,
         skip: int = 0,
         limit: int = 100    
-    ):
+    ) -> list[models.CentreActivityAvailability]:
 
-    db_centre_activity_availabilities = db.query(models.CentreActivityAvailability).filter(models.CentreActivityAvailability.is_deleted == include_deleted)
+    db_centre_activity_availabilities = db.query(models.CentreActivityAvailability)
+    if not db_centre_activity_availabilities:
+        raise HTTPException(status_code=404, detail="Centre Activity Availabilities cannot be found.")
+
+    if not include_deleted:
+        db_centre_activity_availabilities = db_centre_activity_availabilities.filter(models.CentreActivityAvailability.is_deleted == False)
 
     return (
         db_centre_activity_availabilities.order_by(models.CentreActivityAvailability.start_time.asc())
