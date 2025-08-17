@@ -407,8 +407,7 @@ def test_create_centre_activity_recommendation_role_access_success(mock_crud_cre
     result = router_create_centre_activity_recommendation(
         payload=create_centre_activity_recommendation_schema,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert result.centre_activity_id == create_centre_activity_recommendation_schema.centre_activity_id
@@ -423,8 +422,7 @@ def test_create_centre_activity_recommendation_role_access_fail(get_db_session_m
         router_create_centre_activity_recommendation(
             payload=create_centre_activity_recommendation_schema,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -441,14 +439,13 @@ def test_get_all_centre_activity_recommendations_role_access_success(mock_crud_g
     result = router_get_all_centre_activity_recommendations(
         include_deleted=False,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert len(result) == 2
     assert result == existing_centre_activity_recommendations
 
-@pytest.mark.parametrize("mock_user_fixtures", ["mock_supervisor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_caregiver_jwt", "mock_admin_jwt"])
 def test_get_all_centre_activity_recommendations_role_access_fail(get_db_session_mock, mock_user_fixtures, request):
     """Fails when non-doctor tries to get all Centre Activity Recommendations"""
     mock_user_roles = request.getfixturevalue(mock_user_fixtures)
@@ -457,8 +454,7 @@ def test_get_all_centre_activity_recommendations_role_access_fail(get_db_session
         router_get_all_centre_activity_recommendations(
             include_deleted=False,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -476,13 +472,12 @@ def test_get_centre_activity_recommendation_by_id_role_access_success(mock_crud_
         centre_activity_recommendation_id=1,
         include_deleted=False,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert result == existing_centre_activity_recommendation
 
-@pytest.mark.parametrize("mock_user_fixtures", ["mock_supervisor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_caregiver_jwt", "mock_admin_jwt"])
 def test_get_centre_activity_recommendation_by_id_role_access_fail(get_db_session_mock, mock_user_fixtures, request):
     """Fails when non-doctor tries to get Centre Activity Recommendation by ID"""
     mock_user_roles = request.getfixturevalue(mock_user_fixtures)
@@ -492,8 +487,7 @@ def test_get_centre_activity_recommendation_by_id_role_access_fail(get_db_sessio
             centre_activity_recommendation_id=1,
             include_deleted=False,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -511,14 +505,13 @@ def test_get_centre_activity_recommendations_by_patient_id_role_access_success(m
         patient_id=1,
         include_deleted=False,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert len(result) == 2
     assert result == existing_centre_activity_recommendations
 
-@pytest.mark.parametrize("mock_user_fixtures", ["mock_supervisor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_caregiver_jwt", "mock_admin_jwt"])
 def test_get_centre_activity_recommendations_by_patient_id_role_access_fail(get_db_session_mock, mock_user_fixtures, request):
     """Fails when non-doctor tries to get Centre Activity Recommendations by patient ID"""
     mock_user_roles = request.getfixturevalue(mock_user_fixtures)
@@ -528,8 +521,7 @@ def test_get_centre_activity_recommendations_by_patient_id_role_access_fail(get_
             patient_id=1,
             include_deleted=False,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -548,8 +540,7 @@ def test_update_centre_activity_recommendation_role_access_success(mock_crud_upd
         centre_activity_recommendation_id=1,
         payload=update_centre_activity_recommendation_schema,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert result == existing_centre_activity_recommendation
@@ -566,8 +557,7 @@ def test_update_centre_activity_recommendation_role_access_fail(get_db_session_m
             centre_activity_recommendation_id=1,
             payload=update_centre_activity_recommendation_schema,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -584,8 +574,7 @@ def test_delete_centre_activity_recommendation_role_access_success(mock_crud_del
     result = router_delete_centre_activity_recommendation(
         centre_activity_recommendation_id=1,
         db=get_db_session_mock,
-        current_user=mock_doctor_jwt,
-        token="test-token"
+        user_and_token=(mock_doctor_jwt, "test-token")
     )
 
     assert result == existing_centre_activity_recommendation
@@ -599,8 +588,7 @@ def test_delete_centre_activity_recommendation_role_access_fail(get_db_session_m
         router_delete_centre_activity_recommendation(
             centre_activity_recommendation_id=1,
             db=get_db_session_mock,
-            current_user=mock_user_roles,
-            token="test-token"
+            user_and_token=(mock_user_roles, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN

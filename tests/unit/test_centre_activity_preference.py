@@ -435,7 +435,7 @@ def test_delete_centre_activity_preference_not_found_fail(get_db_session_mock, m
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
     assert exc_info.value.detail == "Centre Activity Preference not found or deleted"
 
-# === Role-based Access Control Tests ===
+# ================= Role-based Access Control Tests ===========================================
 @patch("app.crud.centre_activity_preference_crud.create_centre_activity_preference")
 @pytest.mark.parametrize("mock_user_fixtures", ["mock_supervisor_jwt", "mock_caregiver_jwt"])
 def test_create_centre_activity_preference_role_access_success(mock_crud_create, get_db_session_mock, 
@@ -453,8 +453,7 @@ def test_create_centre_activity_preference_role_access_success(mock_crud_create,
     result = router_create_centre_activity_preference(
         payload=create_centre_activity_preference_schema,
         db=get_db_session_mock,
-        current_user=mock_user_roles,
-        token="test-token"
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert result.centre_activity_id == create_centre_activity_preference_schema.centre_activity_id
@@ -466,8 +465,7 @@ def test_create_centre_activity_preference_role_access_fail(get_db_session_mock,
         router_create_centre_activity_preference(
             payload=create_centre_activity_preference_schema,
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt,
-            token="test-token"
+            user_and_token=(mock_doctor_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -484,7 +482,7 @@ def test_get_centre_activity_preferences_role_access_success(mock_crud_get, get_
 
     result = router_get_centre_activity_preferences(
         db=get_db_session_mock,
-        current_user=mock_user_roles
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert len(result) == len(existing_centre_activity_preferences)
@@ -494,7 +492,7 @@ def test_get_centre_activity_preferences_role_access_fail(get_db_session_mock, m
     with pytest.raises(HTTPException) as exc_info:
         router_get_centre_activity_preferences(
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt
+            user_and_token=(mock_doctor_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -512,7 +510,7 @@ def test_get_centre_activity_preference_by_id_role_access_success(mock_crud_get,
     result = router_get_centre_activity_preference_by_id(
         centre_activity_preference_id=existing_centre_activity_preferences[0].id,
         db=get_db_session_mock,
-        current_user=mock_user_roles
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert result.id == existing_centre_activity_preferences[0].id
@@ -523,7 +521,7 @@ def test_get_centre_activity_preference_by_id_role_access_fail(get_db_session_mo
         router_get_centre_activity_preference_by_id(
             centre_activity_preference_id=1,
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt
+            user_and_token=(mock_doctor_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -541,7 +539,7 @@ def test_get_centre_activity_preferences_by_patient_id_role_access_success(mock_
     result = router_get_centre_activity_preferences_by_patient_id(
         patient_id=1,
         db=get_db_session_mock,
-        current_user=mock_user_roles
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert len(result) == len(existing_centre_activity_preferences)
@@ -552,7 +550,7 @@ def test_get_centre_activity_preferences_by_patient_id_role_access_fail(get_db_s
         router_get_centre_activity_preferences_by_patient_id(
             patient_id=1,
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt
+            user_and_token=(mock_doctor_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -577,8 +575,7 @@ def test_update_centre_activity_preference_role_access_success(mock_crud_update,
     result = router_update_centre_activity_preference_by_id(
         payload=update_centre_activity_preference_schema,
         db=get_db_session_mock,
-        current_user=mock_user_roles,
-        token="test-token"
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert result.centre_activity_id == update_centre_activity_preference_schema.centre_activity_id
@@ -590,8 +587,7 @@ def test_update_centre_activity_preference_role_access_fail(get_db_session_mock,
         router_update_centre_activity_preference_by_id(
             payload=update_centre_activity_preference_schema,
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt,
-            token="test-token"
+            user_and_token=(mock_doctor_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -609,20 +605,18 @@ def test_delete_centre_activity_preference_role_access_success(mock_crud_delete,
     result = router_delete_centre_activity_preference_by_id(
         centre_activity_preference_id=existing_centre_activity_preferences[0].id,
         db=get_db_session_mock,
-        current_user=mock_user_roles,
-        token="test-token"
+        user_and_token=(mock_user_roles, "test-token")
     )
 
     assert result.id == existing_centre_activity_preferences[0].id
 
-def test_delete_centre_activity_preference_role_access_fail(get_db_session_mock, mock_doctor_jwt):
+def test_delete_centre_activity_preference_role_access_fail(get_db_session_mock, mock_admin_jwt):
     """Fails when non-supervisor/caregiver tries to delete Centre Activity Preference"""
     with pytest.raises(HTTPException) as exc_info:
         router_delete_centre_activity_preference_by_id(
             centre_activity_preference_id=1,
             db=get_db_session_mock,
-            current_user=mock_doctor_jwt,
-            token="test-token"
+            user_and_token=(mock_admin_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN

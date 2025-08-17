@@ -25,6 +25,7 @@ from app.routers import(
     centre_activity_preference_router,
     centre_activity_recommendation_router,
     adhoc_router,
+    auth_router,
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -94,6 +95,9 @@ routers = [
     (centre_activity_recommendation_router.router, f"{API_VERSION_PREFIX}/centre_activity_recommendations", ["Centre Activity Recommendations"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
 ]
+
+# Add auth router separately (without API version prefix for OAuth2 compatibility)
+app.include_router(auth_router.router, tags=["Authentication"])
 
 for router, prefix, tags, in routers:
     app.include_router(router, prefix=prefix, tags=tags)

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_crud as crud 
 import app.schemas.centre_activity_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
+from app.auth.jwt_utils import get_current_user, JWTPayload, is_supervisor
 from typing import Optional
 
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
 def create_centre_activity(
     payload: schemas.CentreActivityCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -43,7 +43,7 @@ def create_centre_activity(
         response_model=list[schemas.CentreActivityResponse])
 def list_activities(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description="Include soft-deleted records"),
     skip: int = 0,
     limit: int = 100,
@@ -64,7 +64,7 @@ def list_activities(
 def get_by_id(
     centre_activity_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description="Include soft-deleted records")
 ):
     if current_user and not is_supervisor(current_user):
@@ -83,7 +83,7 @@ def get_by_id(
 def update(
     centre_activity: schemas.CentreActivityUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -111,7 +111,7 @@ def update(
 def delete(
     centre_activity_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     
     if current_user and not is_supervisor(current_user):

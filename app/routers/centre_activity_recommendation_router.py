@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_recommendation_crud as crud
 import app.schemas.centre_activity_recommendation_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_doctor, optional_oauth2_scheme
+from app.auth.jwt_utils import get_user_and_token, JWTPayload, is_doctor, is_supervisor
 from typing import Optional
 
 router = APIRouter()
@@ -17,9 +17,9 @@ router = APIRouter()
 def create_centre_activity_recommendation(
     payload: schemas.CentreActivityRecommendationCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
     if current_user and not is_doctor(current_user):
         raise HTTPException(
@@ -50,11 +50,11 @@ def get_centre_activity_recommendation_by_id(
     centre_activity_recommendation_id: int,
     include_deleted: bool = Query(False, description="Include deleted Centre Activity Recommendations"),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -76,11 +76,11 @@ def get_centre_activity_recommendation_by_id(
 def get_all_centre_activity_recommendations(
     include_deleted: bool = Query(False, description="Include deleted Centre Activity Recommendations"),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -110,11 +110,11 @@ def get_centre_activity_recommendations_by_patient_id(
     patient_id: int,
     include_deleted: bool = Query(False, description="Include deleted Centre Activity Recommendations"),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -145,9 +145,9 @@ def update_centre_activity_recommendation(
     centre_activity_recommendation_id: int,
     payload: schemas.CentreActivityRecommendationUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
     if current_user and not is_doctor(current_user):
         raise HTTPException(
@@ -181,9 +181,9 @@ def update_centre_activity_recommendation(
 def delete_centre_activity_recommendation(
     centre_activity_recommendation_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Doctor
     if current_user and not is_doctor(current_user):
         raise HTTPException(
