@@ -89,19 +89,19 @@ def get_current_user_and_token_with_flag(
 
 def get_user_id(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract userId from JWTPayload model."""
-    if not payload or not (hasattr(payload, 'userId') and payload.userId == ''):
+    if not payload or not hasattr(payload, 'userId'):
         return None
     return getattr(payload, "userId", None)
 
 def get_full_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract fullName from JWTPayload model."""
-    if not payload or not (hasattr(payload, 'fullName') and payload.fullName == ''):
+    if not payload or not hasattr(payload, 'fullName'):
         return None
     return getattr(payload, "fullName", None)
 
 def get_role_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract roleName from JWTPayload model."""
-    if not payload or not (hasattr(payload, 'roleName') and payload.roleName == ''):
+    if not payload or not hasattr(payload, 'roleName'):
         return None
     return getattr(payload, "roleName", None)
 
