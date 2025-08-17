@@ -15,7 +15,6 @@ router = APIRouter()
     status_code = status.HTTP_201_CREATED,
     response_model = list[schemas.CentreActivityAvailabilityResponse]
 )
-
 def create_centre_activity_availability(
     payload: schemas.CentreActivityAvailabilityCreate,
     db: Session = Depends(get_db),
@@ -28,7 +27,7 @@ def create_centre_activity_availability(
             detail = "You do not have permission to create a Centre Activity Availability."
         )
     
-    current_user_info = grab_user_info(current_user)
+    current_user_info = _grab_user_info(current_user)
 
     return crud.create_centre_activity_availability(
         db = db,
@@ -110,7 +109,7 @@ def update_centre_activity_availability(
             detail = "You do not have permission to update a Centre Activity Availability."
         )
     
-    current_user_info = grab_user_info(current_user)
+    current_user_info = _grab_user_info(current_user)
 
     return crud.update_centre_activity_availability(
         db = db,
@@ -137,7 +136,7 @@ def delete_centre_activity_availability(
             detail = "You do not have permission to delete a Centre Activity Availability."
         )
     
-    current_user_info = grab_user_info(current_user)
+    current_user_info = _grab_user_info(current_user)
 
     return crud.delete_centre_activity_availability(
         db = db,
@@ -145,7 +144,7 @@ def delete_centre_activity_availability(
         current_user_info = current_user_info
     )
 
-def grab_user_info(user_info: JWTPayload):
+def _grab_user_info(user_info: JWTPayload):
     extracted_user_info = {
         "id": user_info.userId if user_info else None,
         "fullname": user_info.fullName if user_info else "Anonymous"
