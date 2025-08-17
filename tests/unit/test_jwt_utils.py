@@ -89,6 +89,7 @@ def test_get_user_id_fail():
     with pytest.raises(ValidationError) as exc:
         invalid_payload = JWTPayload(
             fullName="John Doe",
+            # Missing id
             email="test@test.com",
             roleName="SUPERVISOR",
             sessionId="abc123"
@@ -104,6 +105,7 @@ def test_get_full_name_fail():
     
     with pytest.raises(ValidationError) as exc:
         invalid_payload = JWTPayload(
+            # Missing fullname
             userId="123",
             email="test@test.com",
             roleName="SUPERVISOR",

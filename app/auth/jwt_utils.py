@@ -89,19 +89,19 @@ def get_current_user_and_token_with_flag(
 
 def get_user_id(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract userId from JWTPayload model."""
-    if not payload or not hasattr(payload, 'userId'):
+    if not payload or not (hasattr(payload, 'userId') and payload.userId == ''):
         return None
     return getattr(payload, "userId", None)
 
 def get_full_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract fullName from JWTPayload model."""
-    if not payload or not hasattr(payload, 'fullName'):
+    if not payload or not (hasattr(payload, 'fullName') and payload.fullName == ''):
         return None
     return getattr(payload, "fullName", None)
 
 def get_role_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract roleName from JWTPayload model."""
-    if not payload or not hasattr(payload, 'roleName'):
+    if not payload or not (hasattr(payload, 'roleName') and payload.roleName == ''):
         return None
     return getattr(payload, "roleName", None)
 
@@ -111,28 +111,28 @@ def is_supervisor(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Supervisor role."""
     if not payload or get_role_name(payload) != "SUPERVISOR":
         return False
-    return getattr(payload, "roleName").upper() == "SUPERVISOR"
+    return True
 
 # Care Centre is accessible to Supervisors and Admins
 def is_admin(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Admin role."""
     if not payload or get_role_name(payload) != "ADMIN":
         return False
-    return getattr(payload, "roleName", "").upper() == "ADMIN"
+    return True
 
 # Centre Activity Preference is accessible to Supervisors and Caregivers
 def is_caregiver(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Caregiver role."""
     if not payload or get_role_name(payload) != "CAREGIVER":
         return False
-    return getattr(payload, "roleName").upper() == "CAREGIVER"
+    return True
 
 # Activity Recommendation is accessible to Doctors
 def is_doctor(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Doctor role."""
     if not payload or get_role_name(payload) != "DOCTOR":
         return False
-    return getattr(payload, "roleName").upper() == "DOCTOR"
+    return True
 
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm
