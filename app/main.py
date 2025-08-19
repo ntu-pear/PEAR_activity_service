@@ -21,6 +21,7 @@ from app.models import(
 )
 
 from app.routers import(
+    auth_router,
     centre_activity_exclusion_router,
     centre_activity_router,
     activity_router,

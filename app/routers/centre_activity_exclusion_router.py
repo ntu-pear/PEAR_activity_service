@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import app.crud.centre_activity_exclusion_crud as crud
 import app.schemas.centre_activity_exclusion_schema as schemas
 from app.database import get_db
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
+from app.auth.jwt_utils import get_current_user_and_token_with_flag, JWTPayload, is_supervisor
 
 router = APIRouter()
 
@@ -13,7 +13,7 @@ router = APIRouter()
 def create_exclusion(
     payload: schemas.CentreActivityExclusionCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user_and_token_with_flag),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -24,7 +24,7 @@ def create_exclusion(
 @router.get("/", response_model=List[schemas.CentreActivityExclusionResponse])
 def list_exclusions(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user_and_token_with_flag),
     include_deleted: bool = Query(False, description="Include soft-deleted?"),
     skip: int = Query(0, ge=0, description="Skip this many"),
     limit: int = Query(100, gt=0, le=1000, description="Max to return"),
@@ -38,7 +38,7 @@ def list_exclusions(
 def get_exclusion(
     exclusion_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user_and_token_with_flag),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -49,7 +49,7 @@ def get_exclusion(
 def update_exclusion(
     payload: schemas.CentreActivityExclusionUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user_and_token_with_flag),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -61,7 +61,7 @@ def update_exclusion(
 def delete_exclusion(
     exclusion_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user_and_token_with_flag),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
