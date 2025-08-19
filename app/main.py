@@ -15,8 +15,9 @@ from app.models import(
     centre_activity_model,
     care_centre_model,
     centre_activity_preference_model,
+    centre_activity_recommendation_model,
+    adhoc_model,
     centre_activity_availability_model,
-    adhoc_model
 )
 
 from app.routers import(
@@ -25,8 +26,9 @@ from app.routers import(
     activity_router,
     care_centre_router,
     centre_activity_preference_router,
+    centre_activity_recommendation_router,
+    adhoc_router,
     centre_activity_availability_router,
-    adhoc_router
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -93,10 +95,14 @@ routers = [
     (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
     (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
-    (centre_activity_availability_router.router, f"{API_VERSION_PREFIX}/centre_activity_availabilities", ["Centre Activity Availabilities"]),
+    (centre_activity_recommendation_router.router, f"{API_VERSION_PREFIX}/centre_activity_recommendations", ["Centre Activity Recommendations"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
     (centre_activity_exclusion_router.router, f"{API_VERSION_PREFIX}/centre_activity_exclusions", ["Centre Activity Exclusions"]),
+    (centre_activity_availability_router.router, f"{API_VERSION_PREFIX}/centre_activity_availabilities", ["Centre Activity Availabilities"]),
 ]
+
+# Add auth router separately (without API version prefix for OAuth2 compatibility)
+app.include_router(auth_router.router, tags=["Authentication"])
 
 for router, prefix, tags, in routers:
     app.include_router(router, prefix=prefix, tags=tags)

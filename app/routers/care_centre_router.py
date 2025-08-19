@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.care_centre_crud as crud 
 import app.schemas.care_centre_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor, is_admin
+from app.auth.jwt_utils import get_current_user, JWTPayload, is_supervisor, is_admin
 from typing import Optional
 
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
 def create_care_centre(
     payload: schemas.CareCentreCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
@@ -42,7 +42,7 @@ def create_care_centre(
         response_model=list[schemas.CareCentreResponse])
 def list_care_centres(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
     include_deleted: bool = False,
@@ -62,7 +62,7 @@ def list_care_centres(
 def get_care_centre_by_id(
     care_centre_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = False,
 ):
     if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
@@ -82,7 +82,7 @@ def get_care_centre_by_id(
 def update_care_centre(
     payload: schemas.CareCentreUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
@@ -108,7 +108,7 @@ def update_care_centre(
 def delete_care_centre(
     care_centre_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(

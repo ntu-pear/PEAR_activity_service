@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.adhoc_crud as crud
 import app.schemas.adhoc_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
+from app.auth.jwt_utils import get_current_user, JWTPayload, is_supervisor
 from typing import List, Optional
 
 router = APIRouter()
@@ -18,7 +18,7 @@ router = APIRouter()
 def create_adhoc(
     adhoc: schemas.AdhocCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -43,7 +43,7 @@ def list_adhocs(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, gt=0),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -68,7 +68,7 @@ def get_adhoc_by_id(
     adhoc_id: int,
     include_deleted: bool = Query(False, description="Include soft‑deleted"),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -90,7 +90,7 @@ def list_adhocs_by_patient(
     patient_id: int,
     include_deleted: bool = Query(False, description="Include soft‑deleted"),
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if not is_supervisor(current_user):
         raise HTTPException(
@@ -108,7 +108,7 @@ def list_adhocs_by_patient(
 def update_adhoc(
     adhoc: schemas.AdhocUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -131,7 +131,7 @@ def update_adhoc(
 def delete_adhoc(
     adhoc_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag)
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(

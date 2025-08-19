@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_preference_crud as crud
 import app.schemas.centre_activity_preference_schema as schemas
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor, is_caregiver, optional_oauth2_scheme
+from app.auth.jwt_utils import get_user_and_token, get_current_user, JWTPayload, is_supervisor, is_caregiver
 from typing import Optional
 
 router = APIRouter()
@@ -17,9 +17,9 @@ router = APIRouter()
 def create_centre_activity_preference(
     payload: schemas.CentreActivityPreferenceCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -46,9 +46,10 @@ def create_centre_activity_preference(
     status_code=status.HTTP_200_OK)
 def get_centre_activity_preferences(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    user_and_token: tuple = Depends(get_user_and_token),
     include_deleted: bool = Query(False, description="Include deleted Centre Activity Preferences"),
 ):
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -67,9 +68,11 @@ def get_centre_activity_preferences(
 def get_centre_activity_preference_by_id(
     centre_activity_preference_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    user_and_token: tuple = Depends(get_user_and_token),
     include_deleted: bool = False,
 ):
+
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -93,11 +96,12 @@ def get_centre_activity_preference_by_id(
 def get_centre_activity_preferences_by_patient_id(
     patient_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    user_and_token: tuple = Depends(get_user_and_token),
     include_deleted: bool = False,
     skip: int = 0,
     limit: int = 100,
 ):
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -122,9 +126,9 @@ def get_centre_activity_preferences_by_patient_id(
 def update_centre_activity_preference_by_id(
     payload: schemas.CentreActivityPreferenceUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -135,7 +139,7 @@ def update_centre_activity_preference_by_id(
         "id": current_user.userId if current_user else None,
         "fullname": current_user.fullName if current_user else "Anonymous",
         "role_name": current_user.roleName if current_user else "Anonymous",
-        "bearer_token": token if token else ""
+        "bearer_token": token
     }
     return crud.update_centre_activity_preference_by_id(
         db=db,
@@ -152,9 +156,9 @@ def update_centre_activity_preference_by_id(
 def delete_centre_activity_preference_by_id(
     centre_activity_preference_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
+    user_and_token: tuple = Depends(get_user_and_token)
 ):
+    current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
     if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
@@ -165,7 +169,7 @@ def delete_centre_activity_preference_by_id(
         "id": current_user.userId if current_user else None,
         "fullname": current_user.fullName if current_user else "Anonymous",
         "role_name": current_user.roleName if current_user else "Anonymous",
-        "bearer_token": token if token else ""
+        "bearer_token": token
     }
     return crud.delete_centre_activity_preference_by_id(
         db=db,

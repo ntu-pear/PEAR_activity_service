@@ -59,6 +59,7 @@ uvicorn app.main:app --reload
 
 This will start the microservice, which should be accessible at `http://localhost:8000`.
 
+
 ### Notes for Windows Users
 Ensure that Visual Studio Code uses LF (Line Feed) instead of CRLF (Carriage Return Line Feed) for line endings.
 
@@ -101,7 +102,24 @@ For consistency and reproducibility, the following versions of packages are used
 - Uvicorn: 0.30.3
 - Python-dotenv: 1.0.1
 
-### Additional Information
+### Testing the API
 
-- MSSQL Database Name: `fyp_activity_service_dev`
-- Microservice Name: `activity_service`
+#### Accessing Swagger UI
+To test endpoints interactively, access the Swagger UI documentation at: `http://localhost:8000/docs`
+
+#### VPN Requirements
+⚠️ **Important**: Some environment variables point to NTU production/staging servers. Ensure you're connected to the **NTU VPN** before testing.
+
+#### RBAC Testing Guide
+
+The endpoints are secured with Role-Based Access Control (RBAC). To test through Swagger UI:
+
+1. **Get Test Credentials**: Refer to the [Confluence page](https://fyppear.atlassian.net/wiki/spaces/FP/pages/112754798/Application+Logins+For+Various+Roles) for authorized test users by role.
+
+2. **Authenticate in Swagger UI**:
+   - Click the **Authorize** button (top-right of Swagger UI)
+   - Enter the credentials for your desired test role
+   - Set **Client credentials location** to `Request body`
+   - Click **Authorize**
+
+3. **VPN Connection**: Required for authentication regardless of whether you're testing on localhost or the NTU production server.
