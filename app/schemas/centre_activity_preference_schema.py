@@ -25,5 +25,5 @@ class CentreActivityPreferenceResponse(CentreActivityPreferenceBase):
     modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified it")
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True  # Optional, but good for flexibility!
+        from_attributes = True
+        populate_by_name = True  # Optional, but good for flexibility!

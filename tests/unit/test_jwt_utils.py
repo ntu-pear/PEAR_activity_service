@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import time
 from app.auth.jwt_utils import decode_jwt_token, JWTPayload, get_user_id, get_full_name, get_role_name, is_supervisor, is_admin
 from fastapi import HTTPException, status
-
+from pydantic import ValidationError
 
 @pytest.fixture
 def mock_valid_token():
@@ -86,28 +86,35 @@ def test_get_user_id_pass(mock_valid_payload):
     assert get_user_id(mock_valid_payload) == "123"
 
 def test_get_user_id_fail():
-    invalid_payload = JWTPayload(
-        fullName="John Doe",
-        userId="",
-        email="test@test.com",
-        roleName="SUPERVISOR",
-        sessionId="abc123"
-    )
-    assert get_user_id(invalid_payload) is None
+    with pytest.raises(ValidationError) as exc:
+        invalid_payload = JWTPayload(
+            fullName="John Doe",
+            # Missing id
+            email="test@test.com",
+            roleName="SUPERVISOR",
+            sessionId="abc123"
+        )
+        get_user_id(invalid_payload)
+    assert "Field required" in str(exc.value)
 
 def test_get_full_name_pass(mock_valid_payload):
     assert get_full_name(mock_valid_payload) == "John Doe"
 
 def test_get_full_name_fail():
-    invalid_payload = JWTPayload(
-        fullName="",
-        userId="123",
-        email="test@test.com",
-        roleName="SUPERVISOR",
-        sessionId="abc123"
-    )
-    assert get_full_name(invalid_payload) is None
+    ''' Raises Validation error when fullName is missing'''
     
+    with pytest.raises(ValidationError) as exc:
+        invalid_payload = JWTPayload(
+            # Missing fullname
+            userId="123",
+            email="test@test.com",
+            roleName="SUPERVISOR",
+            sessionId="abc123"
+        )
+        get_full_name(invalid_payload)
+
+    assert "Field required" in str(exc.value)
+
 #==== Role Tests ====
 def test_is_supervisor_pass(mock_valid_payload):
     assert is_supervisor(mock_valid_payload) is True

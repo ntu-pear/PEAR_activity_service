@@ -1,12 +1,19 @@
-from fastapi import Depends, HTTPException, status, Request, Query
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from typing import Optional
+from fastapi import Depends, FastAPI, HTTPException, status, Request, Query
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes, OAuth2PasswordRequestForm
+from typing import Optional, Annotated
 import base64, json, time, binascii
 from pydantic import BaseModel, ValidationError
-from app.logger.config import logger
-from fastapi.security.utils import get_authorization_scheme_param
+import logging
+from app.services.user_service import user_login
+
+# Internal debugging
+logger = logging.getLogger("uvicorn")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 class JWTPayload(BaseModel):
     userId: str
@@ -16,7 +23,7 @@ class JWTPayload(BaseModel):
     sessionId: str
 
 def decode_jwt_token(token: str, require_auth: bool = True) -> Optional[JWTPayload]:
-    logger.debug(f"decode_jwt_token called with token={token}, require_auth={require_auth}")
+
     try:
         # Split JWT into parts (header.payload.signature)
         parts = token.split(".")
@@ -43,76 +50,105 @@ def decode_jwt_token(token: str, require_auth: bool = True) -> Optional[JWTPaylo
         user_data = json.loads(sub)
         return JWTPayload(**user_data)
     except (ValidationError, ValueError, json.JSONDecodeError, IndexError, binascii.Error) as e:
-        if require_auth:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}")
-        return None
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}")
 
-async def optional_oauth2_scheme(request: Request) -> Optional[str]:
+
+def get_user_and_token(
+        token: str = Depends(oauth2_scheme)
+) -> tuple[JWTPayload, str]:
     """
-    Custom dependency to optionally extract the token from the Authorization header.
-    Does not raise 401 if token is missing.
+    Get user and token from request.
+    Token comes from Authorization header via oauth2_scheme.
     """
-    authorization: str = request.headers.get("Authorization")
-    scheme, param = get_authorization_scheme_param(authorization)
-    if not authorization or scheme.lower() != "bearer":
-        return None
-    return param
+    user = decode_jwt_token(token)
+    return user, token
 
 def get_current_user(
-    token: str = Depends(optional_oauth2_scheme),
-    require_auth: bool = True
-) -> Optional[JWTPayload]:
-    if not token and not require_auth:
-        return None
-    return decode_jwt_token(token, require_auth=require_auth)
-
-
-def get_current_user_with_flag(
-    require_auth: bool = Query(True, description="Require authentication"),
-    token: Optional[str] = Depends(optional_oauth2_scheme)
-) -> Optional[JWTPayload]:
-    if token is None and require_auth:
+    token: str = Depends(oauth2_scheme),
+) -> JWTPayload:
+    '''
+    Get current user from request.
+    No additional "require_auth" in the endpoint params.
+    '''
+    if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    if not token and not require_auth:
-        return None
-    return decode_jwt_token(token, require_auth=require_auth)
+    return decode_jwt_token(token)
+
+
+def get_current_user_and_token_with_flag(
+    require_auth: bool = Query(True, description="Require authentication"),
+    token: str = Depends(oauth2_scheme),
+) -> tuple[Optional[JWTPayload], Optional[str]]:
+    """
+    Get current user and token from request.
+    Additional "require_auth" in the endpoint params to bypass authentication.
+    """
+    
+    user = decode_jwt_token(token, require_auth=require_auth)
+    return user, token
 
 def get_user_id(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract userId from JWTPayload model."""
-    if not payload or not hasattr(payload, 'userId') or payload.userId == '':
+    if not payload or not hasattr(payload, 'userId'):
         return None
     return getattr(payload, "userId", None)
 
 def get_full_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract fullName from JWTPayload model."""
-    if not payload or not hasattr(payload, 'fullName') or payload.fullName == '':
+    if not payload or not hasattr(payload, 'fullName'):
         return None
     return getattr(payload, "fullName", None)
 
 def get_role_name(payload: Optional[JWTPayload]) -> Optional[str]:
     """Extract roleName from JWTPayload model."""
-    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+    if not payload or not hasattr(payload, 'roleName'):
         return None
-    
     return getattr(payload, "roleName", None)
 
+#======================================================
 # Centre Activity is only accessible to Supervisors
 def is_supervisor(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Supervisor role."""
-    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+    if not payload or get_role_name(payload) != "SUPERVISOR":
         return False
-    return getattr(payload, "roleName", "").upper() == "SUPERVISOR"
+    return True
 
 # Care Centre is accessible to Supervisors and Admins
 def is_admin(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Admin role."""
-    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+    if not payload or get_role_name(payload) != "ADMIN":
         return False
-    return getattr(payload, "roleName", "").upper() == "ADMIN"
+    return True
 
 # Centre Activity Preference is accessible to Supervisors and Caregivers
 def is_caregiver(payload: Optional[JWTPayload]) -> bool:
     """Check if the user has the Caregiver role."""
-    if not payload or not hasattr(payload, 'roleName') or payload.roleName == '':
+    if not payload or get_role_name(payload) != "CAREGIVER":
         return False
-    return getattr(payload, "roleName", "").upper() == "CAREGIVER"
+    return True
+
+# Activity Recommendation is accessible to Doctors
+def is_doctor(payload: Optional[JWTPayload]) -> bool:
+    """Check if the user has the Doctor role."""
+    if not payload or get_role_name(payload) != "DOCTOR":
+        return False
+    return True
+
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm
+) -> Token:
+    ''' 
+    Internal function to make request to User Service and return access token.
+    This is called by the auth router, not exposed directly.
+    '''
+    response = user_login(
+        username=form_data.username,
+        password=form_data.password
+    )
+
+    access_token = response.get("access_token")
+
+    return Token(
+        access_token=access_token,
+        token_type="bearer"
+    )

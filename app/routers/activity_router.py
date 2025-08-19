@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from app.auth.jwt_utils import get_current_user_with_flag, JWTPayload, is_supervisor
+from app.auth.jwt_utils import get_current_user, JWTPayload, is_supervisor
 
 import app.crud.activity_crud as crud
 import app.schemas.activity_schema as schemas
@@ -17,7 +17,7 @@ router = APIRouter()
 def create_activity(
     payload: schemas.ActivityCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: JWTPayload = Depends(get_current_user),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -36,7 +36,7 @@ def create_activity(
 )
 def list_activities(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: JWTPayload = Depends(get_current_user),
     include_deleted: bool = Query(False, description="Include soft‑deleted records"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, gt=0, le=1000, description="Max records to return"),
@@ -60,7 +60,7 @@ def list_activities(
 def get_activity_by_id(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: JWTPayload = Depends(get_current_user),
     include_deleted: bool = Query(False, description="Include soft‑deleted records"),
 ):
     if current_user and not is_supervisor(current_user):
@@ -84,7 +84,7 @@ def get_activity_by_id(
 def update_activity_by_id(
     activity_in: schemas.ActivityUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: JWTPayload = Depends(get_current_user),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
@@ -110,7 +110,7 @@ def update_activity_by_id(
 def delete_activity_by_id(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user_with_flag),
+    current_user: JWTPayload = Depends(get_current_user),
 ):
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
