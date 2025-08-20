@@ -4,6 +4,7 @@ import app.models.centre_activity_availability_model as models
 import app.schemas.centre_activity_availability_schema as schemas
 import app.models.care_centre_model as care_centre_models
 from app.crud.centre_activity_crud import get_centre_activity_by_id
+from app.crud.care_centre_crud import get_care_centre_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
@@ -16,15 +17,21 @@ def _check_for_duplicate_availability(
     essential_fields = {
         "centre_activity_id": centre_activity_availability_data.centre_activity_id,
         "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time,
-        "is_deleted": False
+        "end_time": centre_activity_availability_data.end_time
     }
     
     existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    if existing_availability:
+    if existing_availability and existing_availability.is_deleted:
         raise HTTPException(status_code=400,
                 detail = {
-                    "message": "Centre Activity Availability with these attributes already exists or soft deleted.",
+                    "message": "Centre Activity Availability with these attributes is already soft deleted.",
+                    "existing_id": str(existing_availability.id),
+                    "existing_is_deleted": existing_availability.is_deleted
+                })
+    elif existing_availability and not existing_availability.is_deleted:
+        raise HTTPException(status_code=400,
+                detail = {
+                    "message": "Centre Activity Availability with these attributes is already exists.",
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
@@ -40,7 +47,9 @@ def _check_centre_activity_availability_validity(
                     "message": "Centre Activity Availability date cannot be on saturdays and sundays as the Care Centre is closed."
                 })
 
-    care_centre_info = db.query(care_centre_models.CareCentre).filter(care_centre_models.CareCentre.is_deleted == False).first()
+    #This line of code must be changed when PEAR is scoped to handle multiple care centres.
+    care_centre_info = get_care_centre_by_id(db, 1)
+
     day_of_the_week = centre_activity_availability_data.start_time.strftime('%A').lower()
     care_centre_working_hours = care_centre_info.working_hours[day_of_the_week]
     care_centre_opening_hours = datetime.strptime(care_centre_working_hours["open"], "%H:%M").time()
@@ -57,16 +66,14 @@ def _check_centre_activity_availability_validity(
     if not centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found.")
     elif centre_activity:
-        print(centre_activity_availability_data.start_time)
-        print(centre_activity_availability_data.end_time)
         selected_availability_duration = (centre_activity_availability_data.end_time - centre_activity_availability_data.start_time).total_seconds() / 60
 
-        if centre_activity.min_duration == centre_activity.max_duration and selected_availability_duration != centre_activity.min_duration and selected_availability_duration != centre_activity.max_duration:
+        if centre_activity.is_fixed and selected_availability_duration != centre_activity.min_duration and selected_availability_duration != centre_activity.max_duration:
             raise HTTPException(status_code=400,
                 detail = {
                     "message": f"Centre Activity Availability selected duration must be the fixed duration of {centre_activity.max_duration} minutes."
                 })
-        elif centre_activity.min_duration < centre_activity.max_duration and selected_availability_duration < centre_activity.min_duration:
+        elif not centre_activity.is_fixed and selected_availability_duration < centre_activity.min_duration:
             raise HTTPException(status_code=400,
                 detail = {
                     "message": f"Centre Activity Availability selected duration cannot be less than the minimum duration of {centre_activity.min_duration} minutes."
@@ -152,7 +159,7 @@ def get_centre_activity_availability_by_id(
     db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
         models.CentreActivityAvailability.id == centre_activity_availability_id)
     if not db_centre_activity_availability:
-        raise HTTPException(status_code=404, detail="Centre Activity Availability not found.")
+        raise HTTPException(status_code=404, detail="Centre Activity Availability not found or already soft deleted.")
     
     if not include_deleted:
         db_centre_activity_availability = db_centre_activity_availability.filter(models.CentreActivityAvailability.is_deleted == False)
@@ -168,7 +175,7 @@ def get_centre_activity_availabilities(
 
     db_centre_activity_availabilities = db.query(models.CentreActivityAvailability)
     if not db_centre_activity_availabilities:
-        raise HTTPException(status_code=404, detail="Centre Activity Availabilities cannot be found.")
+        raise HTTPException(status_code=404, detail="Centre Activity Availabilities cannot be found or already soft deleted.")
 
     if not include_deleted:
         db_centre_activity_availabilities = db_centre_activity_availabilities.filter(models.CentreActivityAvailability.is_deleted == False)
@@ -191,7 +198,7 @@ def update_centre_activity_availability(
         models.CentreActivityAvailability.is_deleted == False
         ).first())
     if not db_centre_activity_availability:
-        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
+        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found or already soft deleted.")
     
     _check_for_duplicate_availability(db, centre_activity_availability_data)
     _check_centre_activity_availability_validity(db, centre_activity_availability_data)
@@ -237,7 +244,7 @@ def delete_centre_activity_availability(
         models.CentreActivityAvailability.is_deleted == False
         ).first()
     if not db_centre_activity_availability:
-        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
+        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found or already soft deleted.")
     
     db_centre_activity_availability.is_deleted = True
     db_centre_activity_availability.modified_by_id = current_user_info.get("id")

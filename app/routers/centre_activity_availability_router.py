@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_availability_crud as crud 
 import app.schemas.centre_activity_availability_schema as schemas
-from app.auth.jwt_utils import get_user_and_token, JWTPayload, is_supervisor
+from app.auth.jwt_utils import get_user_and_token, get_current_user, JWTPayload, is_supervisor
 from typing import Optional, Tuple
 
 router = APIRouter()
@@ -28,7 +28,12 @@ def create_centre_activity_availability(
             detail = "You do not have permission to create a Centre Activity Availability."
         )
     
-    current_user_info = _grab_user_info(current_user)
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "role_name": current_user.roleName if current_user else None,
+        "fullname": current_user.fullName if current_user else None,
+        "bearer_token": token
+    }
 
     return crud.create_centre_activity_availability(
         db = db,
@@ -45,25 +50,20 @@ def create_centre_activity_availability(
 )
 def get_all_centre_activity_availabilities(
     db: Session = Depends(get_db),
-    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
-    current_user, token = user_and_token
+    current_user
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to view Centre Activity Availabilities."
         )
     
-    result = crud.get_centre_activity_availabilities(db, include_deleted = include_deleted)
-    if not result:
-        raise HTTPException(
-            status_code=400,
-            detail = {
-                "message": "Centre Activity Availabilities cannot be found based on parameters provided."
-            })
-    else:
-        return result
+    return crud.get_centre_activity_availabilities(
+        db, 
+        include_deleted = include_deleted
+    )
 
 @router.get(
     "/{centre_activity_availability_id}",
@@ -74,25 +74,20 @@ def get_all_centre_activity_availabilities(
 def get_centre_activity_availability_by_id(
     centre_activity_availability_id: int,
     db: Session = Depends(get_db),
-    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
-    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to view a Centre Activity Availability."
         )
     
-    result = crud.get_centre_activity_availability_by_id(db, centre_activity_availability_id, include_deleted = include_deleted)
-    if not result:
-        raise HTTPException(
-            status_code=400,
-            detail = {
-                "message": "Centre Activity Availability cannot be found based on parameters provided."
-            })
-    else:
-        return result
+    return crud.get_centre_activity_availability_by_id(
+        db, 
+        centre_activity_availability_id, 
+        include_deleted = include_deleted
+    )
 
 
 @router.put(
@@ -113,7 +108,12 @@ def update_centre_activity_availability(
             detail = "You do not have permission to update a Centre Activity Availability."
         )
     
-    current_user_info = _grab_user_info(current_user)
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "role_name": current_user.roleName if current_user else None,
+        "fullname": current_user.fullName if current_user else None,
+        "bearer_token": token
+    }
 
     return crud.update_centre_activity_availability(
         db = db,
@@ -140,17 +140,15 @@ def delete_centre_activity_availability(
             detail = "You do not have permission to delete a Centre Activity Availability."
         )
     
-    current_user_info = _grab_user_info(current_user)
+    current_user_info = {
+        "id": current_user.userId if current_user else None,
+        "role_name": current_user.roleName if current_user else None,
+        "fullname": current_user.fullName if current_user else None,
+        "bearer_token": token
+    }
 
     return crud.delete_centre_activity_availability(
         db = db,
         centre_activity_availability_id =centre_activity_availability_id,
         current_user_info = current_user_info
     )
-
-def _grab_user_info(user_info: JWTPayload):
-    extracted_user_info = {
-        "id": user_info.userId if user_info else None,
-        "fullname": user_info.fullName if user_info else "Anonymous"
-    }
-    return extracted_user_info
