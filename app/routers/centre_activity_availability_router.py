@@ -4,7 +4,7 @@ from app.database import get_db
 import app.crud.centre_activity_availability_crud as crud 
 import app.schemas.centre_activity_availability_schema as schemas
 from app.auth.jwt_utils import get_user_and_token, JWTPayload, is_supervisor
-from typing import Optional
+from typing import Optional, Tuple
 
 router = APIRouter()
 
@@ -18,9 +18,10 @@ router = APIRouter()
 def create_centre_activity_availability(
     payload: schemas.CentreActivityAvailabilityCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_user_and_token),
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
     is_recurring_everyday: bool = False
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
@@ -44,9 +45,10 @@ def create_centre_activity_availability(
 )
 def get_all_centre_activity_availabilities(
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_user_and_token),
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
@@ -72,9 +74,10 @@ def get_all_centre_activity_availabilities(
 def get_centre_activity_availability_by_id(
     centre_activity_availability_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_user_and_token),
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
@@ -101,8 +104,9 @@ def get_centre_activity_availability_by_id(
 def update_centre_activity_availability(
     centre_activity_availability: schemas.CentreActivityAvailabilityUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_user_and_token)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
@@ -127,9 +131,9 @@ def update_centre_activity_availability(
 def delete_centre_activity_availability(
     centre_activity_availability_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_user_and_token)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
-    
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
