@@ -49,7 +49,11 @@ def create_centre_activity_exclusion(
 
     # 2) Validate patient exists (via external service)
     try:
-        get_patient_by_id(require_auth=False, bearer_token="", patient_id=exclusion_data.patient_id)
+        get_patient_by_id(
+            require_auth=True,
+            bearer_token=current_user_info.get("bearer_token", ""),
+            patient_id=exclusion_data.patient_id,
+        )
     except HTTPException:
         raise HTTPException(status_code=400, detail="Invalid Patient ID")
 
@@ -91,7 +95,11 @@ def update_centre_activity_exclusion(
 
     if exclusion_data.patient_id is not None:
         try:
-            get_patient_by_id(require_auth=False, bearer_token="", patient_id=exclusion_data.patient_id)
+            get_patient_by_id(
+                require_auth=True,
+                bearer_token=current_user_info.get("bearer_token", ""),
+                patient_id=exclusion_data.patient_id,
+            )
         except HTTPException:
             raise HTTPException(status_code=400, detail="Invalid Patient ID")
         db_obj.patient_id = exclusion_data.patient_id
