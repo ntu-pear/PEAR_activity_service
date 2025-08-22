@@ -28,3 +28,5 @@ class CentreActivity(Base):
     modified_by_id = Column(String, nullable=True)
 
     activity = relationship("Activity")
+
+    

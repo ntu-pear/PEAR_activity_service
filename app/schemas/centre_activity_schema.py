@@ -71,3 +71,4 @@ class CentreActivityResponse(CentreActivityBase):
         from_attributes = True
     
 
+
