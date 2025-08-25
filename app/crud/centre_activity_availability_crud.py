@@ -21,17 +21,10 @@ def _check_for_duplicate_availability(
     }
     
     existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
-    if existing_availability and existing_availability.is_deleted:
+    if existing_availability:
         raise HTTPException(status_code=400,
                 detail = {
-                    "message": "Centre Activity Availability with these attributes is already soft deleted.",
-                    "existing_id": str(existing_availability.id),
-                    "existing_is_deleted": existing_availability.is_deleted
-                })
-    elif existing_availability and not existing_availability.is_deleted:
-        raise HTTPException(status_code=400,
-                detail = {
-                    "message": "Centre Activity Availability with these attributes is already exists.",
+                    "message": "Centre Activity Availability with these attributes exists or already soft deleted.",
                     "existing_id": str(existing_availability.id),
                     "existing_is_deleted": existing_availability.is_deleted
                 })
@@ -149,22 +142,25 @@ def create_centre_activity_availability(
 
         return list_db_centre_activity_availability
 
-
 def get_centre_activity_availability_by_id(
         db: Session,
         centre_activity_availability_id: int,
         include_deleted: bool = False
     ):
     
-    db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
-        models.CentreActivityAvailability.id == centre_activity_availability_id)
-    if not db_centre_activity_availability:
-        raise HTTPException(status_code=404, detail="Centre Activity Availability not found or already soft deleted.")
+    db_centre_activity_availability = db.query(models.CentreActivityAvailability)
     
     if not include_deleted:
         db_centre_activity_availability = db_centre_activity_availability.filter(models.CentreActivityAvailability.is_deleted == False)
         
-    return db_centre_activity_availability.first()
+    db_centre_activity_availability = db_centre_activity_availability.filter(
+        models.CentreActivityAvailability.id == centre_activity_availability_id
+    ).first()
+
+    if not db_centre_activity_availability:
+        raise HTTPException(status_code=404, detail="Centre Activity Availability not found or already soft deleted.")
+
+    return db_centre_activity_availability
 
 def get_centre_activity_availabilities(
         db: Session,
@@ -174,11 +170,12 @@ def get_centre_activity_availabilities(
     ) -> list[models.CentreActivityAvailability]:
 
     db_centre_activity_availabilities = db.query(models.CentreActivityAvailability)
-    if not db_centre_activity_availabilities:
-        raise HTTPException(status_code=404, detail="Centre Activity Availabilities cannot be found or already soft deleted.")
-
+   
     if not include_deleted:
         db_centre_activity_availabilities = db_centre_activity_availabilities.filter(models.CentreActivityAvailability.is_deleted == False)
+    
+    if not db_centre_activity_availabilities:
+        raise HTTPException(status_code=404, detail="Centre Activity Availabilities cannot be found or already soft deleted.")
 
     return (
         db_centre_activity_availabilities.order_by(models.CentreActivityAvailability.start_time.asc())

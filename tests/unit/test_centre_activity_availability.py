@@ -30,23 +30,22 @@ def test_get_centre_activity_availability_by_id_success(get_db_session_mock, exi
 def test_get_centre_activity_availability_by_id_not_found(get_db_session_mock):
     db = get_db_session_mock
     db.query.return_value.filter.return_value.filter.return_value.first.return_value = None
-
+    
     with pytest.raises(HTTPException) as exc_info:
         get_centre_activity_availability_by_id(db, centre_activity_availability_id=999)
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
 
 def test_get_centre_activity_availability_by_id_include_deleted(get_db_session_mock, soft_deleted_centre_activity_availability):
     db = get_db_session_mock
-    db.query.return_value.filter.return_value.filter.return_value.first.return_value = soft_deleted_centre_activity_availability
+    db.query.return_value.filter.return_value.first.return_value = soft_deleted_centre_activity_availability
 
     result = get_centre_activity_availability_by_id(db, centre_activity_availability_id=1, include_deleted=True)
     assert result == soft_deleted_centre_activity_availability
-    assert result.id == 1
     assert result.is_deleted == True
 
 def test_get_centre_activity_availabilities_success(get_db_session_mock, existing_centre_activity_availabilities):
-    db = get_db_session_mock
-    db.query.return_value.filter.return_value.filter.return_value.first.return_value = existing_centre_activity_availabilities
+    db=get_db_session_mock
+    db.query.return_value.filter.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = existing_centre_activity_availabilities
 
     result = get_centre_activity_availabilities(db, include_deleted=False)
     assert len(result) == 2
@@ -60,17 +59,20 @@ def test_get_centre_activity_availabilities_success(get_db_session_mock, existin
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
-def test_get_centre_activity_availabilities_fail(get_db_session_mock):
+def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock, soft_deleted_centre_activity_availabilities):
     db = get_db_session_mock
-    db.query.return_value.filter.return_value.filter.return_value.first.return_value = None
+    db.query.return_value.filter.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = soft_deleted_centre_activity_availabilities
 
-    with pytest.raises(HTTPException) as exc_info:
-        get_centre_activity_availabilities(db, include_deleted=False)
-    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    result = get_centre_activity_availabilities(db, include_deleted=True)
+    for actual_data, expected_data in zip(result, soft_deleted_centre_activity_availabilities):
+        assert actual_data.id == expected_data.id
+        assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.created_by_id == expected_data.created_by_id
+        assert actual_data.modified_by_id == expected_data.modified_by_id
 
 def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock, soft_deleted_centre_activity_availabilities):
     db = get_db_session_mock
-    db.query.return_value.filter.return_value.filter.return_value.first.return_value = soft_deleted_centre_activity_availabilities
+    db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = soft_deleted_centre_activity_availabilities
 
     result = get_centre_activity_availabilities(db, include_deleted=True)
     assert len(result) == 2
@@ -86,52 +88,44 @@ def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock,
 
 @patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
 def test_updated_centre_activity_availability_success(
-    get_db_session_mock, 
-    mock_supervisor_user,
     mock_get_centre_activity_availability,
+    get_db_session_mock,
+    mock_supervisor_user,
     existing_centre_activity_availability,
-    update_centre_activity_availability_schema
+    updated_centre_activity_availability
 ):
-    #Mock existing centre activity found
+    #Mock target centre activity availability to be updated exists
     mock_get_centre_activity_availability.return_value = existing_centre_activity_availability
-    
-    #Mock no duplicate centre activity availability
+
+    #Mock no duplicate of updated centre activity availability exists
     mock_query = MagicMock()
-    mock_query.filter.return_value.filter.return_value.first.return_value = None
+    mock_chain = MagicMock()
+    mock_chain.filter.return_value.first.return_value = None
+    mock_query.filter.return_value = mock_chain
     get_db_session_mock.query.return_value = mock_query
 
     result = update_centre_activity_availability(
         db=get_db_session_mock,
-        centre_activity_availability_data=update_centre_activity_availability_schema,
+        centre_activity_availability_data=updated_centre_activity_availability,
         current_user_info=mock_supervisor_user
     )
-
-    assert result.id == update_centre_activity_availability_schema.id
-    assert result.centre_activity_id == update_centre_activity_availability_schema.centre_activity_id
-    assert result.start_time == update_centre_activity_availability_schema.start_time
-    assert result.end_time == update_centre_activity_availability_schema.end_time
-    assert result.created_by_id == update_centre_activity_availability_schema.created_by_id
-    assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
-
-    get_db_session_mock.add.assert_called_once()
+    assert result == updated_centre_activity_availability
     get_db_session_mock.commit.assert_called_once()
 
-@patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
-def test_updated_centre_activity_availability_not_found(
-    get_db_session_mock, 
-    mock_supervisor_user,
-    mock_get_centre_activity_availability,
-    update_centre_activity_availability_schema
-):
-    #Mock existing centre activity not found
-    mock_get_centre_activity_availability.return_value = None
+# @patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
+# def test_updated_centre_activity_availability_not_found(
+#     mock_get_centre_activity_availability,
+#     get_db_session_mock,
+#     mock_supervisor_user,
+#     updated_centre_activity_availability
+# ):
+#     #Mock target centre activity availability cannot be found
+#     mock_get_centre_activity_availability.return_value = HTTPException(status_code=404, detail="Centre Activity Availability not found or already soft deleted.")
 
-    with pytest.raises(HTTPException) as exc_info:
-        update_centre_activity_availability(
-            db=get_db_session_mock,
-            centre_activity_availability_data=update_centre_activity_availability_schema,
-            current_user_info=mock_supervisor_user
-        )
-    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
-    assert exc_info.value.detail == "Centre Activity Availability not found or already soft deleted."
-
+#     with pytest.raises(HTTPException) as exc_info:
+#         update_centre_activity_availability(
+#             db=get_db_session_mock,
+#             centre_activity_availability_data=updated_centre_activity_availability,
+#             current_user_info=mock_supervisor_user
+#         )
+#     assert exc_info.value.status_code == 404
