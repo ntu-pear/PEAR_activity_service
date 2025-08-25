@@ -5,6 +5,7 @@ from datetime import datetime
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
+from app.models.centre_activity_availability_model import CentreActivityAvailability
 from app.auth.jwt_utils import JWTPayload
 
 
@@ -438,3 +439,80 @@ def soft_deleted_centre_activity_recommendation(base_centre_activity_recommendat
         "modified_date": datetime.now()
     })
     return CentreActivityRecommendation(**data)
+
+
+# ====== Centre Activity Availability Fixtures ======
+@pytest.fixture
+def base_centre_activity_availability_data_list():
+    """Base data for Centre Activity Availability"""
+    return [
+        {
+            "centre_activity_id": 1,
+            "start_time": datetime.combine(datetime.now(), datetime.strptime('9:00:00', '%H:%M:%S').time()),
+            "end_time": datetime.combine(datetime.now(), datetime.strptime('9:30:00', '%H:%M:%S').time()),
+            "id": 1,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": None,
+            "created_by_id": "Test User",
+            "modified_by_id": None
+        },
+        {
+            "centre_activity_id": 1,
+            "start_time": datetime.combine(datetime.now(), datetime.strptime('9:30:00', '%H:%M:%S').time()),
+            "end_time": datetime.combine(datetime.now(), datetime.strptime('10:00:00', '%H:%M:%S').time()),
+            "id": 2,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": None,
+            "created_by_id": "Test User",
+            "modified_by_id": None
+        },
+    ]
+
+@pytest.fixture
+def base_centre_activity_availability_data(base_centre_activity_availability_data_list):
+    return base_centre_activity_availability_data_list[0]
+
+@pytest.fixture
+def existing_centre_activity_availability(base_centre_activity_availability_data):
+    model_data = base_centre_activity_availability_data.copy()
+    if "centre_activity_availability_id" in model_data:
+        del model_data["centre_activity_availability_id"]
+    return CentreActivityAvailability(**model_data)
+
+@pytest.fixture
+def existing_centre_activity_availabilities(base_centre_activity_availability_data_list):
+    model_data_list = base_centre_activity_availability_data_list.copy()
+    return [CentreActivityAvailability(**data) for data in model_data_list]
+
+@pytest.fixture
+def soft_deleted_centre_activity_availability(base_centre_activity_availability_data):
+    data = base_centre_activity_availability_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now()
+    })
+    return CentreActivityAvailability(**data)
+
+@pytest.fixture
+def soft_deleted_centre_activity_availabilities(base_centre_activity_availability_data_list):
+    model_data_list = base_centre_activity_availability_data_list.copy()
+    model_data_list[1].update({
+        "id": 1,
+        "is_deleted": True
+    })
+    return [CentreActivityAvailability(**data) for data in model_data_list]
+
+@pytest.fixture
+def updated_centre_activity_availability(base_centre_activity_availability_data):
+    data = base_centre_activity_availability_data.copy()
+    data.update({
+        "id": 1,
+        "start_time": datetime.combine(datetime.now(), datetime.strptime('13:30:00', '%H:%M:%S').time()),
+        "end_time": datetime.combine(datetime.now(), datetime.strptime('14:00:00', '%H:%M:%S').time()), 
+        "modified_date": datetime.now(),
+        "modified_by_id": "Test User 2"
+    })
+    return CentreActivityAvailability(**data)

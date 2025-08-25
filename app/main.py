@@ -17,9 +17,11 @@ from app.models import(
     centre_activity_preference_model,
     centre_activity_recommendation_model,
     adhoc_model,
+    centre_activity_availability_model,
 )
 
 from app.routers import(
+    auth_router,
     centre_activity_exclusion_router,
     centre_activity_router,
     activity_router,
@@ -27,7 +29,7 @@ from app.routers import(
     centre_activity_preference_router,
     centre_activity_recommendation_router,
     adhoc_router,
-    auth_router,
+    centre_activity_availability_router,
 )
 
 API_VERSION_PREFIX = "/api/v1"
@@ -49,7 +51,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     os.getenv("WEB_FE_ORIGIN"),
-    os.getenv("PATIENT_BE_ORIGIN"),
+    os.getenv("PATIENT_BE_ORIGIN")
 ]
 
 app.add_middleware(
@@ -97,6 +99,7 @@ routers = [
     (centre_activity_recommendation_router.router, f"{API_VERSION_PREFIX}/centre_activity_recommendations", ["Centre Activity Recommendations"]),
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
     (centre_activity_exclusion_router.router, f"{API_VERSION_PREFIX}/centre_activity_exclusions", ["Centre Activity Exclusions"]),
+    (centre_activity_availability_router.router, f"{API_VERSION_PREFIX}/centre_activity_availabilities", ["Centre Activity Availabilities"]),
 ]
 
 # Add auth router separately (without API version prefix for OAuth2 compatibility)
