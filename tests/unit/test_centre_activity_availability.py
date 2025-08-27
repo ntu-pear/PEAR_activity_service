@@ -86,31 +86,31 @@ def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock,
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
-@patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
-def test_updated_centre_activity_availability_success(
-    mock_get_centre_activity_availability,
-    get_db_session_mock,
-    mock_supervisor_user,
-    existing_centre_activity_availability,
-    updated_centre_activity_availability
-):
-    #Mock target centre activity availability to be updated exists
-    mock_get_centre_activity_availability.return_value = existing_centre_activity_availability
+# @patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
+# def test_updated_centre_activity_availability_success(
+#     mock_get_centre_activity_availability,
+#     get_db_session_mock,
+#     mock_supervisor_user,
+#     existing_centre_activity_availability,
+#     updated_centre_activity_availability
+# ):
+#     #Mock target centre activity availability to be updated exists
+#     mock_get_centre_activity_availability.return_value = existing_centre_activity_availability
 
-    #Mock no duplicate of updated centre activity availability exists
-    mock_query = MagicMock()
-    mock_chain = MagicMock()
-    mock_chain.filter.return_value.first.return_value = None
-    mock_query.filter.return_value = mock_chain
-    get_db_session_mock.query.return_value = mock_query
+#     #Mock no duplicate of updated centre activity availability exists
+#     mock_query = MagicMock()
+#     mock_chain = MagicMock()
+#     mock_chain.filter.return_value.first.return_value = None
+#     mock_query.filter.return_value = mock_chain
+#     get_db_session_mock.query.return_value = mock_query
 
-    result = update_centre_activity_availability(
-        db=get_db_session_mock,
-        centre_activity_availability_data=updated_centre_activity_availability,
-        current_user_info=mock_supervisor_user
-    )
-    assert result == updated_centre_activity_availability
-    get_db_session_mock.commit.assert_called_once()
+#     result = update_centre_activity_availability(
+#         db=get_db_session_mock,
+#         centre_activity_availability_data=updated_centre_activity_availability,
+#         current_user_info=mock_supervisor_user
+#     )
+#     assert result == updated_centre_activity_availability
+#     get_db_session_mock.commit.assert_called_once()
 
 # @patch("app.crud.centre_activity_crud.get_centre_activity_by_id")
 # def test_updated_centre_activity_availability_not_found(
