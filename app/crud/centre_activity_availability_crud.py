@@ -101,6 +101,10 @@ def create_centre_activity_availability(
             db_centre_activity_availability.end_time = datetime.combine(monday + timedelta(days=i), extracted_end_time)
             list_db_centre_activity_availability.append(db_centre_activity_availability)
 
+        for item in list_db_centre_activity_availability:
+            _check_for_duplicate_availability(db, item)
+            _check_centre_activity_availability_validity(db, item)
+
         db.add_all(list_db_centre_activity_availability)
 
     try:

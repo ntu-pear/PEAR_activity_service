@@ -1,11 +1,12 @@
 import pytest
 from unittest.mock import MagicMock, create_autospec
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
 from app.models.centre_activity_availability_model import CentreActivityAvailability
+from app.schemas.centre_activity_availability_schema import CentreActivityAvailabilityCreate
 from app.auth.jwt_utils import JWTPayload
 
 
@@ -178,7 +179,6 @@ def soft_deleted_care_centre(base_care_centre_data):
         "modified_date": datetime.now()
     })
     return CareCentre(**data)
-
 
 #====== Activity Fixtures ======
 
@@ -445,29 +445,39 @@ def soft_deleted_centre_activity_recommendation(base_centre_activity_recommendat
 @pytest.fixture
 def base_centre_activity_availability_data_list():
     """Base data for Centre Activity Availability"""
+    today = datetime.now(timezone.utc)
+    day_of_the_week = today.isoweekday()
+    days_to_add = 0
+    if day_of_the_week == 6:
+        days_to_add = 2
+    elif day_of_the_week == 7:
+        days_to_add = 1
+    #Date is modified to prevent failed checks when test is run on a weekend day
+    modified_datetime = today + timedelta(days=days_to_add)
+
     return [
         {
-            "centre_activity_id": 1,
-            "start_time": datetime.combine(datetime.now(), datetime.strptime('9:00:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(datetime.now(), datetime.strptime('9:30:00', '%H:%M:%S').time()),
             "id": 1,
+            "centre_activity_id": 1,
+            "start_time": datetime.combine(modified_datetime, datetime.strptime("9:00:00", '%H:%M:%S').time()),
+            "end_time": datetime.combine(modified_datetime, datetime.strptime("9:30:00", '%H:%M:%S').time()),
             "is_deleted": False,
-            "created_date": datetime.now(),
+            "created_date": modified_datetime,
             "modified_date": None,
-            "created_by_id": "Test User",
+            "created_by_id": "2",
             "modified_by_id": None
         },
         {
-            "centre_activity_id": 1,
-            "start_time": datetime.combine(datetime.now(), datetime.strptime('9:30:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(datetime.now(), datetime.strptime('10:00:00', '%H:%M:%S').time()),
             "id": 2,
+            "centre_activity_id": 1,
+            "start_time": datetime.combine(modified_datetime, datetime.strptime("9:30:00", '%H:%M:%S').time()),
+            "end_time": datetime.combine(modified_datetime, datetime.strptime("10:00:00", '%H:%M:%S').time()),
             "is_deleted": False,
-            "created_date": datetime.now(),
+            "created_date": modified_datetime,
             "modified_date": None,
-            "created_by_id": "Test User",
+            "created_by_id": "2",
             "modified_by_id": None
-        },
+        }
     ]
 
 @pytest.fixture
@@ -488,17 +498,20 @@ def existing_centre_activity_availabilities(base_centre_activity_availability_da
 
 @pytest.fixture
 def soft_deleted_centre_activity_availability(base_centre_activity_availability_data):
-    data = base_centre_activity_availability_data.copy()
-    data.update({
+    model_data = base_centre_activity_availability_data.copy()
+    model_data.update({
         "id": 1,
         "is_deleted": True,
-        "modified_date": datetime.now()
+        "modified_date": datetime.now(timezone.utc)
     })
-    return CentreActivityAvailability(**data)
+    return CentreActivityAvailability(**model_data)
 
 @pytest.fixture
 def soft_deleted_centre_activity_availabilities(base_centre_activity_availability_data_list):
     model_data_list = base_centre_activity_availability_data_list.copy()
+    for model_data in model_data_list:
+        if "centre_activity_availability_id" in model_data:
+            del model_data["centre_activity_availability_id"]
     model_data_list[1].update({
         "id": 1,
         "is_deleted": True
@@ -506,13 +519,32 @@ def soft_deleted_centre_activity_availabilities(base_centre_activity_availabilit
     return [CentreActivityAvailability(**data) for data in model_data_list]
 
 @pytest.fixture
-def updated_centre_activity_availability(base_centre_activity_availability_data):
-    data = base_centre_activity_availability_data.copy()
-    data.update({
-        "id": 1,
-        "start_time": datetime.combine(datetime.now(), datetime.strptime('13:30:00', '%H:%M:%S').time()),
-        "end_time": datetime.combine(datetime.now(), datetime.strptime('14:00:00', '%H:%M:%S').time()), 
-        "modified_date": datetime.now(),
-        "modified_by_id": "Test User 2"
-    })
-    return CentreActivityAvailability(**data)
+def create_centre_activity_availability_schema(base_centre_activity_availability_data):
+    return CentreActivityAvailabilityCreate(**base_centre_activity_availability_data)
+
+
+@pytest.fixture
+def create_centre_activity_availability_schema_recurring(base_centre_activity_availability_data):
+    model_data = base_centre_activity_availability_data.copy()
+    today = datetime.now(timezone.utc)
+    day_of_the_week = today.isoweekday()
+
+    #Date is modified to prevent failed checks when test is run on a weekend day
+    if day_of_the_week in [6, 7]:
+        monday = today + timedelta(days=(8 - day_of_the_week))
+    else:
+        monday = today - timedelta(days=(day_of_the_week - 1))
+    
+    extracted_start_time = model_data["start_time"].time()
+    extracted_end_time = model_data["end_time"].time()
+    model_data_list = []
+
+    for i in range(5):
+        model_data_copy = model_data.copy()
+        model_data_copy.update({
+            "start_time" : datetime.combine(monday + timedelta(days=i), extracted_start_time),
+            "end_time" : datetime.combine(monday + timedelta(days=i), extracted_end_time)
+        })
+        model_data_list.append(model_data_copy)
+
+    return [CentreActivityAvailabilityCreate(**data) for data in model_data_list]
