@@ -97,6 +97,7 @@ def test_create_centre_activity_availability_not_recurring_success(
     mock_supervisor_user,
     create_centre_activity_availability_schema,
     existing_centre_activity,
+    existing_care_centre
 ):
     #Mock no duplicate record found
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
@@ -105,34 +106,7 @@ def test_create_centre_activity_availability_not_recurring_success(
     mock_get_centre_activity.return_value = existing_centre_activity
 
     #Mock care centre response
-    mock_get_care_centre = MagicMock()
-    mock_get_care_centre = SimpleNamespace(
-        id=1,
-        is_deleted=False,
-        name="Test Care Centre",
-        country_code="SGP",
-        address="123 Test St",
-        postal_code="123456",
-        contact_no="6512345678",
-        email="test@gmail.com",
-        no_of_devices_avail=10,
-        working_hours = {
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        },
-        remarks="Test remarks",
-        created_by_id="1",
-        created_date=datetime.now(),
-        modified_by_id=None,
-        modified_date=None,
-    )
-
-    mock_get_care_centre_by_id.return_value = mock_get_care_centre
+    mock_get_care_centre_by_id.return_value = existing_care_centre
     
     result = create_centre_activity_availability(
         db=get_db_session_mock,
@@ -153,8 +127,9 @@ def test_create_centre_activity_availability_recurring_success(
     get_db_session_mock,
     mock_supervisor_user,
     create_centre_activity_availability_schema,
+    create_centre_activity_availability_schema_recurring,
     existing_centre_activity,
-    create_centre_activity_availability_schema_recurring
+    existing_care_centre
 ):
     #Mock no duplicate record found
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
@@ -163,34 +138,7 @@ def test_create_centre_activity_availability_recurring_success(
     mock_get_centre_activity.return_value = existing_centre_activity
 
     #Mock care centre response
-    mock_get_care_centre = MagicMock()
-    mock_get_care_centre = SimpleNamespace(
-        id=1,
-        is_deleted=False,
-        name="Test Care Centre",
-        country_code="SGP",
-        address="123 Test St",
-        postal_code="123456",
-        contact_no="6512345678",
-        email="test@gmail.com",
-        no_of_devices_avail=10,
-        working_hours = {
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        },
-        remarks="Test remarks",
-        created_by_id="1",
-        created_date=datetime.now(),
-        modified_by_id=None,
-        modified_date=None,
-    )
-
-    mock_get_care_centre_by_id.return_value = mock_get_care_centre
+    mock_get_care_centre_by_id.return_value = existing_care_centre
     
     result = create_centre_activity_availability(
         db=get_db_session_mock,
@@ -208,8 +156,8 @@ def test_create_centre_activity_availability_recurring_success(
 def test_create_centre_activity_availability_duplicate_found(
     get_db_session_mock,
     mock_supervisor_user,
-    existing_centre_activity_availability,
-    create_centre_activity_availability_schema
+    create_centre_activity_availability_schema,
+    existing_centre_activity_availability
 ):
     #Mock duplicate record found
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = existing_centre_activity_availability
@@ -231,9 +179,10 @@ def test_create_centre_activity_availability_invalid_date(
     mock_get_centre_activity,
     mock_get_care_centre_by_id,
     get_db_session_mock,
-    existing_centre_activity,
+    mock_supervisor_user,
     create_centre_activity_availability_schema_invalid,
-    mock_supervisor_user
+    existing_centre_activity,
+    existing_care_centre
 ):
     #Mock no duplicate record found
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
@@ -242,34 +191,7 @@ def test_create_centre_activity_availability_invalid_date(
     mock_get_centre_activity.return_value = existing_centre_activity
     
     #Mock care centre response
-    mock_get_care_centre = MagicMock()
-    mock_get_care_centre = SimpleNamespace(
-        id=1,
-        is_deleted=False,
-        name="Test Care Centre",
-        country_code="SGP",
-        address="123 Test St",
-        postal_code="123456",
-        contact_no="6512345678",
-        email="test@gmail.com",
-        no_of_devices_avail=10,
-        working_hours = {
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        },
-        remarks="Test remarks",
-        created_by_id="1",
-        created_date=datetime.now(),
-        modified_by_id=None,
-        modified_date=None,
-    )
-
-    mock_get_care_centre_by_id.return_value = mock_get_care_centre
+    mock_get_care_centre_by_id.return_value = existing_care_centre
     
     with pytest.raises(HTTPException) as exc_info:
         create_centre_activity_availability(
@@ -290,7 +212,8 @@ def test_update_centre_activity_availability_success(
     mock_supervisor_user,
     update_centre_activity_availability_schema,
     existing_centre_activity_availability,
-    existing_centre_activity
+    existing_centre_activity,
+    existing_care_centre
 ):
     #Mock centre activity availability record found
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
@@ -302,34 +225,7 @@ def test_update_centre_activity_availability_success(
     mock_get_centre_activity.return_value = existing_centre_activity
     
     #Mock care centre response
-    mock_get_care_centre = MagicMock()
-    mock_get_care_centre = SimpleNamespace(
-        id=1,
-        is_deleted=False,
-        name="Test Care Centre",
-        country_code="SGP",
-        address="123 Test St",
-        postal_code="123456",
-        contact_no="6512345678",
-        email="test@gmail.com",
-        no_of_devices_avail=10,
-        working_hours = {
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        },
-        remarks="Test remarks",
-        created_by_id="1",
-        created_date=datetime.now(),
-        modified_by_id=None,
-        modified_date=None,
-    )
-
-    mock_get_care_centre_by_id.return_value = mock_get_care_centre
+    mock_get_care_centre_by_id.return_value = existing_care_centre
 
     result = update_centre_activity_availability(
         db=get_db_session_mock,
@@ -392,7 +288,8 @@ def test_update_centre_activity_availability_invalid(
         mock_supervisor_user,
         update_centre_activity_availability_schema_invalid,
         existing_centre_activity_availability,
-        existing_centre_activity
+        existing_centre_activity,
+        existing_care_centre
     ):
 
     #Mock centre activity availability record found
@@ -405,34 +302,7 @@ def test_update_centre_activity_availability_invalid(
     mock_get_centre_activity.return_value = existing_centre_activity
     
     #Mock care centre response
-    mock_get_care_centre = MagicMock()
-    mock_get_care_centre = SimpleNamespace(
-        id=1,
-        is_deleted=False,
-        name="Test Care Centre",
-        country_code="SGP",
-        address="123 Test St",
-        postal_code="123456",
-        contact_no="6512345678",
-        email="test@gmail.com",
-        no_of_devices_avail=10,
-        working_hours = {
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        },
-        remarks="Test remarks",
-        created_by_id="1",
-        created_date=datetime.now(),
-        modified_by_id=None,
-        modified_date=None,
-    )
-
-    mock_get_care_centre_by_id.return_value = mock_get_care_centre
+    mock_get_care_centre_by_id.return_value = existing_care_centre
 
     with pytest.raises(HTTPException) as exc_info:
         update_centre_activity_availability(
@@ -476,3 +346,202 @@ def test_delete_centre_activity_availability_fail(
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
     assert "Centre Activity Availability not found or already soft deleted." in exc_info.value.detail
 
+# === Role-based Access Control Tests ===
+@patch("app.crud.centre_activity_availability_crud.create_centre_activity_availability")
+def test_create_centre_activity_availability_role_access_success(
+        mock_crud_create,
+        get_db_session_mock,
+        mock_supervisor_jwt,
+        existing_centre_activity_availability,
+        create_centre_activity_availability_schema
+    ):
+    mock_crud_create.return_value = existing_centre_activity_availability
+
+    result = router_create_centre_activity_availability(
+        payload=create_centre_activity_availability_schema,
+        db=get_db_session_mock,
+        user_and_token=(mock_supervisor_jwt, "test-token")
+    )
+
+    assert result.centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
+    assert result.created_by_id == create_centre_activity_availability_schema.created_by_id
+    assert result.start_time.replace(tzinfo=timezone.utc) == create_centre_activity_availability_schema.start_time
+    assert result.end_time.replace(tzinfo=timezone.utc) == create_centre_activity_availability_schema.end_time
+
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+def test_create_centre_activity_availability_role_access_fail(
+        get_db_session_mock,
+        mock_user_fixtures,
+        request,
+        create_centre_activity_availability_schema
+    ):
+    mock_user_roles = request.getfixturevalue(mock_user_fixtures)
+
+    with pytest.raises(HTTPException) as exc_info:
+        router_create_centre_activity_availability(
+            payload=create_centre_activity_availability_schema,
+            db=get_db_session_mock,
+            user_and_token=(mock_user_roles, "test-token")
+        )
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "You do not have permission to create a Centre Activity Availability."
+
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_availability_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
+def test_update_centre_activity_availability_role_access_success(
+        mock_get_centre_activity,
+        mock_get_care_centre_by_id,
+        get_db_session_mock,
+        mock_supervisor_jwt,
+        existing_centre_activity_availability,
+        existing_care_centre,
+        existing_centre_activity,
+        update_centre_activity_availability_schema
+    ):
+    #Mock centre activity availability record found
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+
+    #Mock no duplicate of updated centre activity availability
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    
+    #Mock centre activity exists
+    mock_get_centre_activity.return_value = existing_centre_activity
+    
+    #Mock care centre response
+    mock_get_care_centre_by_id.return_value = existing_care_centre
+    result = router_update_centre_activity_availability(
+        centre_activity_availability=update_centre_activity_availability_schema,
+        db=get_db_session_mock,
+        user_and_token=(mock_supervisor_jwt, "test-token")
+    )
+    assert result.centre_activity_id == update_centre_activity_availability_schema.centre_activity_id
+    assert result.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.start_time
+    assert result.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.end_time
+    assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
+    assert result.modified_date.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.modified_date
+
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+def test_update_centre_activity_availability_role_access_fail(
+        get_db_session_mock,
+        mock_user_fixtures,
+        request,
+        update_centre_activity_availability_schema
+    ):
+    mock_user_roles = request.getfixturevalue(mock_user_fixtures)
+
+    with pytest.raises(HTTPException) as exc_info:
+        router_update_centre_activity_availability(
+            centre_activity_availability=update_centre_activity_availability_schema,
+            db=get_db_session_mock,
+            user_and_token=(mock_user_roles, "test-token")
+        )
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "You do not have permission to update a Centre Activity Availability."
+
+@patch("app.crud.centre_activity_availability_crud.delete_centre_activity_availability")
+def test_delete_centre_activity_availability_role_access_success(
+        mock_crud_delete,
+        get_db_session_mock,
+        mock_supervisor_jwt,
+        existing_centre_activity_availability
+    ):
+
+    mock_crud_delete.return_value = existing_centre_activity_availability
+
+    result = router_delete_centre_activity_availability(
+        centre_activity_availability_id=1,
+        db=get_db_session_mock,
+        user_and_token=(mock_supervisor_jwt, "test-token")
+    )
+    assert result == existing_centre_activity_availability
+
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+def test_delete_centre_activity_availability_role_access_fail(
+        get_db_session_mock,
+        mock_user_fixtures,
+        request
+    ):
+    mock_user_roles = request.getfixturevalue(mock_user_fixtures)
+
+    with pytest.raises(HTTPException) as exc_info:
+        router_delete_centre_activity_availability(
+            centre_activity_availability_id=1,
+            db=get_db_session_mock,
+            user_and_token=(mock_user_roles, "test-token")
+        )
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "You do not have permission to delete a Centre Activity Availability."
+
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_availability_by_id")
+def test_get_centre_activity_availability_by_id_role_access_success(
+        mock_crud_get,
+        get_db_session_mock,
+        mock_supervisor_jwt,
+        existing_centre_activity_availability
+    ):
+    mock_crud_get.return_value = existing_centre_activity_availability
+
+    result = router_get_centre_activity_availability_by_id(
+        centre_activity_availability_id=1,
+        db=get_db_session_mock,
+        current_user=mock_supervisor_jwt
+    )
+    assert result == existing_centre_activity_availability
+    assert result.id == 1
+
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+def test_get_centre_activity_availability_by_id_role_access_fail(
+        get_db_session_mock,
+        mock_user_fixtures,
+        request    
+    ):
+    mock_user_roles = request.getfixturevalue(mock_user_fixtures)
+
+    with pytest.raises(HTTPException) as exc_info:
+        router_get_centre_activity_availability_by_id(
+            centre_activity_availability_id=1,
+            db=get_db_session_mock,
+            current_user=mock_user_roles
+        )
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "You do not have permission to view a Centre Activity Availability."
+
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_availabilities")
+def test_get_centre_activity_availabilities_role_access_success(
+        mock_crud_get,
+        get_db_session_mock,
+        mock_supervisor_jwt,
+        existing_centre_activity_availabilities
+    ):
+
+    mock_crud_get.return_value = existing_centre_activity_availabilities
+
+    result = router_get_all_centre_activity_availabilities(
+        db=get_db_session_mock,
+        current_user=mock_supervisor_jwt
+    )
+    for actual_data, expected_data in zip(result, existing_centre_activity_availabilities):
+            assert actual_data.id == expected_data.id
+            assert actual_data.centre_activity_id == expected_data.centre_activity_id
+            assert actual_data.is_deleted == expected_data.is_deleted
+            assert actual_data.start_time == expected_data.start_time
+            assert actual_data.end_time == expected_data.end_time
+            assert actual_data.created_by_id == expected_data.created_by_id
+            assert actual_data.modified_by_id == expected_data.modified_by_id
+
+@pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
+def test_get_centre_activity_availabilities_role_access_fail(
+        get_db_session_mock,
+        mock_user_fixtures,
+        request    
+    ):
+    mock_user_roles = request.getfixturevalue(mock_user_fixtures)
+
+    with pytest.raises(HTTPException) as exc_info:
+        router_get_all_centre_activity_availabilities(
+             db=get_db_session_mock,
+            current_user=mock_user_roles
+        )
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert exc_info.value.detail == "You do not have permission to view Centre Activity Availabilities."
