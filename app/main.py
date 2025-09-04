@@ -8,6 +8,7 @@ from .database import engine, Base
 
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from app.services.background_processor import outbox_lifespan
 
 from app.models import(
     activity_model,
@@ -17,6 +18,7 @@ from app.models import(
     centre_activity_preference_model,
     centre_activity_recommendation_model,
     adhoc_model,
+    outbox_model
 )
 
 from app.routers import(
@@ -28,7 +30,10 @@ from app.routers import(
     centre_activity_recommendation_router,
     adhoc_router,
     auth_router,
+    outbox_router
 )
+
+
 
 API_VERSION_PREFIX = "/api/v1"
 
@@ -41,6 +46,7 @@ app = FastAPI(
     description="This is the Activity service api docs",
     version="1.0.0",
     servers=[],
+    lifespan=outbox_lifespan,  # attach outbox poller when the app starts
 )
 
 origins = [
@@ -87,7 +93,6 @@ try:
 except Exception as db_init_error:
     logger.error(f"Failed to initialize database: {str(db_init_error)}", exc_info=True)
 
-
 # Include routers
 routers = [
     (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
@@ -101,6 +106,9 @@ routers = [
 
 # Add auth router separately (without API version prefix for OAuth2 compatibility)
 app.include_router(auth_router.router, tags=["Authentication"])
+
+# Add outbox router
+app.include_router(outbox_router.router)
 
 for router, prefix, tags, in routers:
     app.include_router(router, prefix=prefix, tags=tags)
