@@ -66,7 +66,11 @@ def create_adhoc(
     
     # validate patient
     try:
-        get_patient_by_id(require_auth=False, bearer_token="", patient_id=adhoc_data.patient_id)
+        get_patient_by_id(
+            require_auth=True,
+            bearer_token=current_user_info.get("bearer_token", ""),
+            patient_id=adhoc_data.patient_id,
+        )
     except HTTPException as e:
         raise HTTPException(status_code=400, detail="Invalid Patient ID") from e
 
@@ -111,7 +115,11 @@ def update_adhoc(
 
     # validate patient
     try:
-        get_patient_by_id(require_auth=False, bearer_token="", patient_id=adhoc_data.patient_id)
+        get_patient_by_id(
+            require_auth=True,
+            bearer_token=current_user_info.get("bearer_token", ""),
+            patient_id=adhoc_data.patient_id,
+        )
     except HTTPException as e:
         raise HTTPException(status_code=400, detail="Invalid Patient ID") from e
     db_adhoc.patient_id = adhoc_data.patient_id

@@ -19,34 +19,6 @@ spec:
         image: host.minikube.internal:5000/activity_service_dev:latest  # Replace with your Docker image
         ports:
         - containerPort: 8000
-        env:
-        - name: DB_DRIVER_DEV
-          valueFrom: 
-            configMapKeyRef:
-              name: fyp-config
-              key: DB_DRIVER_DEV
-        - name: DB_SERVER_DEV
-          valueFrom: 
-            configMapKeyRef:
-              name: fyp-config
-              key: DB_SERVER_DEV
-        - name: DB_DATABASE_DEV
-          valueFrom: 
-            configMapKeyRef:
-              name: fyp-config
-              key: DB_DATABASE_DEV
-        - name: DB_DATABASE_PORT
-          valueFrom: 
-            configMapKeyRef:
-              name: fyp-config
-              key: DB_DATABASE_PORT
-        - name: DB_USERNAME_DEV
-          valueFrom: 
-            secretKeyRef:
-              name: fyp-secret
-              key: DB_USERNAME_DEV
-        - name: DB_PASSWORD_DEV
-          value: "Fyppear@3"
         volumeMounts:
         - name: log-volume
           mountPath: /app/logs  # Path inside the container
