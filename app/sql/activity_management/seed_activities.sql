@@ -5,10 +5,16 @@ BEGIN
     VALUES (0, N'lunch', N'daily lunch 12nn-1pm', NULL, NULL);
 END
 
+-- IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'dinner')
+-- BEGIN
+--     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
+--     VALUES (0, N'dinner', N'daily dinner 5pm-6pm', NULL, NULL);
+-- END
+
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'breathing exercise AM')
 BEGIN
     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
-    VALUES (0, N'breathing exercise AM', N'daily 30 minutes before lunch', NULL, NULL);
+    VALUES (0, N'breathing exercise AM', N'daily 30 minutes', NULL, NULL);
 END
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Vital check')
@@ -17,17 +23,17 @@ BEGIN
     VALUES (0, N'Vital check', N'check patient vitals daily 9am-9:30am', NULL, NULL);
 END
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test One')
-BEGIN
-    INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
-    VALUES (0, N'Routine Test One', N'Routine activity for patient Test One - Mon to Fri 1pm-130pm', NULL, NULL);
-END
+-- IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test One')
+-- BEGIN
+--     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
+--     VALUES (0, N'Routine Test One', N'Routine activity for patient Test One - Mon to Fri 1pm-130pm', NULL, NULL);
+-- END
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test Two')
-BEGIN
-    INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
-    VALUES (0, N'Routine Test Two', N'Routine activity for patient Test Two - Fri 11am-12nn', NULL, NULL);
-END
+-- IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'Routine Test Two')
+-- BEGIN
+--     INSERT INTO [dbo].[ACTIVITY] (is_deleted, title, description, created_by_id, modified_by_id)
+--     VALUES (0, N'Routine Test Two', N'Routine activity for patient Test Two - Fri 11am-12nn', NULL, NULL);
+-- END
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ACTIVITY] WHERE title = N'tablet game')
 BEGIN
