@@ -1,11 +1,43 @@
+import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
 import app.models.centre_activity_model as models
 import app.schemas.centre_activity_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
-from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
-from fastapi import HTTPException
-from typing import List, Union
-from datetime import datetime
+from app.logger.logger_utils import (
+    ActionType,
+    log_crud_action,
+    model_to_dict,
+    serialize_data,
+)
+
+from ..services.outbox_service import generate_correlation_id, get_outbox_service
+
+logger = logging.getLogger(__name__)
+
+def _centre_activity_to_dict(activity) -> Dict[str, Any]:
+    """Convert centre activity model to dictionary for messaging"""
+    try:
+        if hasattr(activity, '__dict__'):
+            activity_dict = {}
+            for key, value in activity.__dict__.items():
+                if not key.startswith('_'):
+                    # Convert datetime objects to ISO format strings
+                    if hasattr(value, 'isoformat'):
+                        activity_dict[key] = value.isoformat()
+                    else:
+                        activity_dict[key] = value
+            return activity_dict
+        else:
+            return {}
+    except Exception as e:
+        logger.error(f"Error converting activity to dict: {str(e)}")
+        return {}
+
 
 # Helper validation functions
 def _validate_activity_exists(db: Session, activity_id: int):
@@ -51,6 +83,7 @@ def create_centre_activity(
         db: Session, 
         centre_activity_data: schemas.CentreActivityCreate, 
         current_user_info: dict,
+        correlation_id: str = None
         ):
     
     # Validate dependencies and check for duplicates
@@ -61,24 +94,55 @@ def create_centre_activity(
     current_user_id = current_user_info.get("id") or centre_activity_data.created_by_id
     db_centre_activity.created_by_id = current_user_id
     db.add(db_centre_activity)
+    db.flush()  # Get the ID without committing    
     try:
+        
+        # Create outbox event in the same transaction
+        outbox_service = get_outbox_service()
+        # Generate correlation ID if not provided
+        if not correlation_id:
+            correlation_id = generate_correlation_id()
+            
+        event_payload = {
+            'event_type': 'CENTRE_ACTIVITY_CREATED',
+            'centre_activity_id': db_centre_activity.id,
+            'centre_activity_data': _centre_activity_to_dict(db_centre_activity),
+            'created_by': current_user_info.get("id"),
+            'created_by_name': current_user_info.get("fullname"),
+            'timestamp': datetime.utcnow().isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='CENTRE_ACTIVITY_CREATED',
+            aggregate_id=db_centre_activity.id,
+            payload=event_payload,
+            routing_key=f"centre.activity.created.{db_centre_activity.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_info.get("id")
+        )
+        
+        updated_data_dict = serialize_data(centre_activity_data.model_dump())
+        log_crud_action(
+            action=ActionType.CREATE,
+            user=current_user_id,
+            user_full_name=current_user_info.get("fullname"),
+            message="Created a new Centre Activity",
+            table="CENTRE_ACTIVITY",
+            entity_id=db_centre_activity.id,
+            original_data=None,
+            updated_data=updated_data_dict
+        )   
+        
         db.commit()
         db.refresh(db_centre_activity)
+        logger.info(f"Created centre activity {db_centre_activity.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating Centre Activity: {str(e)}")
     
-    updated_data_dict = serialize_data(centre_activity_data.model_dump())
-    log_crud_action(
-        action=ActionType.CREATE,
-        user=current_user_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Created a new Centre Activity",
-        table="CENTRE_ACTIVITY",
-        entity_id=db_centre_activity.id,
-        original_data=None,
-        updated_data=updated_data_dict
-    )   
     return db_centre_activity
 
 
