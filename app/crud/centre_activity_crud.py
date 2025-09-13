@@ -118,7 +118,7 @@ def create_centre_activity(
             event_type='CENTRE_ACTIVITY_CREATED',
             aggregate_id=db_centre_activity.id,
             payload=event_payload,
-            routing_key=f"centre.activity.created.{db_centre_activity.id}",
+            routing_key=f"activity.centre_activity.created.{db_centre_activity.id}",
             correlation_id=correlation_id,
             created_by=current_user_info.get("id")
         )
