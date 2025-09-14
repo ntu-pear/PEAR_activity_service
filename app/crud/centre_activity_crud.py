@@ -94,9 +94,9 @@ def create_centre_activity(
     current_user_id = current_user_info.get("id") or centre_activity_data.created_by_id
     db_centre_activity.created_by_id = current_user_id
     db.add(db_centre_activity)
-    db.flush()  # Get the ID without committing    
+    db.flush()  # Get the ID without committing
+     
     try:
-        
         # Create outbox event in the same transaction
         outbox_service = get_outbox_service()
         # Generate correlation ID if not provided
@@ -187,11 +187,11 @@ def get_centre_activities(
         .all()
     )
 
-
 def update_centre_activity(
         db: Session, 
         centre_activity_data: schemas.CentreActivityUpdate, 
         current_user_info: dict,
+        correlation_id: str = None
         ):
     
     # Check if centre activity record exists. Allow update of is_deleted back to False.
@@ -215,10 +215,40 @@ def update_centre_activity(
             setattr(db_centre_activity, field, getattr(centre_activity_data, field))
     db_centre_activity.modified_by_id = modified_by_id
     db_centre_activity.modified_date = datetime.now()
-
+    db.flush()
+    
     try:
+        # Create outbox event in the same transaction
+        outbox_service = get_outbox_service()
+        # Generate correlation ID if not provided
+        if not correlation_id:
+            correlation_id = generate_correlation_id()
+            
+        event_payload = {
+            'event_type': 'CENTRE_ACTIVITY_UPDATED',
+            'centre_activity_id': db_centre_activity.id,
+            'original_centre_activity_data': original_data_dict,
+            'new_centre_activity_data': updated_data_dict,
+            'modified_by': db_centre_activity.modified_by_id,
+            'modified_by_name': current_user_info.get("fullname"),
+            'modified_date': db_centre_activity.modified_date.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='CENTRE_ACTIVITY_UPDATED',
+            aggregate_id=db_centre_activity.id,
+            payload=event_payload,
+            routing_key=f"activity.centre_activity.updated.{db_centre_activity.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_info.get("id")
+        )
+        
         db.commit()
         db.refresh(db_centre_activity)
+        logger.info(f"Updated centre activity {db_centre_activity.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating Centre Activity: {str(e)}")
@@ -238,7 +268,8 @@ def update_centre_activity(
 def delete_centre_activity(
         db: Session, 
         centre_activity_id: int, 
-        current_user_info: dict
+        current_user_info: dict,
+        correlation_id: str = None
         ):
     
     # Check if centre activity record is already deleted
@@ -254,10 +285,40 @@ def delete_centre_activity(
     db_centre_activity.is_deleted = True
     db_centre_activity.modified_by_id = modified_by_id        
     db_centre_activity.modified_date = datetime.now()
+    db.flush()
     
     try:
+         # Create outbox event in the same transaction
+        outbox_service = get_outbox_service()
+        # Generate correlation ID if not provided
+        if not correlation_id:
+            correlation_id = generate_correlation_id()
+            
+        event_payload = {
+            'event_type': 'CENTRE_ACTIVITY_DELETED',
+            'centre_activity_id': db_centre_activity.id,
+            'centre_activity_data': _centre_activity_to_dict(db_centre_activity),
+            'modified_by': db_centre_activity.modified_by_id,
+            'modified_date' : db_centre_activity.modified_date.isoformat(),
+            'modified_by_name': current_user_info.get("fullname"),
+            'timestamp': datetime.utcnow().isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='CENTRE_ACTIVITY_DELETED',
+            aggregate_id=db_centre_activity.id,
+            payload=event_payload,
+            routing_key=f"activity.centre_activity.deleted.{db_centre_activity.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_info.get("id")
+        )
+        
         db.commit()
         db.refresh(db_centre_activity)
+        logger.info(f"Deleted centre activity {db_centre_activity.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting Centre Activity: {str(e)}")
