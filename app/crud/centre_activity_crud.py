@@ -288,7 +288,7 @@ def delete_centre_activity(
     db.flush()
     
     try:
-         # Create outbox event in the same transaction
+        # Create outbox event in the same transaction
         outbox_service = get_outbox_service()
         # Generate correlation ID if not provided
         if not correlation_id:
