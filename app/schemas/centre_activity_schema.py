@@ -9,7 +9,7 @@ class CentreActivityBase(BaseModel):
     is_group: bool = Field(..., description="Is group activity")
 
     start_date: date = Field(..., description="Start date of the activity")
-    end_date: Optional[date] = Field(None, description="End date of the activity. Nullable if till indefinite.")
+    end_date: date = Field(..., description="End date of the activity. If indefinite, use a far in the future date (i.e Year 2999).")
 
     min_duration: int = Field(30, description="Minimum duration in minutes", ge=30, le=60)
     max_duration: int = Field(30, description="Maximum duration in minutes", ge=30, le=60)
@@ -38,14 +38,18 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Fixed duration activities must have the same minimum and maximum duration.")
         if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
-        if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
-            raise ValueError("Duration must be either 30 or 60 minutes.")
+        if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
+            raise ValueError("Duration must be 60 minutes.")
         if start_date and start_date < datetime.now(timezone.utc).date():
             raise ValueError("Start date cannot be in the past.")
         if end_date and end_date < self.start_date:
             raise ValueError("End date cannot be before start date.")
-        if end_date and end_date > (datetime.now(timezone.utc) + timedelta(days=365)).date():
-            raise ValueError("End date cannot be more than 1 year in the future.")
+
+    
+        #if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
+        #    raise ValueError("Duration must be either 30 or 60 minutes.")
+        #if end_date and end_date > (datetime.now(timezone.utc) + timedelta(days=365)).date():
+        #    raise ValueError("End date cannot be more than 1 year in the future.")
         return self
 
 class CentreActivityCreate(ValidatedCentreActivity):

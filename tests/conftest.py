@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, create_autospec
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
@@ -209,9 +209,9 @@ def base_centre_activity_data_list():
             "is_compulsory": True,
             "is_fixed": False,
             "is_group": False,
-            "start_date": datetime.now().date(),
-            "end_date": None,
-            "min_duration": 30,
+            "start_date": date.today(),
+            "end_date": date(2999, 1, 1),
+            "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 1,
             "created_by_id": "1",
@@ -226,8 +226,8 @@ def base_centre_activity_data_list():
             "is_compulsory": True,
             "is_fixed": True,
             "is_group": True,
-            "start_date": datetime.now().date(),
-            "end_date": None,
+            "start_date": date.today(),
+            "end_date": date(2999, 1, 1),
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 4,
