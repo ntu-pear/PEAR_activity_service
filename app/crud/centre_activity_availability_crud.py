@@ -66,11 +66,11 @@ def _check_centre_activity_availability_validity(
                 detail = {
                     "message": f"Centre Activity Availability selected duration must be the fixed duration of {centre_activity.max_duration} minutes."
                 })
-        elif not centre_activity.is_fixed and selected_availability_duration < centre_activity.min_duration:
-            raise HTTPException(status_code=400,
-                detail = {
-                    "message": f"Centre Activity Availability selected duration cannot be less than the minimum duration of {centre_activity.min_duration} minutes."
-                })
+        #elif not centre_activity.is_fixed and selected_availability_duration < centre_activity.min_duration:
+        #    raise HTTPException(status_code=400,
+        #        detail = {
+        #            "message": f"Centre Activity Availability selected duration cannot be less than the minimum duration of {centre_activity.min_duration} minutes."
+        #        })
 
 def create_centre_activity_availability(
         db:Session,

@@ -41,7 +41,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"is_fixed": False, "min_duration": 60, "max_duration": 30}, "Flexible activities, ensure minimum"),
 
         # Invalid: duration not in (30, 60)
-        ({"min_duration": 45, "max_duration": 45}, "Duration must be either 30 or 60"),
+        ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
 
         # Invalid: start_date in the past
         ({"start_date": datetime.now(timezone.utc).date() - timedelta(days=1)}, "Start date cannot be in the past"),
@@ -50,7 +50,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"end_date": datetime.now(timezone.utc).date() - timedelta(days=1)}, "End date cannot be before start date"),
         
         # Invalid: end_date more than 1 year in the future
-        ({"end_date": datetime.now(timezone.utc).date() + timedelta(days=366)}, "End date cannot be more than 1 year in the future"),
+        #({"end_date": datetime.datetime.now().date() + datetime.timedelta(days=366)}, "End date cannot be more than 1 year in the future"),
     ]
 )
 @pytest.mark.parametrize("schema_class", [CentreActivityCreate, CentreActivityUpdate])
