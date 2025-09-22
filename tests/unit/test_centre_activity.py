@@ -35,12 +35,9 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"is_group": True, "min_people_req": 1}, "Group activities must have a minimum of 2"),
 
         # Invalid: fixed but min != max
-        ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same"),
+        ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same minimum and maximum duration."),
 
-        # Invalid: flexible but min > max
-        ({"is_fixed": False, "min_duration": 60, "max_duration": 30}, "Flexible activities, ensure minimum"),
-
-        # Invalid: duration not in (30, 60)
+        # Invalid: duration not 60
         ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
 
         # Invalid: start_date in the past
@@ -49,6 +46,9 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         # Invalid: end_date before start_date
         ({"end_date": datetime.now(timezone.utc).date() - timedelta(days=1)}, "End date cannot be before start date"),
         
+        # Commented out these checks due to update of min/max = 60.
+        # Invalid: flexible but min > max
+        #({"is_fixed": False, "min_duration": 60, "max_duration": 30}, "Flexible activities, ensure minimum is greater than maximum"),
         # Invalid: end_date more than 1 year in the future
         #({"end_date": datetime.datetime.now().date() + datetime.timedelta(days=366)}, "End date cannot be more than 1 year in the future"),
     ]

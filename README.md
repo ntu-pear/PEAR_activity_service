@@ -37,7 +37,7 @@ conda activate pear_activity_service
 Python
 ```bash
 python -m venv pear_activity_service
-pear_activity_service/Scripts/activate #for windows
+pear_activity_service\Scripts\activate #for windows (check the slashes '/' vs '\')
 # source pear_activity_service/bin/activate for linux
 ```
 ### Install the required dependencies
