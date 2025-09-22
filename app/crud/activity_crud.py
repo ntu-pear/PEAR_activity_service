@@ -5,7 +5,6 @@ from datetime import datetime
 import logging
 
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
-from ..messaging import get_activity_publisher
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 
 import app.models.activity_model as models
