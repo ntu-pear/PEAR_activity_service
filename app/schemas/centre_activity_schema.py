@@ -11,8 +11,8 @@ class CentreActivityBase(BaseModel):
     start_date: date = Field(..., description="Start date of the activity")
     end_date: date = Field(..., description="End date of the activity. If indefinite, use a far in the future date (i.e Year 2999).")
 
-    min_duration: int = Field(30, description="Minimum duration in minutes", ge=30, le=60)
-    max_duration: int = Field(30, description="Maximum duration in minutes", ge=30, le=60)
+    min_duration: int = Field(60, description="Minimum duration in minutes")
+    max_duration: int = Field(60, description="Maximum duration in minutes")
     min_people_req: int = Field(1, description="Minimum number of people required", ge=1)
     fixed_time_slots: Optional[str] = Field(None, description="Fixed time slots if any")
 
