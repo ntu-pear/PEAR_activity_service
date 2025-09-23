@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
+      SERVICE_NAME: ${{ vars.SERVICE_NAME }}
       DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
       DB_DATABASE_DEV: ${{ secrets.DB_DATABASE_DEV }}
       DB_DATABASE_PORT: ${{ secrets.DB_DATABASE_PORT }}
