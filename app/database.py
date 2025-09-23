@@ -1,4 +1,5 @@
 import os
+import sys
 import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -7,32 +8,28 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()       
 
-#==== General Server Connection Config===
-DB_DRIVER_DEV = os.getenv("DB_DRIVER_DEV")
-if not DB_DRIVER_DEV:
-    raise ValueError("DB_DRIVER_DEV environment variable is not set.")
 
-DB_SERVER_DEV = os.getenv("DB_SERVER_DEV")
-if not DB_SERVER_DEV:
-    raise ValueError("DB_SERVER_DEV environment variable is not set.")
+#===== Service Env Var Check======
+SERVICE_NAME = os.getenv("SERVICE_NAME")
+if SERVICE_NAME != "ACTIVITY":
+    print("Please ensure you are using the correct .env file for ACTIVITY service!")
+    sys.exit(1)
 
-DB_DATABASE_PORT = os.getenv("DB_DATABASE_PORT")
-if not DB_DATABASE_PORT:
-    raise ValueError("DB_DATABASE_PORT environment variable is not set.")
 
 #====  DB Connection Config ===
-DB_DATABASE_DEV = os.getenv("DB_DATABASE_DEV")
-if not DB_DATABASE_DEV:
-    raise ValueError("DB_DATABASE_DEV environment variable is not set.")
+def get_env_var(name, required=True, service=None):
+    value = os.getenv(name)
+    if required and not value:
+        print(f"{name} environment variable is not set.")
+        sys.exit(1)
+    return value
 
-DB_USERNAME_DEV = os.getenv("DB_USERNAME_DEV")
-if not DB_USERNAME_DEV:
-    raise ValueError("DB_USERNAME_DEV environment variable is not set.")
-
-DB_PASSWORD_DEV = os.getenv("DB_PASSWORD_DEV")
-if not DB_PASSWORD_DEV:
-    raise ValueError("DB_PASSWORD_DEV environment variable is not set.")
-#====
+DB_DRIVER_DEV = get_env_var("DB_DRIVER_DEV")
+DB_SERVER_DEV = get_env_var("DB_SERVER_DEV")
+DB_DATABASE_PORT = get_env_var("DB_DATABASE_PORT")
+DB_DATABASE_DEV = get_env_var("DB_DATABASE_DEV")
+DB_USERNAME_DEV = get_env_var("DB_USERNAME_DEV")
+DB_PASSWORD_DEV = get_env_var("DB_PASSWORD_DEV")
 
 
 ##### Note that this connection is to the DEV environment ####
