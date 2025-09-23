@@ -87,11 +87,13 @@ def create_activity(
 
     try:
         # 1. Create activity object
+        timestamp = datetime.utcnow()
+        
         obj = models.Activity(**activity_in.model_dump(by_alias=True))
         obj.created_by_id = current_user_info.get("id")
         obj.modified_by_id = current_user_info.get("id")
-        obj.created_date = datetime.utcnow()
-        obj.modified_date = datetime.utcnow()
+        obj.created_date = timestamp
+        obj.modified_date = timestamp
         
         db.add(obj)
         db.flush()  # Get the ID without committing
@@ -105,7 +107,7 @@ def create_activity(
             'activity_data': _activity_to_dict(obj),
             'created_by': current_user_info.get("id"),
             'created_by_name': current_user_info.get("fullname"),
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': timestamp.isoformat(),
             'correlation_id': correlation_id
         }
         
@@ -173,8 +175,6 @@ def update_activity_by_id(
         # 2. Track changes
         changes = {}
         update_data = activity_in.model_dump(by_alias=True, exclude_unset=True)
-        update_data["modified_by_id"] = current_user_info.get("id")
-        update_data["modified_date"] = datetime.utcnow()
 
         # Track what actually changed
         for field, new_value in update_data.items():
@@ -186,14 +186,22 @@ def update_activity_by_id(
                         'new': serialize_data(new_value)
                     }
 
-        # 3. Apply updates
-        for field, value in update_data.items():
-            setattr(obj, field, value)
-
-        db.flush()
-
-        # 4. Create outbox event only if there were changes
+        # 3. Only proceed with update if there are actual changes
         if changes:
+            # Create consistent timestamp for all audit fields
+            timestamp = datetime.utcnow()
+            
+            # Add audit fields to update_data
+            update_data["modified_by_id"] = current_user_info.get("id")
+            update_data["modified_date"] = timestamp
+
+            # Apply all updates
+            for field, value in update_data.items():
+                setattr(obj, field, value)
+
+            db.flush()
+
+            # 4. Create outbox event only if there were changes
             outbox_service = get_outbox_service()
             
             event_payload = {
@@ -201,10 +209,10 @@ def update_activity_by_id(
                 'activity_id': obj.id,
                 'old_data': original_activity_dict,
                 'new_data': _activity_to_dict(obj),
-                'changes': changes,
+                'changes': changes,  # Only includes business field changes
                 'modified_by': current_user_info.get("id"),
                 'modified_by_name': current_user_info.get("fullname"),
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': timestamp.isoformat(),  # Use same timestamp as obj.modified_date
                 'correlation_id': correlation_id
             }
             
@@ -218,23 +226,22 @@ def update_activity_by_id(
                 created_by=current_user_info.get("id")
             )
 
-        # 5. Log the action
-        log_crud_action(
-            action=ActionType.UPDATE,
-            user=current_user_info.get("id"),
-            user_full_name=current_user_info.get("fullname"),
-            message="Updated an Activity",
-            table="ACTIVITY",
-            entity_id=obj.id,
-            original_data=original,
-            updated_data=serialize_data(update_data),
-        )
+            # 5. Log the action
+            log_crud_action(
+                action=ActionType.UPDATE,
+                user=current_user_info.get("id"),
+                user_full_name=current_user_info.get("fullname"),
+                message="Updated an Activity",
+                table="ACTIVITY",
+                entity_id=obj.id,
+                original_data=original,
+                updated_data=serialize_data(update_data),
+            )
 
-        # 6. Commit atomically
-        db.commit()
-        db.refresh(obj)
-        
-        if changes:
+            # 6. Commit atomically
+            db.commit()
+            db.refresh(obj)
+            
             logger.info(f"Updated activity {obj.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         else:
             logger.info(f"Updated activity {obj.id} with no changes")
@@ -272,9 +279,11 @@ def delete_activity_by_id(
         activity_dict = _activity_to_dict(obj)
 
         # 2. Perform soft delete
+        timestamp = datetime.utcnow()
+        
         obj.is_deleted = True
         obj.modified_by_id = current_user_info.get("id")
-        obj.modified_date = datetime.utcnow()
+        obj.modified_date = timestamp
         
         db.flush()
 
@@ -287,7 +296,7 @@ def delete_activity_by_id(
             'activity_data': activity_dict,
             'deleted_by': current_user_info.get("id"),
             'deleted_by_name': current_user_info.get("fullname"),
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': timestamp.isoformat(),
             'correlation_id': correlation_id
         }
         
