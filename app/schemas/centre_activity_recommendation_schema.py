@@ -6,6 +6,7 @@ class CentreActivityRecommendationBase(BaseModel):
     centre_activity_id: int = Field(..., description="ID of the Centre Activity")
     patient_id: int = Field(..., description="ID of the Patient")
     doctor_id: int = Field(..., description="ID of the Doctor")
+    doctor_recommendation: int = Field(..., description="Indicates if the recommendation is 'not recommended(-1)', 'neutral(0)', or 'recommended(1)'")
     doctor_remarks: Optional[str] = Field(None, description="Doctor's remarks for the recommendation")
 
 class CentreActivityRecommendationCreate(CentreActivityRecommendationBase):

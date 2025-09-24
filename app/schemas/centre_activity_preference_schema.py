@@ -5,7 +5,7 @@ from datetime import datetime
 class CentreActivityPreferenceBase(BaseModel):
     centre_activity_id: int = Field(..., description="ID of the Centre Activity")
     patient_id: int = Field(..., description="ID of the Patient")
-    is_like: bool = Field(..., description="Indicates if the preference is a 'like' or 'dislike'")
+    is_like: int = Field(..., description="Indicates if the preference is a 'like(1)', 'neutral(0)', or 'dislike(-1)'")
 
 class CentreActivityPreferenceCreate(CentreActivityPreferenceBase):
     created_by_id: str = Field(..., description="ID of the user who created this preference")
@@ -26,4 +26,4 @@ class CentreActivityPreferenceResponse(CentreActivityPreferenceBase):
 
     class Config:
         from_attributes = True
-        populate_by_name = True  # Optional, but good for flexibility!
+        populate_by_name = True 

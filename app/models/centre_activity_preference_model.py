@@ -10,7 +10,7 @@ class CentreActivityPreference(Base):
     centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
     patient_id = Column(Integer, nullable=False)    # Foreign key to Patient table
 
-    is_like = Column(Boolean, nullable=False, default=True)
+    is_like = Column(Integer, nullable=False, default=0)         #-1 (Dislike), 0 (Neutral), 1 (Like)
     is_deleted = Column(Boolean, nullable=False, default=False)
 
     created_date = Column(DateTime, nullable=False, default=datetime.now)

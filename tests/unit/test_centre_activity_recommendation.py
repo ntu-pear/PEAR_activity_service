@@ -64,6 +64,7 @@ def test_create_centre_activity_recommendation_success(mock_get_centre_activity,
     assert result.centre_activity_id == create_centre_activity_recommendation_schema.centre_activity_id
     assert result.patient_id == create_centre_activity_recommendation_schema.patient_id
     assert result.doctor_id == create_centre_activity_recommendation_schema.doctor_id
+    assert result.doctor_recommendation == create_centre_activity_recommendation_schema.doctor_recommendation
     assert result.doctor_remarks == create_centre_activity_recommendation_schema.doctor_remarks
     assert result.created_by_id == mock_doctor_user["id"]
     
@@ -412,6 +413,7 @@ def test_create_centre_activity_recommendation_role_access_success(mock_crud_cre
 
     assert result.centre_activity_id == create_centre_activity_recommendation_schema.centre_activity_id
     assert result.patient_id == create_centre_activity_recommendation_schema.patient_id
+    assert result.doctor_recommendation == create_centre_activity_recommendation_schema.doctor_recommendation
 
 @pytest.mark.parametrize("mock_user_fixtures", ["mock_supervisor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
 def test_create_centre_activity_recommendation_role_access_fail(get_db_session_mock, mock_user_fixtures, request, create_centre_activity_recommendation_schema):
@@ -602,6 +604,7 @@ def test_centre_activity_recommendation_create_schema_validation():
         "centre_activity_id": 1,
         "patient_id": 1,
         "doctor_id": 456,
+        "doctor_recommendation": 1,
         "doctor_remarks": "Recommended for cognitive improvement",
         "created_by_id": "456"
     }
@@ -610,6 +613,7 @@ def test_centre_activity_recommendation_create_schema_validation():
     assert schema.centre_activity_id == 1
     assert schema.patient_id == 1
     assert schema.doctor_id == 456
+    assert schema.doctor_recommendation == 1
     assert schema.doctor_remarks == "Recommended for cognitive improvement"
     assert schema.created_by_id == "456"
 
@@ -619,6 +623,7 @@ def test_centre_activity_recommendation_create_schema_validation_missing_field()
         "centre_activity_id": 1,
         "patient_id": 1,
         # Missing doctor_id
+        "doctor_recommendation": 1,
         "doctor_remarks": "Recommended for cognitive improvement",
         "created_by_id": "456"
     }
@@ -633,6 +638,7 @@ def test_centre_activity_recommendation_update_schema_validation():
         "centre_activity_id": 2,
         "patient_id": 1,
         "doctor_id": 456,
+        "doctor_recommendation": -1,
         "doctor_remarks": "Updated remarks",
         "is_deleted": False,
         "modified_by_id": "456",

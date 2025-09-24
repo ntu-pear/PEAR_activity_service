@@ -13,6 +13,7 @@ class CentreActivityRecommendation(Base):
     patient_id = Column(Integer, nullable=False)  # Foreign key to external db
     doctor_id = Column(Integer, nullable=False)  # Foreign key to external db
 
+    doctor_recommendation = Column(Integer, nullable=False)     #-1 (Not recommended), 0 (Neutral), 1 (Recommended)
     doctor_remarks = Column(String(255), nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     

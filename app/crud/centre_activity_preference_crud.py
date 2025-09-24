@@ -64,7 +64,7 @@ def _check_centre_activity_preference_duplicate(
     db: Session, 
     centre_activity_id: int, 
     patient_id: int,
-    is_like: bool,
+    is_like: int,
     exclude_id: int = None
 ):
     """Check if Centre Activity Preference with same essential fields already exists"""
