@@ -12,7 +12,11 @@ INSERT INTO CENTRE_ACTIVITY_PREFERENCE (
 SELECT 
     ca.id AS centre_activity_id,
     p.patient_id,
-    CASE WHEN (CHECKSUM(NEWID()) % 10) < 7 THEN 1 ELSE 0 END AS is_like, -- 70% like, 30% dislike
+    CASE 
+        WHEN (CHECKSUM(NEWID()) % 10) < 5 THEN 1   -- 50% like
+        WHEN (CHECKSUM(NEWID()) % 10) < 8 THEN 0   -- 30% neutral  
+        ELSE -1                                     -- 20% dislike
+    END AS is_like,
     'sql_seed_script' AS created_by_id,
     GETDATE() AS created_date,
     0 AS is_deleted
@@ -41,7 +45,11 @@ WHERE patient_id IN (1, 2, 3, 4, 5);
 -- Show breakdown by patient and preference type
 SELECT 
     patient_id,
-    CASE WHEN is_like = 1 THEN 'Likes' ELSE 'Dislikes' END AS preference_type,
+    CASE 
+        WHEN is_like = 1 THEN 'Likes' 
+        WHEN is_like = 0 THEN 'Neutral'
+        ELSE 'Dislikes' 
+    END AS preference_type,
     COUNT(*) AS count
 FROM CENTRE_ACTIVITY_PREFERENCE 
 WHERE patient_id IN (1, 2, 3, 4, 5)

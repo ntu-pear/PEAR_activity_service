@@ -8,6 +8,7 @@ INSERT INTO CENTRE_ACTIVITY_RECOMMENDATION (
     centre_activity_id,
     patient_id,
     doctor_id,
+    doctor_recommendation,
     doctor_remarks,
     created_by_id,
     created_date,
@@ -19,6 +20,11 @@ SELECT
     ca.id AS centre_activity_id,
     p.patient_id,
     d.doctor_id,
+    CASE 
+        WHEN (CHECKSUM(NEWID()) % 10) < 6 THEN 1   -- 60% recommended
+        WHEN (CHECKSUM(NEWID()) % 10) < 8 THEN 0   -- 20% neutral
+        ELSE -1                                     -- 20% not recommended
+    END AS doctor_recommendation,
     CASE 
         WHEN ca.id % 5 = 1 THEN 'Recommended for physical rehabilitation and strength building'
         WHEN ca.id % 5 = 2 THEN 'Excellent for social interaction and communication skills'
@@ -73,6 +79,7 @@ INSERT INTO CENTRE_ACTIVITY_RECOMMENDATION (
     centre_activity_id,
     patient_id,
     doctor_id,
+    doctor_recommendation,
     doctor_remarks,
     created_by_id,
     created_date,
@@ -84,6 +91,11 @@ SELECT TOP 10
     ca.id AS centre_activity_id,
     (ABS(CHECKSUM(NEWID()) % 10) + 1) AS patient_id, -- Random patient 1-10
     (ABS(CHECKSUM(NEWID()) % 5) + 1) AS doctor_id,   -- Random doctor 1-5
+    CASE 
+        WHEN (ABS(CHECKSUM(NEWID()) % 10)) < 5 THEN 1   -- 50% recommended
+        WHEN (ABS(CHECKSUM(NEWID()) % 10)) < 8 THEN 0   -- 30% neutral
+        ELSE -1                                          -- 20% not recommended
+    END AS doctor_recommendation,
     'Additional test recommendation for comprehensive testing' AS doctor_remarks,
     CONCAT('doctor_', (ABS(CHECKSUM(NEWID()) % 5) + 1)) AS created_by_id,
     DATEADD(day, -ABS(CHECKSUM(NEWID()) % 60), GETDATE()) AS created_date, -- Random date within last 60 days
@@ -150,6 +162,20 @@ FROM CENTRE_ACTIVITY_RECOMMENDATION
 WHERE created_by_id LIKE 'doctor_%'
 GROUP BY patient_id
 ORDER BY patient_id;
+
+-- Summary by recommendation type
+SELECT 
+    CASE 
+        WHEN doctor_recommendation = 1 THEN 'Recommended'
+        WHEN doctor_recommendation = 0 THEN 'Neutral'
+        WHEN doctor_recommendation = -1 THEN 'Not Recommended'
+        ELSE 'Unknown'
+    END AS recommendation_type,
+    COUNT(*) as count
+FROM CENTRE_ACTIVITY_RECOMMENDATION 
+WHERE created_by_id LIKE 'doctor_%' AND is_deleted = 0
+GROUP BY doctor_recommendation
+ORDER BY doctor_recommendation DESC;
 
 -- Summary by doctor
 SELECT 
