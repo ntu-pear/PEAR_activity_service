@@ -403,6 +403,7 @@ def test_create_centre_activity_recommendation_role_access_success(mock_crud_cre
     mock_result.centre_activity_id = create_centre_activity_recommendation_schema.centre_activity_id
     mock_result.patient_id = create_centre_activity_recommendation_schema.patient_id
     mock_result.doctor_id = create_centre_activity_recommendation_schema.doctor_id
+    mock_result.doctor_recommendation = create_centre_activity_recommendation_schema.doctor_recommendation
     mock_crud_create.return_value = mock_result
 
     result = router_create_centre_activity_recommendation(
