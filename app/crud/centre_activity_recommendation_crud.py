@@ -62,14 +62,12 @@ def _check_centre_activity_recommendation_duplicate(
     db: Session, 
     centre_activity_id: int, 
     patient_id: int, 
-    doctor_id: int, 
     exclude_id: int = None
 ):
     """Check if Centre Activity Recommendation with same essential fields already exists"""
     query = db.query(models.CentreActivityRecommendation).filter(
         models.CentreActivityRecommendation.centre_activity_id == centre_activity_id,
         models.CentreActivityRecommendation.patient_id == patient_id,
-        models.CentreActivityRecommendation.doctor_id == doctor_id,
         models.CentreActivityRecommendation.is_deleted == False
     )
     
@@ -92,12 +90,13 @@ def create_centre_activity_recommendation(
         current_user_info: dict,
         ):
 
+    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.created_by_id
+    
     # Validate all dependencies and permissions
     _check_centre_activity_recommendation_duplicate(
         db, 
         centre_activity_recommendation_data.centre_activity_id,
-        centre_activity_recommendation_data.patient_id,
-        centre_activity_recommendation_data.doctor_id
+        centre_activity_recommendation_data.patient_id
     )
     
     _validate_centre_activity_exists(db, centre_activity_recommendation_data.centre_activity_id)
@@ -106,8 +105,8 @@ def create_centre_activity_recommendation(
 
     # Create Centre Activity Recommendation
     db_centre_activity_recommendation = models.CentreActivityRecommendation(**centre_activity_recommendation_data.model_dump())
-    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.created_by_id
     db_centre_activity_recommendation.created_by_id = current_user_id
+    db_centre_activity_recommendation.doctor_id = current_user_id  # Only doctor can create recommendation
     db.add(db_centre_activity_recommendation)
     try:
         db.commit()
@@ -200,6 +199,8 @@ def update_centre_activity_recommendation(
         current_user_info: dict,
 ):
 
+    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.modified_by_id
+
     # Get existing Centre Activity Recommendation
     existing_centre_activity_recommendation = get_centre_activity_recommendation_by_id(
         db=db, 
@@ -211,7 +212,6 @@ def update_centre_activity_recommendation(
         db, 
         centre_activity_recommendation_data.centre_activity_id,
         centre_activity_recommendation_data.patient_id,
-        centre_activity_recommendation_data.doctor_id,
         exclude_id=centre_activity_recommendation_data.centre_activity_recommendation_id
     )
     
@@ -228,10 +228,9 @@ def update_centre_activity_recommendation(
         if hasattr(existing_centre_activity_recommendation, key) and value is not None:
             setattr(existing_centre_activity_recommendation, key, value)
 
-    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.modified_by_id
     existing_centre_activity_recommendation.modified_by_id = current_user_id
     existing_centre_activity_recommendation.modified_date = datetime.now()
-
+    existing_centre_activity_recommendation.doctor_id = current_user_id  # Only doctor can update recommendation
     try:
         db.commit()
         db.refresh(existing_centre_activity_recommendation)
