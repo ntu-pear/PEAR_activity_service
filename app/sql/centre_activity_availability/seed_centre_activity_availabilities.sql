@@ -96,6 +96,13 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, 1, DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('14:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('15:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 7
 
+-- Reminiscence PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('14:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('15:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 13
+
 -- Tea Break
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
@@ -110,6 +117,13 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('16:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('17:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 9
 
+-- Board Game PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('16:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @mondayDate), CAST('17:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 15
+
 
 -- Tuesday timetable
 DECLARE @tuesdayDate DATE = DATEADD(DAY, 1, CAST(@mondayDate AS DATE))
@@ -121,19 +135,26 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, 1, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('11:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('12:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 17
 
--- Art & Craft PM
+-- Sing Along PM
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('13:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('14:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
-FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 11
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 9
 
 -- Reminiscence PM
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('14:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('15:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('13:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('14:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 13
+
+-- Free & Easy
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('14:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('15:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
 
 -- Tea Break
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
@@ -142,12 +163,12 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('15:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('16:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 6
 
--- Free & Easy
+-- Tablet Game
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
     centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
 )
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('16:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @tuesdayDate), CAST('17:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
-FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 22
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 5
 
 
 -- Wednesday timetable
@@ -159,6 +180,13 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 )
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('11:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('12:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 12
+
+-- Sing Along AM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('11:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('12:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 8
 
 -- Free & Easy
 INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
@@ -188,5 +216,11 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
 SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('16:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('17:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
 FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 15
 
+-- Reminiscence PM
+INSERT INTO [dbo].[CENTRE_ACTIVITY_AVAILABILITY] (
+    centre_activity_id, is_deleted, is_fixed, start_time, end_time, created_date, modified_date, created_by_id, modified_by_id
+)
+SELECT id, 0, 0, DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('16:00:00' AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, @wednesdayDate), CAST('17:00:00' AS DATETIME)), @CreateDate, NULL, 'S85f3847c88b', NULL
+FROM [dbo].[CENTRE_ACTIVITY] WHERE activity_id = 13
 
 GO
