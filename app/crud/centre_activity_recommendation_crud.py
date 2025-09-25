@@ -1,11 +1,16 @@
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 import app.models.centre_activity_recommendation_model as models
 import app.schemas.centre_activity_recommendation_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
+from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
 from datetime import datetime
 import app.services.patient_service as patient_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Helper validation functions
 def _validate_patient_exists(patient_id: int, current_user_info: dict):
@@ -86,10 +91,30 @@ def _check_centre_activity_recommendation_duplicate(
                                 "existing_is_deleted": existing_centre_activity_recommendation.is_deleted
                             })
 
+def _recommendation_to_dict(recommendation) -> Dict[str, Any]:
+    """Convert centre activity recommendation model to dictionary for messaging"""
+    try:
+        if hasattr(recommendation, '__dict__'):
+            recommendation_dict = {}
+            for key, value in recommendation.__dict__.items():
+                if not key.startswith('_'):
+                    # Convert datetime objects to ISO format strings
+                    if hasattr(value, 'isoformat'):
+                        recommendation_dict[key] = value.isoformat()
+                    else:
+                        recommendation_dict[key] = value
+            return recommendation_dict
+        else:
+            return {}
+    except Exception as e:
+        logger.error(f"Error converting recommendation to dict: {str(e)}")
+        return {}
+
 def create_centre_activity_recommendation(
         db: Session,
         centre_activity_recommendation_data: schemas.CentreActivityRecommendationCreate,
         current_user_info: dict,
+        correlation_id: str = None
         ):
 
     # Validate all dependencies and permissions
@@ -104,31 +129,71 @@ def create_centre_activity_recommendation(
     _validate_patient_exists(centre_activity_recommendation_data.patient_id, current_user_info)
     _validate_doctor_allocation(centre_activity_recommendation_data.patient_id, current_user_info, "create")
 
-    # Create Centre Activity Recommendation
-    db_centre_activity_recommendation = models.CentreActivityRecommendation(**centre_activity_recommendation_data.model_dump())
-    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.created_by_id
-    db_centre_activity_recommendation.created_by_id = current_user_id
-    db.add(db_centre_activity_recommendation)
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
+
     try:
+        # 1. Create Centre Activity Recommendation
+        timestamp = datetime.utcnow()
+        current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.created_by_id
+        
+        db_centre_activity_recommendation = models.CentreActivityRecommendation(**centre_activity_recommendation_data.model_dump())
+        db_centre_activity_recommendation.created_by_id = current_user_id
+        db_centre_activity_recommendation.modified_by_id = current_user_id
+        db_centre_activity_recommendation.created_date = timestamp
+        db_centre_activity_recommendation.modified_date = timestamp
+        
+        db.add(db_centre_activity_recommendation)
+        db.flush()  # Get the ID without committing
+
+        # 2. Create outbox event in the same transaction
+        outbox_service = get_outbox_service()
+        
+        event_payload = {
+            'event_type': 'ACTIVITY_RECOMMENDATION_CREATED',
+            'recommendation_id': db_centre_activity_recommendation.id,
+            'recommendation_data': _recommendation_to_dict(db_centre_activity_recommendation),
+            'created_by': current_user_id,
+            'created_by_name': current_user_info.get("fullname"),
+            'timestamp': timestamp.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='ACTIVITY_RECOMMENDATION_CREATED',
+            aggregate_id=db_centre_activity_recommendation.id,
+            payload=event_payload,
+            routing_key=f"activity.recommendation.created.{db_centre_activity_recommendation.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_id
+        )
+
+        # 3. Log the action
+        updated_data_dict = serialize_data(centre_activity_recommendation_data.model_dump())
+        log_crud_action(
+            action=ActionType.CREATE,
+            user=current_user_id,
+            user_full_name=current_user_info.get("fullname"),
+            message="Created a new Centre Activity Recommendation",
+            table="CENTRE_ACTIVITY_RECOMMENDATION",
+            entity_id=db_centre_activity_recommendation.id,
+            original_data=None,
+            updated_data=updated_data_dict
+        )
+
+        # 4. Commit both recommendation and outbox event atomically
         db.commit()
         db.refresh(db_centre_activity_recommendation)
+        
+        logger.info(f"Created recommendation {db_centre_activity_recommendation.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        return db_centre_activity_recommendation
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating Centre Activity Recommendation: {str(e)}")
-    
-    updated_data_dict = serialize_data(centre_activity_recommendation_data.model_dump())
-    log_crud_action(
-        action=ActionType.CREATE,
-        user=current_user_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Created a new Centre Activity Recommendation",
-        table="CENTRE_ACTIVITY_RECOMMENDATION",
-        entity_id=db_centre_activity_recommendation.id,
-        original_data=None,
-        updated_data=updated_data_dict
-    )
-
-    return db_centre_activity_recommendation
+        logger.error(f"Failed to create centre activity recommendation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
 
 def get_centre_activity_recommendation_by_id(
@@ -198,6 +263,7 @@ def update_centre_activity_recommendation(
         db: Session,
         centre_activity_recommendation_data: schemas.CentreActivityRecommendationUpdate,
         current_user_info: dict,
+        correlation_id: str = None
 ):
 
     # Get existing Centre Activity Recommendation
@@ -219,47 +285,107 @@ def update_centre_activity_recommendation(
     _validate_patient_exists(centre_activity_recommendation_data.patient_id, current_user_info)
     _validate_doctor_allocation(centre_activity_recommendation_data.patient_id, current_user_info, "update")
 
-    # Store original data for logging
-    original_data_dict = model_to_dict(existing_centre_activity_recommendation)
-    original_data_dict = serialize_data(original_data_dict)
-
-    # Update Centre Activity Recommendation
-    for key, value in centre_activity_recommendation_data.model_dump(exclude={'centre_activity_recommendation_id'}).items():
-        if hasattr(existing_centre_activity_recommendation, key) and value is not None:
-            setattr(existing_centre_activity_recommendation, key, value)
-
-    current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.modified_by_id
-    existing_centre_activity_recommendation.modified_by_id = current_user_id
-    existing_centre_activity_recommendation.modified_date = datetime.now()
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     try:
-        db.commit()
-        db.refresh(existing_centre_activity_recommendation)
+        # 1. Capture original data
+        original_recommendation_dict = _recommendation_to_dict(existing_centre_activity_recommendation)
+        original_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
+
+        # 2. Track changes
+        changes = {}
+        update_data = centre_activity_recommendation_data.model_dump(exclude={'centre_activity_recommendation_id'}, exclude_unset=True)
+
+        # Track what actually changed
+        audit_fields = {'created_by_id', 'modified_by_id', 'created_date', 'modified_date'}
+        for field, new_value in update_data.items():
+            if field not in audit_fields and hasattr(existing_centre_activity_recommendation, field):
+                old_value = getattr(existing_centre_activity_recommendation, field)
+                if old_value != new_value:
+                    changes[field] = {
+                        'old': serialize_data(old_value),
+                        'new': serialize_data(new_value)
+                    }
+
+
+        # 3. Only proceed with update if there are actual changes
+        if changes:
+            # Create consistent timestamp for all audit fields
+            timestamp = datetime.utcnow()
+            current_user_id = current_user_info.get("id") or centre_activity_recommendation_data.modified_by_id
+
+            # Add audit fields to update_data
+            update_data["modified_by_id"] = current_user_id
+            update_data["modified_date"] = timestamp
+
+            # Apply all updates
+            for field, value in update_data.items():
+                if hasattr(existing_centre_activity_recommendation, field):
+                    setattr(existing_centre_activity_recommendation, field, value)
+
+            db.flush()
+
+            # 4. Create outbox event only if there were changes
+            outbox_service = get_outbox_service()
+            
+            event_payload = {
+                'event_type': 'ACTIVITY_RECOMMENDATION_UPDATED',
+                'recommendation_id': existing_centre_activity_recommendation.id,
+                'old_data': original_recommendation_dict,
+                'new_data': _recommendation_to_dict(existing_centre_activity_recommendation),
+                'changes': changes,  # Only includes business field changes
+                'modified_by': current_user_id,
+                'modified_by_name': current_user_info.get("fullname"),
+                'timestamp': timestamp.isoformat(),  # Use same timestamp as obj.modified_date
+                'correlation_id': correlation_id
+            }
+            
+            outbox_event = outbox_service.create_event(
+                db=db,
+                event_type='ACTIVITY_RECOMMENDATION_UPDATED',
+                aggregate_id=existing_centre_activity_recommendation.id,
+                payload=event_payload,
+                routing_key=f"activity.recommendation.updated.{existing_centre_activity_recommendation.id}",
+                correlation_id=correlation_id,
+                created_by=current_user_id
+            )
+
+            # 5. Log the action
+            updated_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
+            log_crud_action(
+                action=ActionType.UPDATE,
+                user=current_user_id,
+                user_full_name=current_user_info.get("fullname"),
+                message="Updated a Centre Activity Recommendation",
+                table="CENTRE_ACTIVITY_RECOMMENDATION",
+                entity_id=existing_centre_activity_recommendation.id,
+                original_data=original_data_dict,
+                updated_data=updated_data_dict
+            )
+
+            # 6. Commit atomically
+            db.commit()
+            db.refresh(existing_centre_activity_recommendation)
+            
+            logger.info(f"Updated recommendation {existing_centre_activity_recommendation.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        else:
+            logger.info(f"Updated recommendation {existing_centre_activity_recommendation.id} with no changes")
+
+        return existing_centre_activity_recommendation
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating Centre Activity Recommendation: {str(e)}")
-
-    updated_data_dict = model_to_dict(existing_centre_activity_recommendation)
-    updated_data_dict = serialize_data(updated_data_dict)
-
-    log_crud_action(
-        action=ActionType.UPDATE,
-        user=current_user_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Updated a Centre Activity Recommendation",
-        table="CENTRE_ACTIVITY_RECOMMENDATION",
-        entity_id=existing_centre_activity_recommendation.id,
-        original_data=original_data_dict,
-        updated_data=updated_data_dict
-    )
-
-    return existing_centre_activity_recommendation
+        logger.error(f"Failed to update centre activity recommendation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
 
 def delete_centre_activity_recommendation(
         db: Session,
         centre_activity_recommendation_id: int,
         current_user_info: dict,
+        correlation_id: str = None
 ):
     # Get existing Centre Activity Recommendation
     existing_centre_activity_recommendation = get_centre_activity_recommendation_by_id(
@@ -271,35 +397,69 @@ def delete_centre_activity_recommendation(
     _validate_patient_exists(existing_centre_activity_recommendation.patient_id, current_user_info)
     _validate_doctor_allocation(existing_centre_activity_recommendation.patient_id, current_user_info, "delete")
 
-    # Store original data for logging
-    original_data_dict = model_to_dict(existing_centre_activity_recommendation)
-    original_data_dict = serialize_data(original_data_dict)
-
-    # Soft delete
-    existing_centre_activity_recommendation.is_deleted = True
-    current_user_id = current_user_info.get("id")
-    existing_centre_activity_recommendation.modified_by_id = current_user_id
-    existing_centre_activity_recommendation.modified_date = datetime.now()
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     try:
+        # 1. Capture original data
+        recommendation_dict = _recommendation_to_dict(existing_centre_activity_recommendation)
+        original_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
+
+        # 2. Perform soft delete
+        timestamp = datetime.utcnow()
+        current_user_id = current_user_info.get("id")
+        
+        existing_centre_activity_recommendation.is_deleted = True
+        existing_centre_activity_recommendation.modified_by_id = current_user_id
+        existing_centre_activity_recommendation.modified_date = timestamp
+        
+        db.flush()
+
+        # 3. Create outbox event
+        outbox_service = get_outbox_service()
+        
+        event_payload = {
+            'event_type': 'ACTIVITY_RECOMMENDATION_DELETED',
+            'recommendation_id': existing_centre_activity_recommendation.id,
+            'recommendation_data': recommendation_dict,
+            'deleted_by': current_user_id,
+            'deleted_by_name': current_user_info.get("fullname"),
+            'timestamp': timestamp.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='ACTIVITY_RECOMMENDATION_DELETED',
+            aggregate_id=existing_centre_activity_recommendation.id,
+            payload=event_payload,
+            routing_key=f"activity.recommendation.deleted.{existing_centre_activity_recommendation.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_id
+        )
+
+        # 4. Log the action
+        updated_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
+        log_crud_action(
+            action=ActionType.DELETE,
+            user=current_user_id,
+            user_full_name=current_user_info.get("fullname"),
+            message="Deleted a Centre Activity Recommendation",
+            table="CENTRE_ACTIVITY_RECOMMENDATION",
+            entity_id=existing_centre_activity_recommendation.id,
+            original_data=original_data_dict,
+            updated_data=updated_data_dict
+        )
+
+        # 5. Commit atomically
         db.commit()
         db.refresh(existing_centre_activity_recommendation)
+        
+        logger.info(f"Deleted recommendation {existing_centre_activity_recommendation.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        return existing_centre_activity_recommendation
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting Centre Activity Recommendation: {str(e)}")
-
-    updated_data_dict = model_to_dict(existing_centre_activity_recommendation)
-    updated_data_dict = serialize_data(updated_data_dict)
-
-    log_crud_action(
-        action=ActionType.DELETE,
-        user=current_user_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Deleted a Centre Activity Recommendation",
-        table="CENTRE_ACTIVITY_RECOMMENDATION",
-        entity_id=existing_centre_activity_recommendation.id,
-        original_data=original_data_dict,
-        updated_data=updated_data_dict
-    )
-
-    return existing_centre_activity_recommendation
+        logger.error(f"Failed to delete centre activity recommendation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")

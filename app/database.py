@@ -84,3 +84,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_database_url():
+    return connection_url

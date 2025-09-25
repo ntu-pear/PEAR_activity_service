@@ -17,7 +17,7 @@ class CentreActivityRecommendation(Base):
     doctor_remarks = Column(String(255), nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     
-    created_date = Column(DateTime, nullable=False, default=datetime.now())
+    created_date = Column(DateTime, nullable=False, default=datetime.now)
     modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.utcnow)
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)

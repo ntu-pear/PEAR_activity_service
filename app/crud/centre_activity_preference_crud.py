@@ -1,11 +1,16 @@
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 import app.models.centre_activity_preference_model as models
 import app.schemas.centre_activity_preference_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
+from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
-from datetime import datetime, time
+from datetime import datetime
 import app.services.patient_service as patient_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Helper validation functions
 def _validate_patient_exists(patient_id: int, current_user_info: dict):
@@ -88,10 +93,30 @@ def _check_centre_activity_preference_duplicate(
                                 "existing_is_deleted": existing_centre_activity_preference.is_deleted
                             })
 
+def _preference_to_dict(preference) -> Dict[str, Any]:
+    """Convert centre activity preference model to dictionary for messaging"""
+    try:
+        if hasattr(preference, '__dict__'):
+            preference_dict = {}
+            for key, value in preference.__dict__.items():
+                if not key.startswith('_'):
+                    # Convert datetime objects to ISO format strings
+                    if hasattr(value, 'isoformat'):
+                        preference_dict[key] = value.isoformat()
+                    else:
+                        preference_dict[key] = value
+            return preference_dict
+        else:
+            return {}
+    except Exception as e:
+        logger.error(f"Error converting preference to dict: {str(e)}")
+        return {}
+
 def create_centre_activity_preference(
         db: Session,
         centre_activity_preference_data: schemas.CentreActivityPreferenceCreate,
         current_user_info: dict,
+        correlation_id: str = None
         ):
 
     # Validate all dependencies and permissions
@@ -106,31 +131,71 @@ def create_centre_activity_preference(
     _validate_patient_exists(centre_activity_preference_data.patient_id, current_user_info)
     _validate_caregiver_supervisor_allocation(centre_activity_preference_data.patient_id, current_user_info, "create")
 
-    # Create Centre Activity Preference
-    db_centre_activity_preference = models.CentreActivityPreference(**centre_activity_preference_data.model_dump())
-    current_user_id = current_user_info.get("id") or centre_activity_preference_data.created_by_id
-    db_centre_activity_preference.created_by_id = current_user_id
-    db.add(db_centre_activity_preference)
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
+
     try:
+        # 1. Create Centre Activity Preference
+        timestamp = datetime.utcnow()
+        current_user_id = current_user_info.get("id") or centre_activity_preference_data.created_by_id
+        
+        db_centre_activity_preference = models.CentreActivityPreference(**centre_activity_preference_data.model_dump())
+        db_centre_activity_preference.created_by_id = current_user_id
+        db_centre_activity_preference.modified_by_id = current_user_id
+        db_centre_activity_preference.created_date = timestamp
+        db_centre_activity_preference.modified_date = timestamp
+        
+        db.add(db_centre_activity_preference)
+        db.flush()  # Get the ID without committing
+
+        # 2. Create outbox event in the same transaction
+        outbox_service = get_outbox_service()
+        
+        event_payload = {
+            'event_type': 'ACTIVITY_PREFERENCE_CREATED',
+            'preference_id': db_centre_activity_preference.id,
+            'preference_data': _preference_to_dict(db_centre_activity_preference),
+            'created_by': current_user_id,
+            'created_by_name': current_user_info.get("fullname"),
+            'timestamp': timestamp.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='ACTIVITY_PREFERENCE_CREATED',
+            aggregate_id=db_centre_activity_preference.id,
+            payload=event_payload,
+            routing_key=f"activity.preference.created.{db_centre_activity_preference.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_id
+        )
+
+        # 3. Log the action
+        updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
+        log_crud_action(
+            action=ActionType.CREATE,
+            user=current_user_id,
+            user_full_name=current_user_info.get("fullname"),
+            message="Created a new Centre Activity Preference",
+            table="CENTRE_ACTIVITY_PREFERENCE",
+            entity_id=db_centre_activity_preference.id,
+            original_data=None,
+            updated_data=updated_data_dict
+        )
+
+        # 4. Commit both preference and outbox event atomically
         db.commit()
         db.refresh(db_centre_activity_preference)
+        
+        logger.info(f"Created preference {db_centre_activity_preference.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        return db_centre_activity_preference
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating Centre Activity Preference: {str(e)}")
-    
-    updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
-    log_crud_action(
-        action=ActionType.CREATE,
-        user=current_user_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Created a new Centre Activity Preference",
-        table="CENTRE_ACTIVITY_PREFERENCE",
-        entity_id=db_centre_activity_preference.id,
-        original_data=None,
-        updated_data=updated_data_dict
-    )
-
-    return db_centre_activity_preference
+        logger.error(f"Failed to create centre activity preference: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
 def get_centre_activity_preference_by_id(
         db: Session, 
@@ -192,6 +257,7 @@ def update_centre_activity_preference_by_id(
         db: Session,
         centre_activity_preference_data: schemas.CentreActivityPreferenceUpdate,
         current_user_info: dict,
+        correlation_id: str = None
         ):
     
     centre_activity_preference_id = centre_activity_preference_data.centre_activity_preference_id
@@ -217,53 +283,107 @@ def update_centre_activity_preference_by_id(
         centre_activity_preference_data.is_like,
         exclude_id=centre_activity_preference_id
     )
-    
-    # Update the Centre Activity Preference
-    db_centre_activity_preference = db.query(models.CentreActivityPreference).filter(
-        models.CentreActivityPreference.id == centre_activity_preference_id,
-    ).first()
 
-    if not db_centre_activity_preference:
-        raise HTTPException(status_code=404, detail="Centre Activity Preference not found")
-    
-    original_data_dict = serialize_data(model_to_dict(db_centre_activity_preference))
-    modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
-    
-    # Update the fields of the CentreActivityPreference instance
-    for field in schemas.CentreActivityPreferenceUpdate.model_fields:
-        if field != "id" and hasattr(centre_activity_preference_data, field):
-            setattr(db_centre_activity_preference, field, getattr(centre_activity_preference_data, field))
-
-    db_centre_activity_preference.modified_by_id = modified_by_id
-    db_centre_activity_preference.modified_date = datetime.now()
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     try:
-        db.commit()
-        db.refresh(db_centre_activity_preference)
+        # 1. Capture original data
+        original_preference_dict = _preference_to_dict(existing_centre_activity_preference)
+        original_data_dict = serialize_data(model_to_dict(existing_centre_activity_preference))
+
+        # 2. Track changes
+        changes = {}
+        update_data = centre_activity_preference_data.model_dump(exclude={'centre_activity_preference_id'}, exclude_unset=True)
+
+        # Track what actually changed, ignore audit fields
+        audit_fields = {'created_by_id', 'modified_by_id', 'created_date', 'modified_date'}
+        for field, new_value in update_data.items():
+            if field not in audit_fields and hasattr(existing_centre_activity_preference, field):
+                old_value = getattr(existing_centre_activity_preference, field)
+                if old_value != new_value:
+                    changes[field] = {
+                        'old': serialize_data(old_value),
+                        'new': serialize_data(new_value)
+                    }
+
+        # 3. Only proceed with update if there are actual changes
+        if changes:
+            # Create consistent timestamp for all audit fields
+            timestamp = datetime.utcnow()
+            modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
+
+            # Add audit fields to update_data
+            update_data["modified_by_id"] = modified_by_id
+            update_data["modified_date"] = timestamp
+
+            # Apply all updates
+            for field, value in update_data.items():
+                if hasattr(existing_centre_activity_preference, field):
+                    setattr(existing_centre_activity_preference, field, value)
+
+            db.flush()
+
+            # 4. Create outbox event only if there were changes
+            outbox_service = get_outbox_service()
+            
+            event_payload = {
+                'event_type': 'ACTIVITY_PREFERENCE_UPDATED',
+                'preference_id': existing_centre_activity_preference.id,
+                'old_data': original_preference_dict,
+                'new_data': _preference_to_dict(existing_centre_activity_preference),
+                'changes': changes,  # Only includes business field changes
+                'modified_by': modified_by_id,
+                'modified_by_name': current_user_info.get("fullname"),
+                'timestamp': timestamp.isoformat(),  # Use same timestamp as obj.modified_date
+                'correlation_id': correlation_id
+            }
+            
+            outbox_event = outbox_service.create_event(
+                db=db,
+                event_type='ACTIVITY_PREFERENCE_UPDATED',
+                aggregate_id=existing_centre_activity_preference.id,
+                payload=event_payload,
+                routing_key=f"activity.preference.updated.{existing_centre_activity_preference.id}",
+                correlation_id=correlation_id,
+                created_by=modified_by_id
+            )
+
+            # 5. Log the action
+            updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
+            log_crud_action(
+                action=ActionType.UPDATE,
+                user=modified_by_id,
+                user_full_name=current_user_info.get("fullname"),
+                message="Updated Centre Activity Preference",
+                table="CENTRE_ACTIVITY_PREFERENCE",
+                entity_id=existing_centre_activity_preference.id,
+                original_data=original_data_dict,
+                updated_data=updated_data_dict
+            )
+
+            # 6. Commit atomically
+            db.commit()
+            db.refresh(existing_centre_activity_preference)
+            
+            logger.info(f"Updated preference {existing_centre_activity_preference.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        else:
+            logger.info(f"Updated preference {existing_centre_activity_preference.id} with no changes")
+
+        return existing_centre_activity_preference
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating Centre Activity Preference: {str(e)}")
-    
-    
-    updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
-    log_crud_action(
-        action=ActionType.UPDATE,
-        user=modified_by_id,
-        user_full_name=current_user_info.get("fullname"),
-        message="Updated Centre Activity Preference",
-        table="CENTRE_ACTIVITY_PREFERENCE",
-        entity_id=db_centre_activity_preference.id,
-        original_data=original_data_dict,
-        updated_data=updated_data_dict
-    )
-    
-    return db_centre_activity_preference
+        logger.error(f"Failed to update centre activity preference: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
 
 def delete_centre_activity_preference_by_id(
     centre_activity_preference_id: int,
     db: Session,
     current_user_info: dict,
+    correlation_id: str = None
 ):
     # Check if the Centre Activity Preference exists
     db_centre_activity_preference = db.query(models.CentreActivityPreference).filter(
@@ -273,28 +393,67 @@ def delete_centre_activity_preference_by_id(
 
     if not db_centre_activity_preference:
         raise HTTPException(status_code=404, detail="Centre Activity Preference not found or deleted")
-    
-    # Soft delete the Centre Activity Preference
-    db_centre_activity_preference.is_deleted = True
-    db_centre_activity_preference.modified_by_id = current_user_info.get("id")
-    db_centre_activity_preference.modified_date = datetime.now()
+
+    # Generate correlation ID if not provided
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     try:
+        # 1. Capture original data
+        preference_dict = _preference_to_dict(db_centre_activity_preference)
+
+        # 2. Perform soft delete
+        timestamp = datetime.utcnow()
+        
+        db_centre_activity_preference.is_deleted = True
+        db_centre_activity_preference.modified_by_id = current_user_info.get("id")
+        db_centre_activity_preference.modified_date = timestamp
+        
+        db.flush()
+
+        # 3. Create outbox event
+        outbox_service = get_outbox_service()
+        
+        event_payload = {
+            'event_type': 'ACTIVITY_PREFERENCE_DELETED',
+            'preference_id': db_centre_activity_preference.id,
+            'preference_data': preference_dict,
+            'deleted_by': current_user_info.get("id"),
+            'deleted_by_name': current_user_info.get("fullname"),
+            'timestamp': timestamp.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='ACTIVITY_PREFERENCE_DELETED',
+            aggregate_id=db_centre_activity_preference.id,
+            payload=event_payload,
+            routing_key=f"activity.preference.deleted.{db_centre_activity_preference.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_info.get("id")
+        )
+
+        # 4. Log the action
+        log_crud_action(
+            action=ActionType.DELETE,
+            user=current_user_info.get("id"),
+            user_full_name=current_user_info.get("fullname"),
+            message="Deleted Centre Activity Preference",
+            table="CENTRE_ACTIVITY_PREFERENCE",
+            entity_id=db_centre_activity_preference.id,
+            original_data=model_to_dict(db_centre_activity_preference),
+            updated_data=None
+        )
+
+        # 5. Commit atomically
         db.commit()
         db.refresh(db_centre_activity_preference)
+        
+        logger.info(f"Deleted preference {db_centre_activity_preference.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
+        return db_centre_activity_preference
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting Centre Activity Preference: {str(e)}")
-    
-    log_crud_action(
-        action=ActionType.DELETE,
-        user=current_user_info.get("id"),
-        user_full_name=current_user_info.get("fullname"),
-        message="Deleted Centre Activity Preference",
-        table="CENTRE_ACTIVITY_PREFERENCE",
-        entity_id=db_centre_activity_preference.id,
-        original_data=model_to_dict(db_centre_activity_preference),
-        updated_data=None
-    )
-    
-    return db_centre_activity_preference
+        logger.error(f"Failed to delete centre activity preference: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
