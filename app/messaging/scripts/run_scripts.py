@@ -17,6 +17,11 @@ def run_centre_activity_sync():
     from messaging.scripts.centre_activity_sync_script import main
     main()
 
+def run_activity_exclusion_sync():
+    """Run the activity exclusion sync script"""
+    from messaging.scripts.activity_exclusion_sync_script import main
+    main()
+
 def run_activity_preference_sync():
     """Run the activity preference sync script"""
     from messaging.scripts.activity_preference_sync_script import main
@@ -30,10 +35,11 @@ def run_activity_recommendation_sync():
 def list_scripts():
     """List available scripts"""
     print("Available scripts:")
-    print("  activity-sync               - Emit ACTIVITY_UPDATED events for existing activities")
-    print("  activity-preference-sync    - Emit PREFERENCE_UPDATED events for existing activity preferences")
-    print("  activity-recommendation-sync - Emit RECOMMENDATION_UPDATED events for existing activity recommendations")
-    print("  centre-activity-sync        - Emit CENTRE_ACTIVITY_UPDATED events for existing centre activities")
+    print("  activity-sync               - Emit ACTIVITY_CREATED events for existing activities")
+    print("  activity-exclusion-sync     - Emit ACTIVITY_EXCLUSION_CREATED events for existing activity recommendations")
+    print("  activity-preference-sync    - Emit PREFERENCE_CREATED events for existing activity preferences")
+    print("  activity-recommendation-sync - Emit RECOMMENDATION_CREATED events for existing activity recommendations")
+    print("  centre-activity-sync        - Emit CENTRE_ACTIVITY_CREATED events for existing centre activities")
     print("")
     print("Usage:")
     print("  python run_scripts.py activity-sync --help")
@@ -52,6 +58,8 @@ def main():
     
     if script_name == "activity-sync":
         run_activity_sync()
+    elif script_name == "activity-exclusion-sync":
+        run_activity_exclusion_sync()
     elif script_name == "activity-preference-sync":
         run_activity_preference_sync()
     elif script_name == "activity-recommendation-sync":
