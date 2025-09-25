@@ -17,62 +17,81 @@ INSERT INTO CENTRE_ACTIVITY_RECOMMENDATION (
     is_deleted
 )
 SELECT 
-    ca.id AS centre_activity_id,
-    p.patient_id,
-    d.doctor_id,
+    sub.centre_activity_id,
+    sub.patient_id,
+    sub.doctor_id,
+    sub.doctor_recommendation,
     CASE 
-        WHEN (CHECKSUM(NEWID()) % 10) < 6 THEN 1   -- 60% recommended
-        WHEN (CHECKSUM(NEWID()) % 10) < 8 THEN 0   -- 20% neutral
-        ELSE -1                                     -- 20% not recommended
-    END AS doctor_recommendation,
-    CASE 
-        WHEN ca.id % 5 = 1 THEN 'Recommended for physical rehabilitation and strength building'
-        WHEN ca.id % 5 = 2 THEN 'Excellent for social interaction and communication skills'
-        WHEN ca.id % 5 = 3 THEN 'Beneficial for cognitive stimulation and memory enhancement'
-        WHEN ca.id % 5 = 4 THEN 'Helps with creative expression and fine motor skills'
-        ELSE 'Good for emotional wellbeing and overall wellness'
+        WHEN sub.doctor_recommendation = 0 THEN NULL  -- No remarks for neutral
+        WHEN sub.doctor_recommendation = 1 THEN
+            CASE 
+                WHEN sub.centre_activity_id % 5 = 1 THEN 'Recommended for physical rehabilitation and strength building'
+                WHEN sub.centre_activity_id % 5 = 2 THEN 'Excellent for social interaction and communication skills'
+                WHEN sub.centre_activity_id % 5 = 3 THEN 'Beneficial for cognitive stimulation and memory enhancement'
+                WHEN sub.centre_activity_id % 5 = 4 THEN 'Helps with creative expression and fine motor skills'
+                ELSE 'Good for emotional wellbeing and overall wellness'
+            END
+        ELSE -- doctor_recommendation = -1
+            CASE 
+                WHEN sub.centre_activity_id % 5 = 1 THEN 'Not recommended due to physical limitations'
+                WHEN sub.centre_activity_id % 5 = 2 THEN 'May not be suitable for social interaction'
+                WHEN sub.centre_activity_id % 5 = 3 THEN 'Cognitive demands may be too high'
+                WHEN sub.centre_activity_id % 5 = 4 THEN 'Fine motor requirements may be challenging'
+                ELSE 'May cause stress or anxiety'
+            END
     END AS doctor_remarks,
-    CONCAT('doctor_', d.doctor_id) AS created_by_id,
+    CONCAT('doctor_', sub.doctor_id) AS created_by_id,
     DATEADD(day, -ABS(CHECKSUM(NEWID()) % 30), GETDATE()) AS created_date,
-    CONCAT('doctor_', d.doctor_id) AS modified_by_id,
+    CONCAT('doctor_', sub.doctor_id) AS modified_by_id,
     DATEADD(day, -ABS(CHECKSUM(NEWID()) % 30), GETDATE()) AS modified_date,
     0 AS is_deleted
-FROM CENTRE_ACTIVITY ca
-CROSS JOIN (
-    -- Patient IDs - adjust these based on your actual patient data
-    SELECT 1 AS patient_id
-    UNION SELECT 2
-    UNION SELECT 3
-    UNION SELECT 4
-    UNION SELECT 5
-) p
-CROSS JOIN (
-    -- Doctor IDs - adjust these based on your actual doctor data
-    SELECT 1 AS doctor_id
-    UNION SELECT 2
-) d
-WHERE ca.is_deleted = 0
-AND NOT EXISTS (
-    -- Prevent duplicates
-    SELECT 1 FROM CENTRE_ACTIVITY_RECOMMENDATION car
-    WHERE car.centre_activity_id = ca.id
-    AND car.patient_id = p.patient_id
-    AND car.doctor_id = d.doctor_id
-    AND car.is_deleted = 0
-)
--- Only create recommendations for a subset to avoid overwhelming data
-AND (
-    -- Create recommendations based on some logic
-    (p.patient_id % 3 = 0 AND d.doctor_id <= 2) OR  -- Every 3rd patient with first 2 doctors
-    (p.patient_id % 2 = 1 AND d.doctor_id IN (3, 4)) OR  -- Odd patients with doctors 3, 4
-    (p.patient_id <= 5 AND d.doctor_id = 5)  -- First 5 patients with doctor 5
-)
-AND ca.id IN (
-    -- Limit to first 5 centre activities to keep data manageable
-    SELECT TOP 5 id FROM CENTRE_ACTIVITY 
-    WHERE is_deleted = 0 
-    ORDER BY id
-);
+FROM (
+    SELECT 
+        ca.id AS centre_activity_id,
+        p.patient_id,
+        d.doctor_id,
+        CASE 
+            WHEN (ABS(CHECKSUM(NEWID())) % 10) < 6 THEN 1   -- 60% recommended
+            WHEN (ABS(CHECKSUM(NEWID())) % 10) < 8 THEN 0   -- 20% neutral
+            ELSE -1                                          -- 20% not recommended
+        END AS doctor_recommendation
+    FROM CENTRE_ACTIVITY ca
+    CROSS JOIN (
+        -- Patient IDs - adjust these based on your actual patient data
+        SELECT 1 AS patient_id
+        UNION SELECT 2
+        UNION SELECT 3
+        UNION SELECT 4
+        UNION SELECT 5
+    ) p
+    CROSS JOIN (
+        -- Doctor IDs - adjust these based on your actual doctor data
+        SELECT 1 AS doctor_id
+        UNION SELECT 2
+    ) d
+    WHERE ca.is_deleted = 0
+    AND NOT EXISTS (
+        -- Prevent duplicates
+        SELECT 1 FROM CENTRE_ACTIVITY_RECOMMENDATION car
+        WHERE car.centre_activity_id = ca.id
+        AND car.patient_id = p.patient_id
+        AND car.doctor_id = d.doctor_id
+        AND car.is_deleted = 0
+    )
+    -- Only create recommendations for a subset to avoid overwhelming data
+    AND (
+        -- Create recommendations based on some logic
+        (p.patient_id % 3 = 0 AND d.doctor_id <= 2) OR  -- Every 3rd patient with first 2 doctors
+        (p.patient_id % 2 = 1 AND d.doctor_id IN (3, 4)) OR  -- Odd patients with doctors 3, 4
+        (p.patient_id <= 5 AND d.doctor_id = 5)  -- First 5 patients with doctor 5
+    )
+    AND ca.id IN (
+        -- Limit to first 5 centre activities to keep data manageable
+        SELECT TOP 5 id FROM CENTRE_ACTIVITY 
+        WHERE is_deleted = 0 
+        ORDER BY id
+    )
+) sub;
 
 -- Insert some additional recommendations with different statuses for testing
 INSERT INTO CENTRE_ACTIVITY_RECOMMENDATION (
@@ -88,29 +107,39 @@ INSERT INTO CENTRE_ACTIVITY_RECOMMENDATION (
     is_deleted
 )
 SELECT TOP 10
-    ca.id AS centre_activity_id,
-    (ABS(CHECKSUM(NEWID()) % 10) + 1) AS patient_id, -- Random patient 1-10
-    (ABS(CHECKSUM(NEWID()) % 5) + 1) AS doctor_id,   -- Random doctor 1-5
+    sub2.centre_activity_id,
+    sub2.patient_id,
+    sub2.doctor_id,
+    sub2.doctor_recommendation,
     CASE 
-        WHEN (ABS(CHECKSUM(NEWID()) % 10)) < 5 THEN 1   -- 50% recommended
-        WHEN (ABS(CHECKSUM(NEWID()) % 10)) < 8 THEN 0   -- 30% neutral
-        ELSE -1                                          -- 20% not recommended
-    END AS doctor_recommendation,
-    'Additional test recommendation for comprehensive testing' AS doctor_remarks,
-    CONCAT('doctor_', (ABS(CHECKSUM(NEWID()) % 5) + 1)) AS created_by_id,
+        WHEN sub2.doctor_recommendation = 0 THEN NULL  -- No remarks for neutral
+        ELSE 'Additional test recommendation for comprehensive testing'
+    END AS doctor_remarks,
+    CONCAT('doctor_', sub2.doctor_id) AS created_by_id,
     DATEADD(day, -ABS(CHECKSUM(NEWID()) % 60), GETDATE()) AS created_date, -- Random date within last 60 days
-    CONCAT('doctor_', (ABS(CHECKSUM(NEWID()) % 5) + 1)) AS modified_by_id,
+    CONCAT('doctor_', sub2.doctor_id) AS modified_by_id,
     DATEADD(day, -ABS(CHECKSUM(NEWID()) % 30), GETDATE()) AS modified_date,
     0 AS is_deleted
-FROM CENTRE_ACTIVITY ca
-WHERE ca.is_deleted = 0
-AND NOT EXISTS (
-    SELECT 1 FROM CENTRE_ACTIVITY_RECOMMENDATION car
-    WHERE car.centre_activity_id = ca.id
-    AND car.patient_id = (ABS(CHECKSUM(NEWID()) % 10) + 1)
-    AND car.doctor_id = (ABS(CHECKSUM(NEWID()) % 5) + 1)
-    AND car.is_deleted = 0
-);
+FROM (
+    SELECT 
+        ca.id AS centre_activity_id,
+        (ABS(CHECKSUM(NEWID()) % 10) + 1) AS patient_id, -- Random patient 1-10
+        (ABS(CHECKSUM(NEWID()) % 5) + 1) AS doctor_id,   -- Random doctor 1-5
+        CASE 
+            WHEN (ABS(CHECKSUM(NEWID())) % 10) < 5 THEN 1   -- 50% recommended
+            WHEN (ABS(CHECKSUM(NEWID())) % 10) < 8 THEN 0   -- 30% neutral
+            ELSE -1                                          -- 20% not recommended
+        END AS doctor_recommendation
+    FROM CENTRE_ACTIVITY ca
+    WHERE ca.is_deleted = 0
+    AND NOT EXISTS (
+        SELECT 1 FROM CENTRE_ACTIVITY_RECOMMENDATION car
+        WHERE car.centre_activity_id = ca.id
+        AND car.patient_id = (ABS(CHECKSUM(NEWID()) % 10) + 1)
+        AND car.doctor_id = (ABS(CHECKSUM(NEWID()) % 5) + 1)
+        AND car.is_deleted = 0
+    )
+) sub2;
 
 -- Create some soft-deleted records for testing soft delete functionality
 UPDATE TOP (3) CENTRE_ACTIVITY_RECOMMENDATION 
