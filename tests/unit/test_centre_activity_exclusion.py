@@ -39,8 +39,8 @@ def existing_exclusion_instance(valid_exclusion_data):
         exclusion_remarks=data["exclusion_remarks"],
         start_date=data["start_date"],
         end_date=data["end_date"],
-        created_date=datetime.utcnow(),
-        modified_date=datetime.utcnow(),
+        created_date=datetime.now(),
+        modified_date=datetime.now(),
         created_by_id="user1",
         modified_by_id="user1",
     )
