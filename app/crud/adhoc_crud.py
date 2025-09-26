@@ -129,7 +129,7 @@ def update_adhoc(
     db_adhoc.end_date = adhoc_data.end_date
     db_adhoc.is_deleted = adhoc_data.is_deleted
     # stamp modification
-    db_adhoc.modified_date = adhoc_data.modified_date or datetime.utcnow()
+    db_adhoc.modified_date = adhoc_data.modified_date or datetime.now()
     db_adhoc.modified_by_id = adhoc_data.modified_by_id
 
     try:
@@ -163,7 +163,7 @@ def delete_adhoc(
 
     original = serialize_data(model_to_dict(db_adhoc))
     db_adhoc.is_deleted = True
-    db_adhoc.modified_date = datetime.utcnow()
+    db_adhoc.modified_date = datetime.now()
     db_adhoc.modified_by_id = current_user_info.get("id")
 
     try:

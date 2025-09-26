@@ -5,7 +5,6 @@ from datetime import datetime
 class CentreActivityRecommendationBase(BaseModel):
     centre_activity_id: int = Field(..., description="ID of the Centre Activity")
     patient_id: int = Field(..., description="ID of the Patient")
-    doctor_id: int = Field(..., description="ID of the Doctor")
     doctor_recommendation: int = Field(..., description="Indicates if the recommendation is 'not recommended(-1)', 'neutral(0)', or 'recommended(1)'")
     doctor_remarks: Optional[str] = Field(None, description="Doctor's remarks for the recommendation")
 
@@ -21,6 +20,7 @@ class CentreActivityRecommendationUpdate(CentreActivityRecommendationBase):
 class CentreActivityRecommendationResponse(CentreActivityRecommendationBase):
     centre_activity_recommendation_id: int = Field(..., description="ID of the Centre Activity Recommendation", alias='id')
     is_deleted: bool = Field(..., description="Is the Centre Activity Recommendation deleted")
+    doctor_id: str = Field(..., description="ID of the Doctor")
     created_date: datetime = Field(..., description="Timestamp of creation")
     modified_date: Optional[datetime] = Field(None, description="Last modification timestamp")
     created_by_id: str = Field(..., description="ID of the user who created it")

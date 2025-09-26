@@ -39,8 +39,8 @@ def existing_exclusion_instance(valid_exclusion_data):
         exclusion_remarks=data["exclusion_remarks"],
         start_date=data["start_date"],
         end_date=data["end_date"],
-        created_date=datetime.utcnow(),
-        modified_date=datetime.utcnow(),
+        created_date=datetime.now(),
+        modified_date=datetime.now(),
         created_by_id="user1",
         modified_by_id="user1",
     )
@@ -121,7 +121,7 @@ def test_create_exclusion_success(
     result = create_centre_activity_exclusion(get_db_session_mock, payload, mock_supervisor_user)
 
     assert result is fake_obj
-    get_db_session_mock.add.assert_called_once_with(fake_obj)
+    assert get_db_session_mock.add.call_count == 2 # Once for exclusion, once for Outbox record
     get_db_session_mock.commit.assert_called_once()
     get_db_session_mock.refresh.assert_called_once_with(fake_obj)
 

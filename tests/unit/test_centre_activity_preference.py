@@ -66,7 +66,8 @@ def test_create_centre_activity_preference_success(mock_get_centre_activity, moc
     assert result.is_like == create_centre_activity_preference_schema.is_like
     assert result.created_by_id == mock_caregiver_user["id"]
     
-    get_db_session_mock.add.assert_called_once()
+    get_db_session_mock.add.assert_called()  # Called twice: once for preference, once for outbox_event
+    assert get_db_session_mock.add.call_count == 2
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.services.patient_service.get_patient_allocation_by_patient_id")

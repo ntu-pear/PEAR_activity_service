@@ -63,12 +63,12 @@ def test_create_centre_activity_recommendation_success(mock_get_centre_activity,
 
     assert result.centre_activity_id == create_centre_activity_recommendation_schema.centre_activity_id
     assert result.patient_id == create_centre_activity_recommendation_schema.patient_id
-    assert result.doctor_id == create_centre_activity_recommendation_schema.doctor_id
     assert result.doctor_recommendation == create_centre_activity_recommendation_schema.doctor_recommendation
     assert result.doctor_remarks == create_centre_activity_recommendation_schema.doctor_remarks
     assert result.created_by_id == mock_doctor_user["id"]
     
-    get_db_session_mock.add.assert_called_once()
+    get_db_session_mock.add.assert_called()  # Called twice: once for recommendation, once for outbox_event
+    assert get_db_session_mock.add.call_count == 2
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.services.patient_service.get_patient_allocation_by_patient_id")
@@ -402,7 +402,6 @@ def test_create_centre_activity_recommendation_role_access_success(mock_crud_cre
     mock_result = MagicMock()
     mock_result.centre_activity_id = create_centre_activity_recommendation_schema.centre_activity_id
     mock_result.patient_id = create_centre_activity_recommendation_schema.patient_id
-    mock_result.doctor_id = create_centre_activity_recommendation_schema.doctor_id
     mock_result.doctor_recommendation = create_centre_activity_recommendation_schema.doctor_recommendation
     mock_crud_create.return_value = mock_result
 
@@ -604,7 +603,6 @@ def test_centre_activity_recommendation_create_schema_validation():
     valid_data = {
         "centre_activity_id": 1,
         "patient_id": 1,
-        "doctor_id": 456,
         "doctor_recommendation": 1,
         "doctor_remarks": "Recommended for cognitive improvement",
         "created_by_id": "456"
@@ -613,7 +611,6 @@ def test_centre_activity_recommendation_create_schema_validation():
     schema = CentreActivityRecommendationCreate(**valid_data)
     assert schema.centre_activity_id == 1
     assert schema.patient_id == 1
-    assert schema.doctor_id == 456
     assert schema.doctor_recommendation == 1
     assert schema.doctor_remarks == "Recommended for cognitive improvement"
     assert schema.created_by_id == "456"
@@ -622,8 +619,7 @@ def test_centre_activity_recommendation_create_schema_validation_missing_field()
     """Test CentreActivityRecommendationCreate schema validation with missing required field"""
     invalid_data = {
         "centre_activity_id": 1,
-        "patient_id": 1,
-        # Missing doctor_id
+        #Missing patient id
         "doctor_recommendation": 1,
         "doctor_remarks": "Recommended for cognitive improvement",
         "created_by_id": "456"
@@ -638,7 +634,6 @@ def test_centre_activity_recommendation_update_schema_validation():
         "id": 1,  # This gets aliased to centre_activity_recommendation_id
         "centre_activity_id": 2,
         "patient_id": 1,
-        "doctor_id": 456,
         "doctor_recommendation": -1,
         "doctor_remarks": "Updated remarks",
         "is_deleted": False,
