@@ -37,6 +37,11 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         # Invalid: fixed but min != max
         ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same minimum and maximum duration."),
 
+        # Invalid: fixed activity without fixed time slots
+        ({"is_fixed": True, "fixed_time_slots": ""}, "Fixed activities must have fixed time slots specified."),
+        ({"is_fixed": True, "fixed_time_slots": None}, "Fixed activities must have fixed time slots specified."),
+        ({"is_fixed": True, "fixed_time_slots": "   "}, "Fixed activities must have fixed time slots specified."),
+
         # Invalid: duration not 60
         ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
 
