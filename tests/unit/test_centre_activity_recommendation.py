@@ -67,7 +67,8 @@ def test_create_centre_activity_recommendation_success(mock_get_centre_activity,
     assert result.doctor_remarks == create_centre_activity_recommendation_schema.doctor_remarks
     assert result.created_by_id == mock_doctor_user["id"]
     
-    get_db_session_mock.add.assert_called_once()
+    get_db_session_mock.add.assert_called()  # Called twice: once for recommendation, once for outbox_event
+    assert get_db_session_mock.add.call_count == 2
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.services.patient_service.get_patient_allocation_by_patient_id")

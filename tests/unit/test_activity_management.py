@@ -31,8 +31,7 @@ def activity_data():
         title="Morning Jog",
         description="A quick run in the park",
         start_date=datetime(2025, 1, 1, 7, 0, 0),
-        end_date=datetime(2025, 1, 1, 8, 0, 0),
-        active=True,
+        end_date=datetime(2025, 1, 1, 8, 0, 0)
     )
 
 @mock.patch("app.crud.activity_crud.get_outbox_service")

@@ -89,7 +89,8 @@ def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, 
     assert result.max_duration == create_centre_activity_schema.max_duration
     assert result.min_people_req == create_centre_activity_schema.min_people_req
     
-    get_db_session_mock.add.assert_called_once()
+    get_db_session_mock.add.assert_called()  # Called twice: once for centre_activity, once for outbox_event
+    assert get_db_session_mock.add.call_count == 2
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
