@@ -38,6 +38,8 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Fixed duration activities must have the same minimum and maximum duration.")
         if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
+        if is_fixed and (self.fixed_time_slots is None or self.fixed_time_slots.strip() == ''):
+            raise ValueError("Fixed activities must have fixed time slots specified.")
         if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
             raise ValueError("Duration must be 60 minutes.")
         if start_date and start_date < datetime.now(timezone.utc).date():

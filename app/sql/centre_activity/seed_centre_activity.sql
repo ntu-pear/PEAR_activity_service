@@ -16,7 +16,7 @@ WHERE title = N'lunch'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '0-0,1-0,2-0,3-0,4-0', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 1, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'breathing exercise AM'
   AND NOT EXISTS (
@@ -27,7 +27,7 @@ WHERE title = N'breathing exercise AM'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 1, 0, '2025-07-28T09:00:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 1, 1, 0, '2025-07-28T09:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-2,1-2,2-2,3-2,4-2', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'Vital check'
   AND NOT EXISTS (
@@ -38,7 +38,7 @@ WHERE title = N'Vital check'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-4,1-4,2-4,3-4,4-4', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'Routine Test One'
   AND NOT EXISTS (
@@ -192,7 +192,7 @@ WHERE title = N'physio Mon 11am'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 0, '2025-07-29T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 0, 1, 0, '2025-07-29T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-0,1-0,2-0,3-0,4-0', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Tue 11am'
   AND NOT EXISTS (
@@ -203,7 +203,7 @@ WHERE title = N'physio Tue 11am'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 0, '2025-07-30T14:00:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 0, 1, 0, '2025-07-30T14:00:00', '2999-01-01T00:00:00', 60, 60, 1, '2-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Wed 2pm'
   AND NOT EXISTS (
@@ -214,7 +214,7 @@ WHERE title = N'physio Wed 2pm'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 0, '2025-07-31T13:30:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 0, 1, 0, '2025-07-31T13:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-4', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 130pm'
   AND NOT EXISTS (
@@ -225,7 +225,7 @@ WHERE title = N'physio Thu 130pm'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 0, '2025-07-31T14:30:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 0, 1, 0, '2025-07-31T14:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 230pm'
   AND NOT EXISTS (
@@ -236,7 +236,7 @@ WHERE title = N'physio Thu 230pm'
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 0, 1, 0, '2025-07-31T15:30:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 0, 1, 0, '2025-07-31T15:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-6', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 330pm'
   AND NOT EXISTS (
