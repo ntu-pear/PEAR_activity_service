@@ -1,70 +1,105 @@
--- This script creates random preferences for patients 1-5 across all centre activities
+-- This script creates sample centre activity preferences for testing
 
--- Insert preferences for all patient/centre_activity combinations that don't already exist
+-- Clear existing test data (optional - uncomment if you want to reset)
+-- DELETE FROM CENTRE_ACTIVITY_PREFERENCE WHERE created_by_id = 'seeding_script';
+
+-- Insert sparse sample preferences (approximately 30 records)
 INSERT INTO CENTRE_ACTIVITY_PREFERENCE (
     centre_activity_id,
     patient_id,
     is_like,
     created_by_id,
     created_date,
+    modified_by_id,
+    modified_date,
     is_deleted
 )
-SELECT 
-    ca.id AS centre_activity_id,
-    p.patient_id,
-    CASE 
-        WHEN (CHECKSUM(NEWID()) % 10) < 5 THEN 1   -- 50% like
-        WHEN (CHECKSUM(NEWID()) % 10) < 8 THEN 0   -- 30% neutral  
-        ELSE -1                                     -- 20% dislike
-    END AS is_like,
-    'sql_seed_script' AS created_by_id,
-    GETDATE() AS created_date,
-    0 AS is_deleted
-FROM CENTRE_ACTIVITY ca
-CROSS JOIN (
-    SELECT 1 AS patient_id
-    UNION SELECT 2
-    UNION SELECT 3
-    UNION SELECT 4
-    UNION SELECT 5
-) p
-WHERE ca.is_deleted = 0
-AND NOT EXISTS (
-    SELECT 1 FROM CENTRE_ACTIVITY_PREFERENCE cap
-    WHERE cap.centre_activity_id = ca.id
-    AND cap.patient_id = p.patient_id
-);
+VALUES
+-- Patient 1 preferences
+(1, 1, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(3, 1, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(5, 1, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(7, 1, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(9, 1, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(2, 1, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(4, 1, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(6, 1, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(8, 1, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(10, 1, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
 
--- Show summary
-SELECT 
-    'Total Preferences Created' AS Metric,
-    COUNT(*) AS Count
+-- Patient 2 preferences  
+(2, 2, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(4, 2, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(6, 2, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(8, 2, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(10, 2, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(1, 2, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(3, 2, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(5, 2, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(7, 2, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(9, 2, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+
+-- Patient 3 preferences
+(1, 3, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(3, 3, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(5, 3, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(7, 3, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(9, 3, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(2, 3, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(4, 3, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(6, 3, 1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(8, 3, 0, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0),
+(10, 3, -1, 'seeding_script', GETDATE(), 'seeding_script', GETDATE(), 0);
+
+PRINT 'Centre Activity Preferences seeded successfully!';
+
+-- Verification queries
+PRINT 'Total preferences created:';
+SELECT COUNT(*) as total_preferences 
 FROM CENTRE_ACTIVITY_PREFERENCE 
-WHERE patient_id IN (1, 2, 3, 4, 5);
+WHERE created_by_id = 'seeding_script';
 
--- Show breakdown by patient and preference type
+PRINT 'Active preferences:';
+SELECT COUNT(*) as active_preferences 
+FROM CENTRE_ACTIVITY_PREFERENCE 
+WHERE created_by_id = 'seeding_script' AND is_deleted = 0;
+
+-- Summary by patient
 SELECT 
     patient_id,
-    CASE 
-        WHEN is_like = 1 THEN 'Likes' 
-        WHEN is_like = 0 THEN 'Neutral'
-        ELSE 'Dislikes' 
-    END AS preference_type,
-    COUNT(*) AS count
+    COUNT(*) as total_preferences,
+    COUNT(CASE WHEN is_like = 1 THEN 1 END) as likes,
+    COUNT(CASE WHEN is_like = 0 THEN 1 END) as neutral,
+    COUNT(CASE WHEN is_like = -1 THEN 1 END) as dislikes
 FROM CENTRE_ACTIVITY_PREFERENCE 
-WHERE patient_id IN (1, 2, 3, 4, 5)
-GROUP BY patient_id, is_like
-ORDER BY patient_id, is_like DESC;
+WHERE created_by_id = 'seeding_script' AND is_deleted = 0
+GROUP BY patient_id
+ORDER BY patient_id;
 
--- Show sample of created preferences
-SELECT TOP 20
-    cap.patient_id,
+-- Summary by preference type
+SELECT 
+    CASE 
+        WHEN is_like = 1 THEN 'Likes'
+        WHEN is_like = 0 THEN 'Neutral'
+        WHEN is_like = -1 THEN 'Dislikes'
+        ELSE 'Unknown'
+    END AS preference_type,
+    COUNT(*) as count
+FROM CENTRE_ACTIVITY_PREFERENCE 
+WHERE created_by_id = 'seeding_script' AND is_deleted = 0
+GROUP BY is_like
+ORDER BY is_like DESC;
+
+-- Sample data preview
+SELECT TOP 10
     cap.centre_activity_id,
-    CASE WHEN cap.is_like = 1 THEN 'Likes' ELSE 'Dislikes' END AS preference,
+    cap.patient_id,
+    CASE 
+        WHEN cap.is_like = 1 THEN 'Likes'
+        WHEN cap.is_like = 0 THEN 'Neutral'
+        ELSE 'Dislikes'
+    END AS preference_status,
     cap.created_date
 FROM CENTRE_ACTIVITY_PREFERENCE cap
-WHERE cap.patient_id IN (1, 2, 3, 4, 5)
-AND cap.created_by_id = 'sql_seed_script'
+WHERE cap.created_by_id = 'seeding_script' AND cap.is_deleted = 0
 ORDER BY cap.patient_id, cap.centre_activity_id;
-
-PRINT 'Centre Activity Preference seeding completed successfully!';

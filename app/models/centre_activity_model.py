@@ -25,7 +25,7 @@ class CentreActivity(Base):
     fixed_time_slots = Column(String, nullable=True)
 
     created_date = Column(DateTime, nullable=False, default=datetime.now())
-    modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.utcnow)
+    modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.now)
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
 

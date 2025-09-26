@@ -71,7 +71,6 @@ def _check_centre_activity_preference_duplicate(
     query = db.query(models.CentreActivityPreference).filter(
         models.CentreActivityPreference.centre_activity_id == centre_activity_id,
         models.CentreActivityPreference.patient_id == patient_id,
-        models.CentreActivityPreference.is_like == is_like,
         models.CentreActivityPreference.is_deleted == False
     )
     
