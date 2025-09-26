@@ -232,6 +232,7 @@ def base_centre_activity_data_list():
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 4,
+            "fixed_time_slots": "0-3,1-3,2-3,3-3,4-3",
             "created_by_id": "2",
             "modified_by_id": "2",
             "created_date": datetime.now(),
