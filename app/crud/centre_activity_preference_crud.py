@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from sqlalchemy.orm import Session
 import app.models.centre_activity_preference_model as models
 import app.schemas.centre_activity_preference_schema as schemas
@@ -65,33 +65,94 @@ def _validate_centre_activity_exists(db: Session, centre_activity_id: int):
     if not existing_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found")
 
-def _check_centre_activity_preference_duplicate(
-    db: Session, 
-    centre_activity_id: int, 
-    patient_id: int,
-    is_like: int,
+def _validate_and_detect_changes(
+    db: Session,
+    centre_activity_preference_data: Union[schemas.CentreActivityPreferenceCreate, schemas.CentreActivityPreferenceUpdate],
+    db_centre_activity_preference = None,
     exclude_id: int = None
 ):
-    """Check if Centre Activity Preference with same essential fields already exists"""
-    query = db.query(models.CentreActivityPreference).filter(
-        models.CentreActivityPreference.centre_activity_id == centre_activity_id,
-        models.CentreActivityPreference.patient_id == patient_id,
-        models.CentreActivityPreference.is_like == is_like,
-        models.CentreActivityPreference.is_deleted == False
-    )
+    """
+    Universal function for duplicate validation and change detection.
+    - For CREATE: Only validates duplicates (db_centre_activity_preference=None)
+    - For UPDATE: Validates duplicates AND detects changes (db_centre_activity_preference provided)
+    Returns changes dict for updates, None for creates, raises HTTPException if duplicate.
+    """
+    # Define essential business fields
+    essential_fields = {
+        "centre_activity_id", "patient_id", "is_like"
+    }
     
-    if exclude_id is not None:
-        query = query.filter(models.CentreActivityPreference.id != exclude_id)
+    # For CREATE operations - just check duplicates
+    if db_centre_activity_preference is None:
+        query = db.query(models.CentreActivityPreference).filter(
+            models.CentreActivityPreference.centre_activity_id == centre_activity_preference_data.centre_activity_id,
+            models.CentreActivityPreference.patient_id == centre_activity_preference_data.patient_id,
+            models.CentreActivityPreference.is_deleted == False
+        )
+        
+        if exclude_id is not None:
+            query = query.filter(models.CentreActivityPreference.id != exclude_id)
+        
+        existing_centre_activity_preference = query.first()
+        
+        if existing_centre_activity_preference:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Centre Activity Preference with these attributes already exists or deleted",
+                    "existing_id": str(existing_centre_activity_preference.id),
+                    "existing_is_deleted": existing_centre_activity_preference.is_deleted
+                }
+            )
+        return None  # No changes to return for create
     
-    existing_centre_activity_preference = query.first()
+    # For UPDATE operations - detect changes AND validate duplicates
+    audit_fields = {'created_by_id', 'modified_by_id', 'created_date', 'modified_date'}
+    update_data = centre_activity_preference_data.model_dump(exclude={'centre_activity_preference_id'}, exclude_unset=True)
+    changes = {}
+    essential_field_changes = {}
     
-    if existing_centre_activity_preference:
-        raise HTTPException(status_code=400,
-                            detail={
-                                "message": "Centre Activity Preference with these attributes already exists or deleted",
-                                "existing_id": str(existing_centre_activity_preference.id),
-                                "existing_is_deleted": existing_centre_activity_preference.is_deleted
-                            })
+    # Single pass: detect all changes
+    for field, new_value in update_data.items():
+        if field not in audit_fields and hasattr(db_centre_activity_preference, field):
+            old_value = getattr(db_centre_activity_preference, field)
+            if old_value != new_value:
+                changes[field] = {
+                    'old': serialize_data(old_value),
+                    'new': serialize_data(new_value)
+                }
+                # Track essential field changes for duplicate checking
+                if field in essential_fields:
+                    essential_field_changes[field] = new_value
+    
+    # If no changes at all, return early
+    if not changes:
+        return None  # Indicates no changes detected
+    
+    # If there are essential field changes, check for duplicates
+    if essential_field_changes:
+        query = db.query(models.CentreActivityPreference).filter(
+            models.CentreActivityPreference.centre_activity_id == essential_field_changes.get('centre_activity_id', getattr(db_centre_activity_preference, 'centre_activity_id')),
+            models.CentreActivityPreference.patient_id == essential_field_changes.get('patient_id', getattr(db_centre_activity_preference, 'patient_id')),
+            models.CentreActivityPreference.is_deleted == False
+        )
+        
+        if exclude_id is not None:
+            query = query.filter(models.CentreActivityPreference.id != exclude_id)
+        
+        existing_centre_activity_preference = query.first()
+        
+        if existing_centre_activity_preference:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Centre Activity Preference with these attributes already exists or deleted",
+                    "existing_id": str(existing_centre_activity_preference.id),
+                    "existing_is_deleted": existing_centre_activity_preference.is_deleted
+                }
+            )
+    
+    return changes
 
 def _preference_to_dict(preference) -> Dict[str, Any]:
     """Convert centre activity preference model to dictionary for messaging"""
@@ -120,12 +181,7 @@ def create_centre_activity_preference(
         ):
 
     # Validate all dependencies and permissions
-    _check_centre_activity_preference_duplicate(
-        db,
-        centre_activity_preference_data.centre_activity_id,
-        centre_activity_preference_data.patient_id,
-        centre_activity_preference_data.is_like
-    )
+    _validate_and_detect_changes(db, centre_activity_preference_data)
     
     _validate_centre_activity_exists(db, centre_activity_preference_data.centre_activity_id)
     _validate_patient_exists(centre_activity_preference_data.patient_id, current_user_info)
@@ -275,14 +331,14 @@ def update_centre_activity_preference_by_id(
     _validate_patient_exists(centre_activity_preference_data.patient_id, current_user_info)
     _validate_caregiver_supervisor_allocation(centre_activity_preference_data.patient_id, current_user_info, "update")
     
-    # Check for duplicates (excluding current record)
-    _check_centre_activity_preference_duplicate(
-        db,
-        centre_activity_preference_data.centre_activity_id,
-        centre_activity_preference_data.patient_id,
-        centre_activity_preference_data.is_like,
-        exclude_id=centre_activity_preference_id
+    # Validate + detect changes
+    changes = _validate_and_detect_changes(
+        db, centre_activity_preference_data, existing_centre_activity_preference, exclude_id=centre_activity_preference_id
     )
+
+    if not changes:
+        logger.info(f"No changes detected for centre activity preference {existing_centre_activity_preference.id}")
+        return existing_centre_activity_preference
 
     # Generate correlation ID if not provided
     if not correlation_id:
@@ -293,84 +349,64 @@ def update_centre_activity_preference_by_id(
         original_preference_dict = _preference_to_dict(existing_centre_activity_preference)
         original_data_dict = serialize_data(model_to_dict(existing_centre_activity_preference))
 
-        # 2. Track changes
-        changes = {}
+        # 2. Update the record (changes already validated)
+        timestamp = datetime.utcnow()
+        modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
+
+        # Update the fields of the preference instance
         update_data = centre_activity_preference_data.model_dump(exclude={'centre_activity_preference_id'}, exclude_unset=True)
+        for field, value in update_data.items():
+            if field not in {'created_by_id', 'modified_by_id', 'created_date', 'modified_date'}:
+                setattr(existing_centre_activity_preference, field, value)
+        
+        existing_centre_activity_preference.modified_by_id = modified_by_id
+        existing_centre_activity_preference.modified_date = timestamp
 
-        # Track what actually changed, ignore audit fields
-        audit_fields = {'created_by_id', 'modified_by_id', 'created_date', 'modified_date'}
-        for field, new_value in update_data.items():
-            if field not in audit_fields and hasattr(existing_centre_activity_preference, field):
-                old_value = getattr(existing_centre_activity_preference, field)
-                if old_value != new_value:
-                    changes[field] = {
-                        'old': serialize_data(old_value),
-                        'new': serialize_data(new_value)
-                    }
+        db.flush()
 
-        # 3. Only proceed with update if there are actual changes
-        if changes:
-            # Create consistent timestamp for all audit fields
-            timestamp = datetime.utcnow()
-            modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
+        # 3. Create outbox event (we know there are changes)
+        outbox_service = get_outbox_service()
+        
+        event_payload = {
+            'event_type': 'ACTIVITY_PREFERENCE_UPDATED',
+            'preference_id': existing_centre_activity_preference.id,
+            'old_data': original_preference_dict,
+            'new_data': _preference_to_dict(existing_centre_activity_preference),
+            'changes': changes,  # Already computed by _validate_and_detect_changes
+            'modified_by': modified_by_id,
+            'modified_by_name': current_user_info.get("fullname"),
+            'timestamp': timestamp.isoformat(),
+            'correlation_id': correlation_id
+        }
+        
+        outbox_event = outbox_service.create_event(
+            db=db,
+            event_type='ACTIVITY_PREFERENCE_UPDATED',
+            aggregate_id=existing_centre_activity_preference.id,
+            payload=event_payload,
+            routing_key=f"activity.preference.updated.{existing_centre_activity_preference.id}",
+            correlation_id=correlation_id,
+            created_by=modified_by_id
+        )
 
-            # Add audit fields to update_data
-            update_data["modified_by_id"] = modified_by_id
-            update_data["modified_date"] = timestamp
+        # 4. Log the action
+        updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
+        log_crud_action(
+            action=ActionType.UPDATE,
+            user=modified_by_id,
+            user_full_name=current_user_info.get("fullname"),
+            message="Updated Centre Activity Preference",
+            table="CENTRE_ACTIVITY_PREFERENCE",
+            entity_id=existing_centre_activity_preference.id,
+            original_data=original_data_dict,
+            updated_data=updated_data_dict
+        )
 
-            # Apply all updates
-            for field, value in update_data.items():
-                if hasattr(existing_centre_activity_preference, field):
-                    setattr(existing_centre_activity_preference, field, value)
-
-            db.flush()
-
-            # 4. Create outbox event only if there were changes
-            outbox_service = get_outbox_service()
-            
-            event_payload = {
-                'event_type': 'ACTIVITY_PREFERENCE_UPDATED',
-                'preference_id': existing_centre_activity_preference.id,
-                'old_data': original_preference_dict,
-                'new_data': _preference_to_dict(existing_centre_activity_preference),
-                'changes': changes,  # Only includes business field changes
-                'modified_by': modified_by_id,
-                'modified_by_name': current_user_info.get("fullname"),
-                'timestamp': timestamp.isoformat(),  # Use same timestamp as obj.modified_date
-                'correlation_id': correlation_id
-            }
-            
-            outbox_event = outbox_service.create_event(
-                db=db,
-                event_type='ACTIVITY_PREFERENCE_UPDATED',
-                aggregate_id=existing_centre_activity_preference.id,
-                payload=event_payload,
-                routing_key=f"activity.preference.updated.{existing_centre_activity_preference.id}",
-                correlation_id=correlation_id,
-                created_by=modified_by_id
-            )
-
-            # 5. Log the action
-            updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
-            log_crud_action(
-                action=ActionType.UPDATE,
-                user=modified_by_id,
-                user_full_name=current_user_info.get("fullname"),
-                message="Updated Centre Activity Preference",
-                table="CENTRE_ACTIVITY_PREFERENCE",
-                entity_id=existing_centre_activity_preference.id,
-                original_data=original_data_dict,
-                updated_data=updated_data_dict
-            )
-
-            # 6. Commit atomically
-            db.commit()
-            db.refresh(existing_centre_activity_preference)
-            
-            logger.info(f"Updated preference {existing_centre_activity_preference.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
-        else:
-            logger.info(f"Updated preference {existing_centre_activity_preference.id} with no changes")
-
+        # 5. Commit atomically
+        db.commit()
+        db.refresh(existing_centre_activity_preference)
+        
+        logger.info(f"Updated preference {existing_centre_activity_preference.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         return existing_centre_activity_preference
 
     except Exception as e:

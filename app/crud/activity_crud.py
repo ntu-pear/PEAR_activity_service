@@ -87,7 +87,7 @@ def create_activity(
 
     try:
         # 1. Create activity object
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         
         obj = models.Activity(**activity_in.model_dump(by_alias=True))
         obj.created_by_id = current_user_info.get("id")
@@ -189,7 +189,7 @@ def update_activity_by_id(
         # 3. Only proceed with update if there are actual changes
         if changes:
             # Create consistent timestamp for all audit fields
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now()
             
             # Add audit fields to update_data
             update_data["modified_by_id"] = current_user_info.get("id")
@@ -279,7 +279,7 @@ def delete_activity_by_id(
         activity_dict = _activity_to_dict(obj)
 
         # 2. Perform soft delete
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         
         obj.is_deleted = True
         obj.modified_by_id = current_user_info.get("id")

@@ -18,7 +18,7 @@ from app.schemas.adhoc_schema import AdhocCreate, AdhocUpdate
 @pytest.fixture
 def valid_adhoc_data():
     """Returns a dict of minimal valid data for AdhocCreate."""
-    now = datetime.utcnow() + timedelta(hours=1)
+    now = datetime.now() + timedelta(hours=1)
     return {
         "old_centre_activity_id": 1,
         "new_centre_activity_id": 2,
@@ -36,7 +36,7 @@ def test_schema_rejects_same_activity_ids(valid_adhoc_data):
         AdhocCreate(**valid_adhoc_data)
 
 def test_schema_rejects_past_start_date(valid_adhoc_data):
-    valid_adhoc_data["start_date"] = datetime.utcnow() - timedelta(days=1)
+    valid_adhoc_data["start_date"] = datetime.now() - timedelta(days=1)
     with pytest.raises(ValidationError):
         AdhocCreate(**valid_adhoc_data)
 
@@ -123,11 +123,11 @@ def test_get_adhocs_no_results(get_db_session_mock):
 def existing_adhoc_instance():
     return AdhocModel(id=1, old_centre_activity_id=1, new_centre_activity_id=2,
                       patient_id=1, status="PENDING",
-                      start_date=datetime.utcnow() + timedelta(hours=1),
-                      end_date=datetime.utcnow() + timedelta(hours=2),
+                      start_date=datetime.now() + timedelta(hours=1),
+                      end_date=datetime.now() + timedelta(hours=2),
                       is_deleted=False,
                       created_by_id="user1",
-                      created_date=datetime.utcnow())
+                      created_date=datetime.now())
 
 # def test_update_adhoc_success(get_db_session_mock, existing_adhoc_instance, valid_adhoc_data, mock_supervisor_user, monkeypatch):
 #     db = get_db_session_mock
