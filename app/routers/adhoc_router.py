@@ -3,34 +3,33 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.adhoc_crud as crud
 import app.schemas.adhoc_schema as schemas
-from app.auth.jwt_utils import get_current_user, JWTPayload, is_supervisor
-from typing import List, Optional
+from app.auth.jwt_utils import get_user_and_token, get_current_user, JWTPayload, is_supervisor
+from typing import List, Optional, Tuple
 
 router = APIRouter()
 
 @router.post(
     "/",
     response_model=schemas.AdhocResponse,
-    summary="Create Adhoc record",
-    description="Create a new adhoc activity replacement (supervisor only)",
     status_code=status.HTTP_201_CREATED
 )
 def create_adhoc(
     adhoc: schemas.AdhocCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create an Adhoc record."
         )
-    user_info = {
+    current_user_info = {
         "id": current_user.userId if current_user else None,
-        "fullname": current_user.fullName if current_user else "Anonymous"
+        "fullname": current_user.fullName if current_user else "Anonymous",
+        "bearer_token": token
     }
-    return crud.create_adhoc(db=db, adhoc_data=adhoc, current_user_info=user_info)
-
+    return crud.create_adhoc(db=db, adhoc_data=adhoc, current_user_info=current_user_info)
 
 @router.get(
     "/",
@@ -108,19 +107,20 @@ def list_adhocs_by_patient(
 def update_adhoc(
     adhoc: schemas.AdhocUpdate,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update Adhoc records."
         )
-    user_info = {
+    current_user_info  = {
         "id": current_user.userId if current_user else None,
-        "fullname": current_user.fullName if current_user else "Anonymous"
-    }
-    return crud.update_adhoc(db=db, adhoc_data=adhoc, current_user_info=user_info)
-
+        "fullname": current_user.fullName if current_user else "Anonymous",
+        "bearer_token": token
+    } 
+    return crud.update_adhoc(db=db, adhoc_data=adhoc, current_user_info=current_user_info)
 
 @router.delete(
     "/{adhoc_id}",
