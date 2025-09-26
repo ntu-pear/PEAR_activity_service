@@ -6,7 +6,8 @@ class CentreActivityAvailabilityBase(BaseModel):
     centre_activity_id: int = Field(..., description="Reference to Centre Activity")
     start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability. If recurring every day, it will hold the specific start time of the Centre Activity Availability.")
     end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date. If recurring every day, it will hold the specific end time of the Centre Activity Availability.")
-
+    is_fixed: bool =Field(..., description="Is the Centre Activity Availability only allowed to occur at the indicated start time and end time")
+    
 class ValidatedCentreActivityAvailability(CentreActivityAvailabilityBase):
     @model_validator(mode='after')
     def validate_input(self):

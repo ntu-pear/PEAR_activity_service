@@ -17,7 +17,8 @@ def _check_for_duplicate_availability(
     essential_fields = {
         "centre_activity_id": centre_activity_availability_data.centre_activity_id,
         "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time
+        "end_time": centre_activity_availability_data.end_time,
+        "is_fixed": centre_activity_availability_data.is_fixed
     }
     
     existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
