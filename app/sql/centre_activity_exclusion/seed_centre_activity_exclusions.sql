@@ -30,4 +30,5 @@ WHERE ca.is_deleted = 0
       WHERE e.centre_activity_id = ca.id
         AND e.patient_id = p.patient_id
         AND ISNULL(e.is_deleted, 0) = 0
-  );
+  )
+  AND ca.id BETWEEN 5 AND 10; -- Only for these Centre Activities for now
