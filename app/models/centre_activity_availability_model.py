@@ -9,6 +9,7 @@ class CentreActivityAvailability(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     centre_activity_id = Column(Integer, ForeignKey("CENTRE_ACTIVITY.id"), nullable=False)
     is_deleted = Column(Boolean, nullable=False, default=False)
+    is_fixed = Column(Boolean, nullable=False, default=False)
     start_time = Column(DateTime, nullable=False, default=None)
     end_time = Column(DateTime, nullable=False, default=None)
     created_date = Column(DateTime, nullable=False, default=datetime.now())

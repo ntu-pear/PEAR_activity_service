@@ -6,7 +6,8 @@ class CentreActivityAvailabilityBase(BaseModel):
     centre_activity_id: int = Field(..., description="Reference to Centre Activity")
     start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability. If recurring every day, it will hold the specific start time of the Centre Activity Availability.")
     end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date. If recurring every day, it will hold the specific end time of the Centre Activity Availability.")
-
+    is_fixed: bool =Field(..., description="Is the Centre Activity Availability only allowed to occur at the indicated start time and end time")
+    
 class ValidatedCentreActivityAvailability(CentreActivityAvailabilityBase):
     @model_validator(mode='after')
     def validate_input(self):
@@ -39,13 +40,14 @@ class CentreActivityAvailabilityCreate(ValidatedCentreActivityAvailability):
 class CentreActivityAvailabilityUpdate(ValidatedCentreActivityAvailability):
     id: int = Field(..., description="ID of the Centre Activity Availability to update")
     is_deleted: bool = Field(..., description="Is the Centre Activity Availability deleted")
+    is_fixed: bool =Field(..., description="Is the Centre Activity Availability only allowed to occur at the indicated start time and end time")
     modified_by_id: str = Field(..., description="ID of the user who last modified this Centre Activity Availability")
     modified_date: datetime = Field(None, description="Last modification timestamp")
 
 class CentreActivityAvailabilityResponse(CentreActivityAvailabilityBase):
     id: int = Field(..., description="ID of the Centre Activity Availability")
     is_deleted: bool = Field(..., description="Is the Centre Activity Availability deleted")
-
+    is_fixed: bool =Field(..., description="Is the Centre Activity Availability only allowed to occur at the indicated start time and end time")
     created_date: datetime = Field(..., description="Creation date of the Centre Activity Availability")
     modified_date: Optional[datetime] = Field(..., description="Last modification date of the Centre Activity Availability")
     created_by_id: str = Field(..., description="ID of the user who created this Centre Activity Availability")
