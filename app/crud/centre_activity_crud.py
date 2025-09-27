@@ -157,7 +157,7 @@ def create_centre_activity(
     
     try:
         # 1. Create Centre Activity
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         current_user_id = current_user_info.get("id") or centre_activity_data.created_by_id
         
         db_centre_activity = models.CentreActivity(**centre_activity_data.model_dump())
@@ -296,7 +296,7 @@ def update_centre_activity(
         original_data_dict = serialize_data(model_to_dict(db_centre_activity))
 
         # 2. Update the record (changes already validated)
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         modified_by_id = current_user_info.get("id") or centre_activity_data.modified_by_id
 
         # Update the fields of the CentreActivity instance
@@ -385,7 +385,7 @@ def delete_centre_activity(
         activity_dict = _centre_activity_to_dict(db_centre_activity)
 
         # 2. Perform soft delete
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         modified_by_id = current_user_info.get("id") or db_centre_activity.modified_by_id
         
         db_centre_activity.is_deleted = True

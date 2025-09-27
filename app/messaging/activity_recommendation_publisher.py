@@ -36,7 +36,7 @@ class ActivityRecommendationPublisher:
             'doctor_id': doctor_id,
             'recommendation_data': recommendation_data,
             'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.recommendation.created.{recommendation_id}"
@@ -65,7 +65,7 @@ class ActivityRecommendationPublisher:
             'new_data': new_data,
             'changes': changes,
             'modified_by': modified_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.recommendation.updated.{recommendation_id}"
@@ -92,7 +92,7 @@ class ActivityRecommendationPublisher:
             'doctor_id': doctor_id,
             'recommendation_data': recommendation_data,
             'deleted_by': deleted_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.recommendation.deleted.{recommendation_id}"

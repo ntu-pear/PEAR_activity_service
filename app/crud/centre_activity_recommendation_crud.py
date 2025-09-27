@@ -196,7 +196,7 @@ def create_centre_activity_recommendation(
 
     try:
         # 1. Create Centre Activity Recommendation
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         
         db_centre_activity_recommendation = models.CentreActivityRecommendation(**centre_activity_recommendation_data.model_dump())
         db_centre_activity_recommendation.created_by_id = current_user_id
@@ -362,7 +362,7 @@ def update_centre_activity_recommendation(
         original_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
 
         # 2. Update the record (changes already validated)
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         modified_by_id = current_user_id
 
         # Update the fields of the recommendation instance
@@ -453,7 +453,7 @@ def delete_centre_activity_recommendation(
         recommendation_dict = _recommendation_to_dict(existing_centre_activity_recommendation)
 
         # 2. Perform soft delete
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         current_user_id = current_user_info.get("id")
         
         existing_centre_activity_recommendation.is_deleted = True

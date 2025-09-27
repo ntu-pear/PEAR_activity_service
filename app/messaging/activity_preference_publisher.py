@@ -34,7 +34,7 @@ class ActivityPreferencePublisher:
             'centre_activity_id': centre_activity_id,
             'preference_data': preference_data,
             'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.preference.created.{centre_activity_id}"
@@ -62,7 +62,7 @@ class ActivityPreferencePublisher:
             'new_data': new_data,
             'changes': changes,
             'modified_by': modified_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.preference.updated.{centre_activity_id}"
@@ -87,7 +87,7 @@ class ActivityPreferencePublisher:
             'centre_activity_id': centre_activity_id,
             'preference_data': preference_data,
             'deleted_by': deleted_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.preference.deleted.{centre_activity_id}"
