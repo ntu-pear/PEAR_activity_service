@@ -31,7 +31,7 @@ class CentreActivityPublisher:
             'centre_activity_id': centre_activity_id,
             'centre_activity_data': centre_activity_data,
             'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity.created.{centre_activity_id}"
@@ -56,7 +56,7 @@ class CentreActivityPublisher:
             'new_data': new_data,
             'changes': changes,
             'modified_by': modified_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity.updated.{centre_activity_id}"
@@ -78,7 +78,7 @@ class CentreActivityPublisher:
             'centre_activity_id': centre_activity_id,
             'centre_activity_data': centre_activity_data,
             'deleted_by': deleted_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity.deleted.{centre_activity_id}"

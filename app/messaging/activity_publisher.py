@@ -31,7 +31,7 @@ class ActivityPublisher:
             'activity_id': activity_id,
             'activity_data': activity_data,
             'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.created.{activity_id}"
@@ -56,7 +56,7 @@ class ActivityPublisher:
             'new_data': new_data,
             'changes': changes,
             'modified_by': modified_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.updated.{activity_id}"
@@ -78,7 +78,7 @@ class ActivityPublisher:
             'activity_id': activity_id,
             'activity_data': activity_data,
             'deleted_by': deleted_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.deleted.{activity_id}"

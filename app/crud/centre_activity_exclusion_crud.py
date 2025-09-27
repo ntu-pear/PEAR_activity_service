@@ -88,7 +88,7 @@ def create_centre_activity_exclusion(
 
     try:
         # 1. Create Centre Activity Exclusion
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         current_user_id = current_user_info.get("id")
         
         obj = models.CentreActivityExclusion(**exclusion_data.model_dump())
@@ -196,7 +196,7 @@ def update_centre_activity_exclusion(
         # 3. Only proceed with update if there are actual changes
         if changes:
             # Create consistent timestamp for all audit fields
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now()
             modified_by_id = current_user_info.get("id")
 
             # Add audit fields to update_data
@@ -280,7 +280,7 @@ def delete_centre_activity_exclusion(
         exclusion_dict = _exclusion_to_dict(obj)
 
         # 2. Perform soft delete
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         
         obj.is_deleted = True
         obj.modified_by_id = current_user_info.get("id")

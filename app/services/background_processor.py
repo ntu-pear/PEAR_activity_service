@@ -90,7 +90,7 @@ class OutboxProcessor:
                 self.stats['total_processed'] += successful + failed
                 self.stats['total_successful'] += successful
                 self.stats['total_failed'] += failed
-                self.stats['last_run'] = datetime.utcnow().isoformat()
+                self.stats['last_run'] = datetime.now().isoformat()
                 
                 if successful > 0 or failed > 0:
                     logger.info(f"Processed {successful + failed} events - Success: {successful}, Failed: {failed}")

@@ -50,7 +50,7 @@ class OutboxEvent(Base):
     def mark_published(self) -> None:
         """Mark as successfully published"""
         self.status = OutboxStatus.PUBLISHED
-        self.processed_at = datetime.utcnow()
+        self.processed_at = datetime.now()
         self.error_message = None
 
     def mark_failed(self, error: str) -> None:

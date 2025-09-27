@@ -34,7 +34,7 @@ class ActivityExclusionPublisher:
             'centre_activity_id': centre_activity_id,
             'exclusion_data': exclusion_data,
             'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity_exclusion.created.{exclusion_id}"
@@ -62,7 +62,7 @@ class ActivityExclusionPublisher:
             'new_data': new_data,
             'changes': changes,
             'modified_by': modified_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity_exclusion.updated.{exclusion_id}"
@@ -87,7 +87,7 @@ class ActivityExclusionPublisher:
             'centre_activity_id': centre_activity_id,
             'exclusion_data': exclusion_data,
             'deleted_by': deleted_by,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now().isoformat()
         }
         
         routing_key = f"activity.centre_activity_exclusion.deleted.{exclusion_id}"
