@@ -34,27 +34,27 @@ WHERE title = N'Vital check'
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
 
--- Routine Test One (compulsory, individual, fixed)
-INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
-)
-SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-4,1-4,2-4,3-4,4-4', SYSDATETIME(), NULL, 'system', NULL
-FROM [dbo].[ACTIVITY]
-WHERE title = N'Routine Test One'
-  AND NOT EXISTS (
-      SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
-  );
-
--- Routine Test Two (compulsory, individual, fixed)
-INSERT INTO [dbo].[CENTRE_ACTIVITY] (
-    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
-)
-SELECT id, 0, 1, 1, 0, '2025-07-28T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-6,1-6,2-6,3-6,4-6', SYSDATETIME(), NULL, 'system', NULL
-FROM [dbo].[ACTIVITY]
-WHERE title = N'Routine Test Two'
-  AND NOT EXISTS (
-      SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
-  );
+---- Routine Test One (compulsory, individual, fixed)
+--INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+--    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
+--)
+--SELECT id, 0, 1, 1, 0, '2025-07-28T13:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-4,1-4,2-4,3-4,4-4', SYSDATETIME(), NULL, 'system', NULL
+--FROM [dbo].[ACTIVITY]
+--WHERE title = N'Routine Test One'
+--  AND NOT EXISTS (
+--      SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
+--  );
+--
+---- Routine Test Two (compulsory, individual, fixed)
+--INSERT INTO [dbo].[CENTRE_ACTIVITY] (
+--    activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
+--)
+--SELECT id, 0, 1, 1, 0, '2025-07-28T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-6,1-6,2-6,3-6,4-6', SYSDATETIME(), NULL, 'system', NULL
+--FROM [dbo].[ACTIVITY]
+--WHERE title = N'Routine Test Two'
+--  AND NOT EXISTS (
+--      SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
+--  );
 
 -- Tablet game (compulsory, individual, flexible)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
