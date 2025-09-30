@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -37,10 +37,13 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         # Invalid: fixed but min != max
         ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same minimum and maximum duration."),
 
-        # Invalid: fixed activity without fixed time slots
-        ({"is_fixed": True, "fixed_time_slots": ""}, "Fixed activities must have fixed time slots specified."),
-        ({"is_fixed": True, "fixed_time_slots": None}, "Fixed activities must have fixed time slots specified."),
-        ({"is_fixed": True, "fixed_time_slots": "   "}, "Fixed activities must have fixed time slots specified."),
+        # Invalid: compulsory activities must be fixed (one-way implication)
+        ({"is_compulsory": True, "is_fixed": False}, "Compulsory activities must be fixed."),
+        
+        # Invalid: compulsory activity without fixed time slots
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": ""}, "Compulsory activities must have fixed time slots specified."),
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": None}, "Compulsory activities must have fixed time slots specified."),
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "   "}, "Compulsory activities must have fixed time slots specified."),
 
         # Invalid: duration not 60
         ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
@@ -69,16 +72,46 @@ def test_centre_activity_schema_validation_fails(base_centre_activity_data, sche
 
     assert expected_error in str(exc.value)
 
+
+@pytest.mark.parametrize(
+    "override_fields",
+    [
+        # Valid: compulsory and fixed (both true)
+        {"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+        
+        # Valid: non-compulsory and flexible (both false)
+        {"is_compulsory": False, "is_fixed": False, "fixed_time_slots": ""},
+        
+        # Valid: non-compulsory but fixed (allowed - this is the key difference!)
+        {"is_compulsory": False, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+    ]
+)
+@pytest.mark.parametrize("schema_class", [CentreActivityCreate, CentreActivityUpdate])
+def test_centre_activity_schema_validation_passes(base_centre_activity_data, schema_class, override_fields):
+    """Tests that valid combinations pass validation"""
+    
+    data = {**base_centre_activity_data, **override_fields}
+    
+    # Should not raise any exception
+    schema = schema_class(**data)
+    assert schema.is_compulsory == override_fields["is_compulsory"]
+    assert schema.is_fixed == override_fields["is_fixed"]
+
 #======= CREATE tests ===========
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, mock_supervisor_user, 
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_create_centre_activity_success(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user, 
                                      create_centre_activity_schema, existing_activity):
     '''Creates when activity exists and no dulpicate centre activity exists.'''
 
     # Valid Activity ID
     mock_get_activity.return_value = existing_activity      
-    # No duplicate Centre Activity                                    
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None     
+    
+    # Mock the compulsory validation to do nothing (pass)
+    mock_validate_compulsory.return_value = None
+    
+    # Mock duplicate validation to return None (no duplicates)
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
     get_db_session_mock.refresh.return_value = existing_activity
 
     result = create_centre_activity(
@@ -100,12 +133,12 @@ def test_create_centre_activity_success(mock_get_activity, get_db_session_mock, 
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
 def test_create_centre_activity_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
-                                          create_centre_activity_schema):
+                                        create_centre_activity_schema):
     '''Fails to create when invalid Activity ID given'''
 
-    # Invalid Activity ID
+    # Invalid Activity ID - this will cause _validate_activity_exists to raise HTTPException
     mock_get_activity.return_value = None
-    # No duplicate Centre Activity                                                       
+    # No duplicate Centre Activity (won't be reached due to activity validation failure)                                                      
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None     
     get_db_session_mock.refresh.return_value = None
 
@@ -119,15 +152,20 @@ def test_create_centre_activity_activity_not_found_fail(mock_get_activity, get_d
     assert exc.value.detail == "Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user, 
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_create_centre_activity_duplicate_fail(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user, 
                                      create_centre_activity_schema, existing_activity, existing_centre_activity):
     
     '''Fails to create when an identical record of Centre Activity already exists'''
 
     # Valid Activity ID
     mock_get_activity.return_value = existing_activity
-    # Duplicate Centre Activity                                                           
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = existing_centre_activity  
+    
+    # Mock the compulsory validation to do nothing (won't be reached due to duplicate failure)
+    mock_validate_compulsory.return_value = None
+    
+    # Mock duplicate validation to find conflict
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = existing_centre_activity
     get_db_session_mock.refresh.return_value = existing_centre_activity
 
     with pytest.raises(HTTPException) as exc:
@@ -142,6 +180,45 @@ def test_create_centre_activity_duplicate_fail(mock_get_activity, get_db_session
         'existing_is_deleted': False, 
         'message': 'Centre Activity with these attributes already exists or deleted'
         }
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+def test_create_centre_activity_compulsory_fixed_time_slots_conflict_fail(
+    mock_get_activity, get_db_session_mock, mock_supervisor_user, base_centre_activity_data, existing_activity, conflicting_compulsory_centre_activities
+):
+    '''Fails to create when compulsory activity has same fixed_time_slots as another compulsory activity'''
+    
+    # Use existing compulsory activity from fixture
+    existing_compulsory = conflicting_compulsory_centre_activities[0]
+    
+    # Set up data for compulsory activity with same time slots as fixture
+    compulsory_data = {**base_centre_activity_data, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-2,1-2,2-2"}  # Same as fixture
+    create_schema = CentreActivityCreate(**compulsory_data)
+    
+    # Valid Activity ID
+    mock_get_activity.return_value = existing_activity
+    
+    # Set up mock query calls in order
+    # First query call: duplicate validation - return None (no duplicates)
+    mock_duplicate_query = MagicMock()
+    mock_duplicate_query.filter_by.return_value.first.return_value = None
+    
+    # Second query call: compulsory validation - return conflict
+    mock_compulsory_query = MagicMock()
+    # Set up the complete chain to return the actual fixture object
+    mock_compulsory_query.filter.return_value.filter.return_value.filter.return_value.first.return_value = existing_compulsory
+
+    get_db_session_mock.query.side_effect = [mock_duplicate_query, mock_compulsory_query]
+
+    with pytest.raises(HTTPException) as exc:
+        create_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_data=create_schema,
+            current_user_info=mock_supervisor_user
+        )
+    
+    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Compulsory activities cannot have identical fixed_time_slots" in exc.value.detail["message"]
+
 
 #===== GET tests ======
 def test_get_centre_acitivity_by_id_success(get_db_session_mock, existing_centre_activity):
@@ -215,7 +292,8 @@ def test_get_centre_activities_fail(get_db_session_mock):
 
 #======= UPDATE tests =====
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_update_centre_activity_success(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Updates Centre Activity if target to be updated exists and activity id provided exists"""
@@ -223,6 +301,9 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
     # Valid existing Centre Activity
     mock_query_find = MagicMock()
     mock_query_find.filter.return_value.first.return_value = existing_centre_activity
+    
+    # Mock the compulsory validation to pass
+    mock_validate_compulsory.return_value = None
     
     # No duplicate Centre Activity
     mock_query_duplicate = MagicMock()
@@ -258,7 +339,8 @@ def test_update_centre_activity_success(mock_get_activity, get_db_session_mock, 
     get_db_session_mock.commit.assert_called_once()
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_update_centre_activity_not_found_fail(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                         update_centre_activity_schema, existing_activity):
     """Test update fails when centre activity doesn't exist"""
 
@@ -266,6 +348,8 @@ def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None  
     # Valid Activity  
     mock_get_activity.return_value = existing_activity
+    # Mock the compulsory validation (won't be reached due to centre activity not found)
+    mock_validate_compulsory.return_value = None
     
     with pytest.raises(HTTPException) as exc:
         update_centre_activity(
@@ -277,12 +361,14 @@ def test_update_centre_activity_not_found_fail(mock_get_activity, get_db_session
     assert exc.value.detail == "Centre Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_update_centre_activity_invalid_activity_fail(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                         update_centre_activity_schema, existing_centre_activity):
     """Test update fails when activity doesn't exist"""
 
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity    
     mock_get_activity.return_value = None
+    mock_validate_compulsory.return_value = None
     
     with pytest.raises(HTTPException) as exc:
         update_centre_activity(
@@ -294,15 +380,18 @@ def test_update_centre_activity_invalid_activity_fail(mock_get_activity, get_db_
     assert exc.value.detail == "Activity not found"
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
-def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+def test_update_centre_activity_duplicate_fail(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Test update fails when an identical record of Centre Activity already exists"""
     
-    # Set up separate mock query objects for different calls
     # First call: finding existing centre activity
     mock_query_find = MagicMock()
     mock_query_find.filter.return_value.first.return_value = existing_centre_activity
+    
+    # Mock the compulsory validation to pass (won't be reached due to duplicate failure)
+    mock_validate_compulsory.return_value = None
     
     # Second call: checking for duplicates (should return the duplicate)
     mock_query_duplicate = MagicMock()
@@ -328,6 +417,60 @@ def test_update_centre_activity_duplicate_fail(mock_get_activity, get_db_session
         'existing_is_deleted': existing_centre_activity.is_deleted, 
         'message': 'Centre Activity with these attributes already exists or deleted'
     }
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+def test_update_centre_activity_compulsory_fixed_time_slots_conflict_fail(
+    mock_get_activity, get_db_session_mock, mock_supervisor_user, base_centre_activity_data, existing_activity, conflicting_compulsory_centre_activities
+):
+    '''Fails to update when compulsory activity would have same fixed_time_slots as another compulsory activity'''
+    
+    # Use conflicting compulsory activity from fixture
+    conflicting_compulsory = conflicting_compulsory_centre_activities[0]
+    
+    # Set up data for updating to compulsory activity with conflicting time slots
+    update_data = {**base_centre_activity_data, "id": 1, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-2,1-2,2-2"}  # Same as fixture
+    update_schema = CentreActivityUpdate(**update_data)
+    
+    # Mock existing centre activity being updated
+    existing_centre_activity = CentreActivityModel(
+        id=1,
+        activity_id=1,
+        is_compulsory=False,
+        is_fixed=False,
+        fixed_time_slots="",
+        is_deleted=False
+    )
+    
+    # Valid Activity ID
+    mock_get_activity.return_value = existing_activity
+    
+    # ACTUAL ORDER: 1st = find existing, 2nd = compulsory validation, 3rd = duplicate validation
+    
+    # First call: finding existing centre activity
+    mock_query_find = MagicMock()
+    mock_query_find.filter.return_value.first.return_value = existing_centre_activity
+    
+    # Second call: compulsory fixed_time_slots validation (conflict found)
+    mock_query_compulsory = MagicMock()
+    # Set up the complete chain to return the actual fixture object (4 filters for update with exclude_id)
+    mock_query_compulsory.filter.return_value.filter.return_value.filter.return_value.filter.return_value.first.return_value = conflicting_compulsory
+    
+    # Third call won't be reached due to compulsory validation failure, but setup anyway
+    mock_query_duplicate = MagicMock()
+    mock_query_duplicate.filter_by.return_value.filter.return_value.first.return_value = None
+    
+    # Set up side_effect to return different mock objects for different calls
+    get_db_session_mock.query.side_effect = [mock_query_find, mock_query_compulsory, mock_query_duplicate]
+
+    with pytest.raises(HTTPException) as exc:
+        update_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_data=update_schema,
+            current_user_info=mock_supervisor_user
+        )
+    
+    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Compulsory activities cannot have identical fixed_time_slots" in exc.value.detail["message"]
 
 #======= DELETE tests ==================
 def test_delete_centre_activity_success(get_db_session_mock, mock_supervisor_user,
