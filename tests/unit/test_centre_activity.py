@@ -37,10 +37,13 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         # Invalid: fixed but min != max
         ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same minimum and maximum duration."),
 
-        # Invalid: fixed activity without fixed time slots
-        ({"is_fixed": True, "fixed_time_slots": ""}, "Fixed activities must have fixed time slots specified."),
-        ({"is_fixed": True, "fixed_time_slots": None}, "Fixed activities must have fixed time slots specified."),
-        ({"is_fixed": True, "fixed_time_slots": "   "}, "Fixed activities must have fixed time slots specified."),
+        # Invalid: compulsory activities must be fixed (one-way implication)
+        ({"is_compulsory": True, "is_fixed": False}, "Compulsory activities must be fixed."),
+        
+        # Invalid: compulsory activity without fixed time slots
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": ""}, "Compulsory activities must have fixed time slots specified."),
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": None}, "Compulsory activities must have fixed time slots specified."),
+        ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "   "}, "Compulsory activities must have fixed time slots specified."),
 
         # Invalid: duration not 60
         ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
@@ -68,6 +71,31 @@ def test_centre_activity_schema_validation_fails(base_centre_activity_data, sche
         schema_class(**data)
 
     assert expected_error in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "override_fields",
+    [
+        # Valid: compulsory and fixed (both true)
+        {"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+        
+        # Valid: non-compulsory and flexible (both false)
+        {"is_compulsory": False, "is_fixed": False, "fixed_time_slots": ""},
+        
+        # Valid: non-compulsory but fixed (allowed - this is the key difference!)
+        {"is_compulsory": False, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+    ]
+)
+@pytest.mark.parametrize("schema_class", [CentreActivityCreate, CentreActivityUpdate])
+def test_centre_activity_schema_validation_passes(base_centre_activity_data, schema_class, override_fields):
+    """Tests that valid combinations pass validation"""
+    
+    data = {**base_centre_activity_data, **override_fields}
+    
+    # Should not raise any exception
+    schema = schema_class(**data)
+    assert schema.is_compulsory == override_fields["is_compulsory"]
+    assert schema.is_fixed == override_fields["is_fixed"]
 
 #======= CREATE tests ===========
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
