@@ -266,6 +266,90 @@ def soft_deleted_centre_activity(base_centre_activity_data):
     })
     return CentreActivity(**data)
 
+@pytest.fixture
+def conflicting_compulsory_centre_activities():
+    """Centre Activities with conflicting compulsory fixed time slots for validation testing"""
+    return [
+        CentreActivity(
+            id=1,
+            activity_id=1,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        ),
+        CentreActivity(
+            id=2,
+            activity_id=2,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots - should conflict
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        )
+    ]
+
+@pytest.fixture
+def unique_compulsory_centre_activities():
+    """Centre Activities with unique compulsory fixed time slots for validation testing"""
+    return [
+        CentreActivity(
+            id=1,
+            activity_id=1,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Unique fixed_time_slots
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        ),
+        CentreActivity(
+            id=2,
+            activity_id=2,
+            is_deleted=False,  
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="3-2,4-2,5-2",  # Different fixed_time_slots - should be valid
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        )
+    ]
+
 # === Centre Activity Preference Fixtures ===
 @pytest.fixture
 def base_centre_activity_preference_data_list():

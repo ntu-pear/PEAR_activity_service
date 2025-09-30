@@ -19,6 +19,48 @@ def _validate_activity_exists(db: Session, activity_id: int):
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+def _validate_compulsory_fixed_time_slots_unique(
+    db: Session, 
+    centre_activity_data: Union[schemas.CentreActivityCreate, schemas.CentreActivityUpdate],
+    exclude_id: int = None
+):
+    """
+    Validate that compulsory activities have unique fixed_time_slots.
+    For compulsory activities (is_compulsory=True), ensure no other compulsory activity 
+    has the same fixed_time_slots string.
+    """
+    # Only validate if this is a compulsory activity
+    if not centre_activity_data.is_compulsory:
+        return
+    
+    # Only validate if fixed_time_slots is provided and not empty
+    if not centre_activity_data.fixed_time_slots or not centre_activity_data.fixed_time_slots.strip():
+        return
+    
+    # Query for other compulsory activities with the same fixed_time_slots
+    query = db.query(models.CentreActivity).filter(
+        models.CentreActivity.is_compulsory == True,
+        models.CentreActivity.fixed_time_slots == centre_activity_data.fixed_time_slots.strip(),
+        models.CentreActivity.is_deleted == False
+    )
+    
+    # Exclude current record if updating
+    if exclude_id is not None:
+        query = query.filter(models.CentreActivity.id != exclude_id)
+    
+    conflicting_activity = query.first()
+    
+    if conflicting_activity:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": f"Compulsory activities cannot have identical fixed_time_slots. Another compulsory activity already uses '{centre_activity_data.fixed_time_slots}'",
+                "conflicting_activity_id": str(conflicting_activity.id),
+                "conflicting_activity_name": f"Activity ID: {conflicting_activity.activity_id}",
+                "conflicting_fixed_time_slots": conflicting_activity.fixed_time_slots
+            }
+        )
+
 def _validate_and_detect_changes(
     db: Session,
     centre_activity_data: Union[schemas.CentreActivityCreate, schemas.CentreActivityUpdate],
@@ -150,6 +192,7 @@ def create_centre_activity(
     # Validate dependencies and check for duplicates
     _validate_activity_exists(db, centre_activity_data.activity_id)
     _validate_and_detect_changes(db, centre_activity_data)
+    _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data)
     
     # Generate correlation ID if not provided
     if not correlation_id:
@@ -276,6 +319,7 @@ def update_centre_activity(
     
     # Validate dependencies and check for duplicates (excluding current record)
     _validate_activity_exists(db, centre_activity_data.activity_id)
+    _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data, exclude_id=centre_activity_data.id)
     
     # Validate + detect changes
     changes = _validate_and_detect_changes(
