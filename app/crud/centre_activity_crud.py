@@ -55,8 +55,8 @@ def _validate_compulsory_fixed_time_slots_unique(
             status_code=400,
             detail={
                 "message": f"Compulsory activities cannot have identical fixed_time_slots. Another compulsory activity already uses '{centre_activity_data.fixed_time_slots}'",
-                "conflicting_activity_id": str(conflicting_activity.id),
-                "conflicting_activity_name": f"Activity ID: {conflicting_activity.activity_id}",
+                "conflicting_centre_activity_id": str(conflicting_activity.id),
+                "conflicting_activity_id": f"Activity ID: {conflicting_activity.activity_id}",
                 "conflicting_fixed_time_slots": conflicting_activity.fixed_time_slots
             }
         )
