@@ -6,6 +6,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 1, 1, 1, '2025-07-28T12:00:00', '2999-01-01T00:00:00', 60, 60, 4, '0-3,1-3,2-3,3-3,4-3', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY] 
 WHERE title = N'lunch'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -17,6 +18,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 1, 1, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '0-0,1-0,2-0,3-0,4-0', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'breathing exercise AM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -28,6 +30,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 1, 1, 0, '2025-07-28T09:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-2,1-2,2-2,3-2,4-2', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'Vital check'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -61,6 +64,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 1, 1, 0, '2025-07-28T10:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-5,1-5,2-5,3-5,4-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'tablet game'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -72,6 +76,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 1, '2025-07-28T15:00:00', '2999-01-01T00:00:00', 60, 60, 4, '1-1,3-1', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'tea break'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -83,6 +88,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T14:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'Simple exercise PM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -94,6 +100,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'sing along AM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -105,6 +112,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'sing along PM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -116,6 +124,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'art & craft AM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -127,6 +136,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'art & craft PM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -138,6 +148,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'reminiscence AM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -149,6 +160,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'reminiscence PM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -160,6 +172,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'board game AM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -171,6 +184,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 1, '2025-07-28T13:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'board game PM'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -182,6 +196,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-28T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-1,1-2,2-1,3-4,4-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Mon 11am'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -193,6 +208,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-29T11:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-0,1-0,2-0,3-0,4-0', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Tue 11am'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -204,6 +220,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-30T14:00:00', '2999-01-01T00:00:00', 60, 60, 1, '2-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Wed 2pm'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -215,6 +232,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-31T13:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-4', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 130pm'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -226,6 +244,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-31T14:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 230pm'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -237,6 +256,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 1, 0, '2025-07-31T15:30:00', '2999-01-01T00:00:00', 60, 60, 1, '3-6', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'physio Thu 330pm'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
@@ -248,6 +268,7 @@ INSERT INTO [dbo].[CENTRE_ACTIVITY] (
 SELECT id, 0, 0, 0, 0, '2025-07-28T10:30:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'free & easy'
+  AND is_deleted = 0
   AND NOT EXISTS (
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
