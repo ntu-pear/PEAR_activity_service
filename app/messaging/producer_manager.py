@@ -15,7 +15,7 @@ class PublishRequest:
         self.exchange = exchange
         self.routing_key = routing_key
         self.message = message
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now()
 
 class ProducerManager:
     """

@@ -193,7 +193,7 @@ def create_centre_activity_preference(
 
     try:
         # 1. Create Centre Activity Preference
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         current_user_id = current_user_info.get("id") or centre_activity_preference_data.created_by_id
         
         db_centre_activity_preference = models.CentreActivityPreference(**centre_activity_preference_data.model_dump())
@@ -350,7 +350,7 @@ def update_centre_activity_preference_by_id(
         original_data_dict = serialize_data(model_to_dict(existing_centre_activity_preference))
 
         # 2. Update the record (changes already validated)
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         modified_by_id = current_user_info.get("id") or centre_activity_preference_data.modified_by_id
 
         # Update the fields of the preference instance
@@ -439,7 +439,7 @@ def delete_centre_activity_preference_by_id(
         preference_dict = _preference_to_dict(db_centre_activity_preference)
 
         # 2. Perform soft delete
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now()
         
         db_centre_activity_preference.is_deleted = True
         db_centre_activity_preference.modified_by_id = current_user_info.get("id")

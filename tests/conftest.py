@@ -208,13 +208,14 @@ def base_centre_activity_data_list():
             "activity_id": 1,
             "is_deleted": False,
             "is_compulsory": True,
-            "is_fixed": False,
+            "is_fixed": True,
             "is_group": False,
             "start_date": date.today(),
             "end_date": date(2999, 1, 1),
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 1,
+            "fixed_time_slots": "0-2,1-2,2-2,3-2,4-2",
             "created_by_id": "1",
             "modified_by_id": "1",
             "created_date": datetime.now(),
@@ -264,6 +265,90 @@ def soft_deleted_centre_activity(base_centre_activity_data):
         "modified_date": datetime.now()
     })
     return CentreActivity(**data)
+
+@pytest.fixture
+def conflicting_compulsory_centre_activities():
+    """Centre Activities with conflicting compulsory fixed time slots for validation testing"""
+    return [
+        CentreActivity(
+            id=1,
+            activity_id=1,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        ),
+        CentreActivity(
+            id=2,
+            activity_id=2,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots - should conflict
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        )
+    ]
+
+@pytest.fixture
+def unique_compulsory_centre_activities():
+    """Centre Activities with unique compulsory fixed time slots for validation testing"""
+    return [
+        CentreActivity(
+            id=1,
+            activity_id=1,
+            is_deleted=False,
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="0-2,1-2,2-2",  # Unique fixed_time_slots
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        ),
+        CentreActivity(
+            id=2,
+            activity_id=2,
+            is_deleted=False,  
+            is_compulsory=True,
+            is_fixed=True,
+            is_group=False,
+            start_date=date.today(),
+            end_date=date(2999, 1, 1),
+            min_duration=60,
+            max_duration=60,
+            min_people_req=1,
+            fixed_time_slots="3-2,4-2,5-2",  # Different fixed_time_slots - should be valid
+            created_by_id="1",
+            modified_by_id="1",
+            created_date=datetime.now(),
+            modified_date=datetime.now(),
+        )
+    ]
 
 # === Centre Activity Preference Fixtures ===
 @pytest.fixture
@@ -468,7 +553,7 @@ def base_centre_activity_availability_data_list():
             "id": 1,
             "centre_activity_id": 1,
             "start_time": datetime.combine(modified_datetime, datetime.strptime('9:00:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(modified_datetime, datetime.strptime('9:30:00', '%H:%M:%S').time()),
+            "end_time": datetime.combine(modified_datetime, datetime.strptime('10:00:00', '%H:%M:%S').time()),
             "is_deleted": False,
             "is_fixed": False,
             "created_date": datetime.now(timezone.utc),
@@ -479,8 +564,8 @@ def base_centre_activity_availability_data_list():
         {
             "id": 2,
             "centre_activity_id": 1,
-            "start_time": datetime.combine(modified_datetime, datetime.strptime('9:30:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(modified_datetime, datetime.strptime('10:00:00', '%H:%M:%S').time()),
+            "start_time": datetime.combine(modified_datetime, datetime.strptime('10:00:00', '%H:%M:%S').time()),
+            "end_time": datetime.combine(modified_datetime, datetime.strptime('11:00:00', '%H:%M:%S').time()),
             "is_deleted": False,
             "is_fixed": False,
             "created_date": datetime.now(timezone.utc),
@@ -569,7 +654,7 @@ def create_centre_activity_availability_schema_invalid(base_centre_activity_avai
 def update_centre_activity_availability_schema(base_centre_activity_availability_data):
     monday_datetime = _get_next_monday()
     model_data = base_centre_activity_availability_data.copy()
-    model_data["start_time"] = datetime.combine(monday_datetime, datetime.strptime('14:30:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
+    model_data["start_time"] = datetime.combine(monday_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
     model_data["end_time"] = datetime.combine(monday_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)
@@ -580,7 +665,7 @@ def update_centre_activity_availability_duplicate(base_centre_activity_availabil
     monday_datetime = _get_next_monday()
     model_data = base_centre_activity_availability_data.copy()
     model_data.update({
-        "start_time": datetime.combine(monday_datetime, datetime.strptime('14:30:00', '%H:%M:%S').time()).replace(second=0, microsecond=0),
+        "start_time": datetime.combine(monday_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0),
         "end_time": datetime.combine(monday_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0),
         "modified_by_id": "2",
         "modified_date": datetime.now(timezone.utc).replace(second=0, microsecond=0)
@@ -591,7 +676,7 @@ def update_centre_activity_availability_duplicate(base_centre_activity_availabil
 def update_centre_activity_availability_schema_invalid(base_centre_activity_availability_data):
     weekend_datetime = _get_weekend()
     model_data = base_centre_activity_availability_data.copy()
-    model_data["start_time"] = datetime.combine(weekend_datetime, datetime.strptime('14:30:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
+    model_data["start_time"] = datetime.combine(weekend_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
     model_data["end_time"] = datetime.combine(weekend_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)

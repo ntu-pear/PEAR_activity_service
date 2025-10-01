@@ -1,6 +1,4 @@
-USE activity_service_dev;
-GO
-
+-- Adjusted seed data for CENTRE_ACTIVITY table to accomodate Scheduler's limitation 
 -- Lunch (compulsory, group, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
@@ -13,11 +11,11 @@ WHERE title = N'lunch'
       SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
   );
 
--- Breathing exercise AM (compulsory, group, flexible)
+-- Breathing exercise AM (compulsory, group, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 0, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 1, 1, 1, '2025-07-28T11:30:00', '2999-01-01T00:00:00', 60, 60, 4, '0-0,1-0,2-0,3-0,4-0', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'breathing exercise AM'
   AND is_deleted = 0
@@ -59,11 +57,11 @@ WHERE title = N'Vital check'
 --      SELECT 1 FROM [dbo].[CENTRE_ACTIVITY] ca WHERE ca.activity_id = [dbo].[ACTIVITY].id
 --  );
 
--- Tablet game (compulsory, individual, flexible)
+-- Tablet game (compulsory, individual, fixed)
 INSERT INTO [dbo].[CENTRE_ACTIVITY] (
     activity_id, is_deleted, is_compulsory, is_fixed, is_group, start_date, end_date, min_duration, max_duration, min_people_req, fixed_time_slots, created_date, modified_date, created_by_id, modified_by_id
 )
-SELECT id, 0, 1, 0, 0, '2025-07-28T10:00:00', '2999-01-01T00:00:00', 60, 60, 1, '', SYSDATETIME(), NULL, 'system', NULL
+SELECT id, 0, 1, 1, 0, '2025-07-28T10:00:00', '2999-01-01T00:00:00', 60, 60, 1, '0-5,1-5,2-5,3-5,4-5', SYSDATETIME(), NULL, 'system', NULL
 FROM [dbo].[ACTIVITY]
 WHERE title = N'tablet game'
   AND is_deleted = 0

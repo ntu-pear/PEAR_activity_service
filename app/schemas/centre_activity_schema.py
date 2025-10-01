@@ -22,6 +22,7 @@ class ValidatedCentreActivity(CentreActivityBase):
     
     @model_validator(mode='after')
     def validate_input(self):
+        is_compulsory = self.is_compulsory
         is_fixed = self.is_fixed
         is_group = self.is_group
         fixed_time_slots = self.fixed_time_slots
@@ -39,8 +40,6 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Fixed duration activities must have the same minimum and maximum duration.")
         if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
-        if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-            raise ValueError("Fixed activities must have fixed time slots specified.")
         if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
             raise ValueError("Duration must be 60 minutes.")
         if start_date and start_date < datetime.now(timezone.utc).date():
@@ -48,7 +47,13 @@ class ValidatedCentreActivity(CentreActivityBase):
         if end_date and end_date < self.start_date:
             raise ValueError("End date cannot be before start date.")
 
-    
+        # Not in SRS, but Scheduler's limitation - compulsory activities must be fixed
+        if is_compulsory and not is_fixed: 
+            raise ValueError("Compulsory activities must be fixed.")
+        if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
+            raise ValueError("Compulsory activities must have fixed time slots specified.")
+        #if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
+        #    raise ValueError("Fixed activities must have fixed time slots specified.")
         #if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
         #    raise ValueError("Duration must be either 30 or 60 minutes.")
         #if end_date and end_date > (datetime.now(timezone.utc) + timedelta(days=365)).date():

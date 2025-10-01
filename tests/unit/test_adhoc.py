@@ -148,7 +148,7 @@ def existing_adhoc_instance():
 #         "id": existing_adhoc_instance.id,
 #         "status": "APPROVED",
 #         "modified_by_id": "user2",
-#         "modified_date": datetime.utcnow(),
+#         "modified_date": datetime.now(),
 #     })
 #     adhoc_upd = AdhocUpdate(**upd_data)
 

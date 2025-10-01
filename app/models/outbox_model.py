@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, DateTime, Integer, Text, Index
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
-from sqlalchemy.sql import func
 from datetime import datetime
 from enum import Enum
 from app.database import Base
@@ -32,7 +31,7 @@ class OutboxEvent(Base):
     retry_count = Column(Integer, nullable=False, default=0)
     error_message = Column(String(1000))
     correlation_id = Column(String(100), nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, nullable=False, default=func.getutcdate(), index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now(), index=True)
     processed_at = Column(DateTime)
     created_by = Column(String(255), nullable=False)
 
@@ -50,7 +49,7 @@ class OutboxEvent(Base):
     def mark_published(self) -> None:
         """Mark as successfully published"""
         self.status = OutboxStatus.PUBLISHED
-        self.processed_at = datetime.utcnow()
+        self.processed_at = datetime.now()
         self.error_message = None
 
     def mark_failed(self, error: str) -> None:
