@@ -276,7 +276,6 @@ def delete_activity_by_id(
     try:
         # 1. Capture original data
         original = serialize_data(model_to_dict(obj))
-        activity_dict = _activity_to_dict(obj)
 
         # 2. Perform soft delete
         timestamp = datetime.now()
@@ -286,8 +285,11 @@ def delete_activity_by_id(
         obj.modified_date = timestamp
         
         db.flush()
+        
+        # 3. Capture activity data AFTER soft delete to include updated modified_date
+        activity_dict = _activity_to_dict(obj)
 
-        # 3. Create outbox event
+        # 4. Create outbox event
         outbox_service = get_outbox_service()
         
         event_payload = {
@@ -310,7 +312,7 @@ def delete_activity_by_id(
             created_by=current_user_info.get("id")
         )
 
-        # 4. Log the action
+        # 5. Log the action
         log_crud_action(
             action=ActionType.DELETE,
             user=current_user_info.get("id"),
@@ -322,7 +324,7 @@ def delete_activity_by_id(
             updated_data=None,
         )
 
-        # 5. Commit atomically
+        # 6. Commit atomically
         db.commit()
         db.refresh(obj)
         
