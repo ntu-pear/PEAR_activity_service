@@ -41,11 +41,7 @@ def list_activities(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, gt=0, le=1000, description="Max records to return"),
 ):
-    if current_user and not is_supervisor(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to view Activities."
-        )
+
     return crud.get_activities(
         db=db,
         skip=skip,
@@ -63,11 +59,7 @@ def get_activity_by_id(
     current_user: JWTPayload = Depends(get_current_user),
     include_deleted: bool = Query(False, description="Include soft‑deleted records"),
 ):
-    if current_user and not is_supervisor(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to view this Activity."
-        )
+
     obj = crud.get_activity_by_id(
         db=db,
         activity_id=activity_id,
