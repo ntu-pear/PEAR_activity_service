@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 import app.crud.centre_activity_preference_crud as crud
 import app.schemas.centre_activity_preference_schema as schemas
-from app.auth.jwt_utils import get_user_and_token, get_current_user, JWTPayload, is_supervisor, is_caregiver
+from app.auth.jwt_utils import get_user_and_token, get_current_user, JWTPayload, is_supervisor, is_caregiver, is_doctor
 from typing import Optional
 
 router = APIRouter()
@@ -50,8 +50,8 @@ def get_centre_activity_preferences(
     include_deleted: bool = Query(False, description="Include deleted Centre Activity Preferences"),
 ):
     current_user, token = user_and_token
-    # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    # Check if Role is Supervisor, Caregiver or Doctor
+    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Centre Activity Preferences"
@@ -74,7 +74,7 @@ def get_centre_activity_preference_by_id(
 
     current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this Centre Activity Preference"
@@ -102,8 +102,8 @@ def get_centre_activity_preferences_by_patient_id(
     limit: int = 100,
 ):
     current_user, token = user_and_token
-    # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    # Check if Role is Supervisor, Caregiver or Doctor
+    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Centre Activity Preferences for this Patient"

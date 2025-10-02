@@ -488,12 +488,12 @@ def test_get_centre_activity_preferences_role_access_success(mock_crud_get, get_
 
     assert len(result) == len(existing_centre_activity_preferences)
 
-def test_get_centre_activity_preferences_role_access_fail(get_db_session_mock, mock_doctor_jwt):
+def test_get_centre_activity_preferences_role_access_fail(get_db_session_mock, mock_admin_jwt):
     """Fails when non-supervisor/caregiver tries to list Centre Activity Preferences"""
     with pytest.raises(HTTPException) as exc_info:
         router_get_centre_activity_preferences(
             db=get_db_session_mock,
-            user_and_token=(mock_doctor_jwt, "test-token")
+            user_and_token=(mock_admin_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -516,13 +516,13 @@ def test_get_centre_activity_preference_by_id_role_access_success(mock_crud_get,
 
     assert result.id == existing_centre_activity_preferences[0].id
 
-def test_get_centre_activity_preference_by_id_role_access_fail(get_db_session_mock, mock_doctor_jwt):
+def test_get_centre_activity_preference_by_id_role_access_fail(get_db_session_mock, mock_admin_jwt):
     """Fails when non-supervisor/caregiver tries to get Centre Activity Preference by ID"""
     with pytest.raises(HTTPException) as exc_info:
         router_get_centre_activity_preference_by_id(
             centre_activity_preference_id=1,
             db=get_db_session_mock,
-            user_and_token=(mock_doctor_jwt, "test-token")
+            user_and_token=(mock_admin_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -545,13 +545,13 @@ def test_get_centre_activity_preferences_by_patient_id_role_access_success(mock_
 
     assert len(result) == len(existing_centre_activity_preferences)
 
-def test_get_centre_activity_preferences_by_patient_id_role_access_fail(get_db_session_mock, mock_doctor_jwt):
+def test_get_centre_activity_preferences_by_patient_id_role_access_fail(get_db_session_mock, mock_admin_jwt):
     """Fails when non-supervisor/caregiver tries to get Centre Activity Preferences by Patient ID"""
     with pytest.raises(HTTPException) as exc_info:
         router_get_centre_activity_preferences_by_patient_id(
             patient_id=1,
             db=get_db_session_mock,
-            user_and_token=(mock_doctor_jwt, "test-token")
+            user_and_token=(mock_admin_jwt, "test-token")
         )
     
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
