@@ -99,7 +99,7 @@ class OutboxService:
                 OutboxEvent.retry_count < 3
             ).order_by(OutboxEvent.created_at.asc()).limit(batch_size).all()  # ASC for sequential processing
             
-            logger.info(f"Found {len(pending_events)} pending events to process")
+            # logger.info(f"Found {len(pending_events)} pending events to process")
             
             for i, event in enumerate(pending_events, 1):
                 logger.info(f"Processing event {i}/{len(pending_events)}: {event.correlation_id[:8]}...")
