@@ -21,10 +21,9 @@ def mock_producer_manager():
 def sample_exclusion_data():
     """Sample exclusion data for testing."""
     return {
-        'reason': 'Medical contraindication',
         'start_date': '2025-01-01',
         'end_date': '2025-12-31',
-        'notes': 'Patient cannot participate'
+        'exclusion_remarks': 'Patient cannot participate'
     }
 
 
@@ -117,16 +116,14 @@ def test_publish_exclusion_updated_success(mock_uuid, mock_datetime, mock_produc
 
     old_data = sample_exclusion_data
     new_data = {
-        'reason': 'Updated reason',
         'start_date': '2025-02-01',
         'end_date': '2025-11-30',
-        'notes': 'Updated notes'
+        'exclusion_remarks': 'Updated notes'
     }
     changes = {
-        'reason': {'old': old_data['reason'], 'new': new_data['reason']},
         'start_date': {'old': old_data['start_date'], 'new': new_data['start_date']},
         'end_date': {'old': old_data['end_date'], 'new': new_data['end_date']},
-        'notes': {'old': old_data['notes'], 'new': new_data['notes']}
+        'exclusion_remarks': {'old': old_data['exclusion_remarks'], 'new': new_data['exclusion_remarks']}
     }
 
     result = publisher.publish_exclusion_updated(
