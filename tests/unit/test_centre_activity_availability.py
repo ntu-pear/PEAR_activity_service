@@ -219,7 +219,7 @@ def test_update_centre_activity_availability_success(
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
 
     #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -266,7 +266,7 @@ def test_update_centre_activity_availability_duplicate_found(
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
 
     #Mock duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = update_centre_activity_availability_duplicate
+    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = update_centre_activity_availability_duplicate
 
     with pytest.raises(HTTPException) as exc_info:
         update_centre_activity_availability(
@@ -296,7 +296,7 @@ def test_update_centre_activity_availability_invalid(
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
 
     #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -403,7 +403,7 @@ def test_update_centre_activity_availability_role_access_success(
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
 
     #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity

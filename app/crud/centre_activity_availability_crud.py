@@ -11,7 +11,8 @@ from datetime import datetime, timedelta, timezone
 
 def _check_for_duplicate_availability(
         db:Session,
-        centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate
+        centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
+        exclude_id: int = None
     ):
     
     essential_fields = {
@@ -20,7 +21,13 @@ def _check_for_duplicate_availability(
         "end_time": centre_activity_availability_data.end_time
     }
     
-    existing_availability = db.query(models.CentreActivityAvailability).filter_by(**essential_fields).first()
+    query = db.query(models.CentreActivityAvailability).filter_by(**essential_fields)
+    
+    if exclude_id is not None:
+        query = query.filter(models.CentreActivityAvailability.id != exclude_id)
+    
+    existing_availability = query.first()
+
     if existing_availability:
         raise HTTPException(status_code=400,
                 detail = {
@@ -195,13 +202,12 @@ def update_centre_activity_availability(
     ):
 
     db_centre_activity_availability = (db.query(models.CentreActivityAvailability).filter(
-        models.CentreActivityAvailability.id == centre_activity_availability_data.id,
-        models.CentreActivityAvailability.is_deleted == False
+        models.CentreActivityAvailability.id == centre_activity_availability_data.id
         ).first())
     if not db_centre_activity_availability:
-        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found or already soft deleted.")
+        raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
     
-    _check_for_duplicate_availability(db, centre_activity_availability_data)
+    _check_for_duplicate_availability(db, centre_activity_availability_data, exclude_id=centre_activity_availability_data.id)
     _check_centre_activity_availability_validity(db, centre_activity_availability_data)
 
     original_data = serialize_data(model_to_dict(db_centre_activity_availability))
