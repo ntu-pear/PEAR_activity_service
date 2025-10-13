@@ -56,8 +56,8 @@ jobs:
       - name: Test integration tests with pytest
         env:
           SERVICE_NAME: ${{ vars.SERVICE_NAME }}
-          DB_SERVER_DEV: "10.96.188.186"
-          DB_DATABASE_DEV: "fyp_dev_bryan_activity_test"
+          DB_SERVER_DEV: "fyp_dev_bryan_activity_test"
+          DB_DATABASE_DEV: ${{ secrets.DB_DATABASE_DEV }}
           DB_DATABASE_PORT: ${{ secrets.DB_DATABASE_PORT }}
           DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
           DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
