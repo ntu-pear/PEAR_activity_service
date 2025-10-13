@@ -53,9 +53,7 @@ def mock_user():
         "fullname": "Integration Test User"
     }
 
-class TestActivityCreateOutbox:
-    """Test activity creation triggers outbox event"""
-    
+class TestActivityCreateOutbox:    
     def test_create_activity_creates_outbox_event(self, integration_db, mock_user):
         """
         GIVEN: Activity data
@@ -154,9 +152,7 @@ class TestActivityCreateOutbox:
         ).count()
         assert final_outbox_count == initial_outbox_count
 
-class TestActivityUpdateOutbox:
-    """Test activity updates trigger outbox events"""
-    
+class TestActivityUpdateOutbox:    
     def test_update_activity_creates_outbox_event(self, integration_db, mock_user):
         """
         GIVEN: An existing activity
@@ -310,9 +306,7 @@ class TestActivityUpdateOutbox:
         final_outbox_count = integration_db.query(OutboxEvent).count()
         assert final_outbox_count == initial_outbox_count
 
-class TestActivityDeleteOutbox:
-    """Test activity deletion triggers outbox events"""
-    
+class TestActivityDeleteOutbox:    
     def test_delete_activity_creates_outbox_event(self, integration_db, mock_user):
         """
         GIVEN: An existing activity
