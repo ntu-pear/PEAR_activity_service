@@ -3,9 +3,9 @@ Integration tests for Activity Service (Publisher) Outbox Pattern
 Tests the flow: Activity CRUD -> OUTBOX_EVENTS table creation
 
 Run Pytest with command: 
-1. Run everything: python -m pytest tests/integration/test_activity_outbox_integration.py -v -s
-2. Run specific test class: python -m pytest tests/integration/test_activity_outbox_integration.py::TestActivityCreateOutbox -v -s
-3. Run specific test function: python -m pytest tests/integration/test_activity_outbox_integration.py::TestActivityCreateOutbox::test_create_activity_creates_outbox_event -v -s
+1. Run everything: pytest tests/integration/test_activity_outbox_integration.py -v -s
+2. Run specific test class: pytest tests/integration/test_activity_outbox_integration.py::TestActivityCreateOutbox -v -s
+3. Run specific test function: pytest tests/integration/test_activity_outbox_integration.py::TestActivityCreateOutbox::test_create_activity_creates_outbox_event -v -s
 
 SQL Commands to clear DB: 
 delete FROM [fyp_dev_bryan_activity_test].[dbo].[OUTBOX_EVENTS];
