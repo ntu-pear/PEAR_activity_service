@@ -49,6 +49,15 @@ jobs:
         run: |
           python -c "from app.main import app; print('All imports successful')"
 
-      - name: Test with pytest
+      - name: Test unit tests with pytest
         run: |
-          python -m pytest
+          python -m pytest tests/unit
+
+      - name: Test integration tests with pytest
+        env:
+          DB_SERVER_DEV: "10.96.188.186"
+          DB_DATABASE_DEV: "fyp_dev_bryan_activity_test"
+          DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
+          DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
+        run: |
+          python -m pytest tests/integration
