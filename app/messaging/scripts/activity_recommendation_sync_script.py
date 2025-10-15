@@ -193,7 +193,12 @@ def main():
     except Exception as e:
         print(f"Script failed: {str(e)}")
         sys.exit(1)
-
+    finally:
+        # Ensure all messages are published before exiting
+        print("Shutting down producer manager...")
+        from messaging.producer_manager import stop_producer_manager
+        stop_producer_manager()
+        print("Producer manager stopped. Script complete.")
 
 if __name__ == "__main__":
     main()
