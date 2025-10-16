@@ -81,7 +81,10 @@ jobs:
         env:
           DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
           DB_DATABASE_DEV: "fyp_dev_bryan_activity_test"
-          DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
-          DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
+          # DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
+          # DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
+          DB_USERNAME_DEV: "sa"
+          DB_PASSWORD_DEV: "Fyppear@3"
+          DB_DRIVER_DEV: "ODBC Driver 18 for SQL Server"
         run: |
           python -m pytest tests/integration
