@@ -23,6 +23,7 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_DRIVER: ${{ secrets.DB_DRIVER }}
       WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
+      WEB_FE_ORIGIN_STG: ${{ secrets.WEB_FE_ORIGIN_STG }}   # To be shifted into Environment Secrets with _STG removed when Activity stg server is up
       PATIENT_BE_ORIGIN: ${{ secrets.PATIENT_BE_ORIGIN }}
       USER_BE_ORIGIN: ${{ secrets.USER_BE_ORIGIN }}
       RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST }}
