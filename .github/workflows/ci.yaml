@@ -37,25 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # # Temporary step to debug ODBC installation issues
-      # - name: Check ODBC Installation
-      #   run: |
-      #     echo "=== Checking ODBC Installation ==="
-      #     echo "1. Checking if odbcinst command exists:"
-      #     which odbcinst || echo "odbcinst not found"
-          
-      #     echo -e "\n2. Checking ODBC configuration:"
-      #     odbcinst -j || echo "unixODBC not installed"
-          
-      #     echo -e "\n3. Listing installed ODBC drivers:"
-      #     odbcinst -q -d || echo "No drivers found or unixODBC not installed"
-          
-      #     echo -e "\n4. Checking for SQL Server ODBC driver files:"
-      #     ls -la /opt/microsoft/msodbcsql*/lib64/ 2>/dev/null || echo "SQL Server ODBC drivers not found"
-          
-      #     echo -e "\n5. Checking odbcinst.ini file:"
-      #     cat /etc/odbcinst.ini 2>/dev/null || echo "odbcinst.ini not found"
-
       - name: Set up Python 3.9.19
         uses: actions/setup-python@v3
         with:
