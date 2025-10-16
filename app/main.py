@@ -161,6 +161,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     os.getenv("WEB_FE_ORIGIN"),
+    os.getenv("WEB_FE_ORIGIN_STG"),  # To be shifted into Environment Secrets with _STG removed when Activity stg server is up
     os.getenv("PATIENT_BE_ORIGIN")
 ]
 

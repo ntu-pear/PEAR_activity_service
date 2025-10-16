@@ -13,24 +13,23 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-
+    environment: 'prod'
     env:
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}
-      DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
-      DB_DATABASE_DEV: ${{ secrets.DB_DATABASE_DEV }}
+      DB_SERVER: ${{ secrets.DB_SERVER }}
+      DB_DATABASE: ${{ secrets.DB_DATABASE }}
       DB_DATABASE_PORT: ${{ secrets.DB_DATABASE_PORT }}
-      DB_USERNAME_DEV: ${{ secrets.DB_USERNAME_DEV }}
-      DB_PASSWORD_DEV: ${{ secrets.DB_PASSWORD_DEV }}
-      DB_DRIVER_DEV: ${{ secrets.DB_DRIVER_DEV }}
-      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_DRIVER: ${{ secrets.DB_DRIVER }}
       WEB_FE_ORIGIN: ${{ secrets.WEB_FE_ORIGIN }}
+      WEB_FE_ORIGIN_STG: ${{ secrets.WEB_FE_ORIGIN_STG }}   # To be shifted into Environment Secrets with _STG removed when Activity stg server is up
       PATIENT_BE_ORIGIN: ${{ secrets.PATIENT_BE_ORIGIN }}
-      RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST_STG }}
+      USER_BE_ORIGIN: ${{ secrets.USER_BE_ORIGIN }}
+      RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST }}
       RABBITMQ_PORT: ${{ secrets.RABBITMQ_PORT }}
-      RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USER }}
-      RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASS }}
+      RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+      RABBITMQ_PASS: ${{ secrets.RABBITMQ_PASS }}
       RABBITMQ_VIRTUAL_HOST: ${{ secrets.RABBITMQ_VIRTUAL_HOST }}
 
     steps:

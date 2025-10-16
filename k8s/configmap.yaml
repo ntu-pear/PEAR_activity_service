@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fyp-config
-data:
-  DB_DRIVER_DEV: "ODBC Driver 17 for SQL Server"
-  DB_SERVER_DEV: "192.168.188.186"
-  DB_DATABASE_DEV: "activity_service_dev"
-  DB_DATABASE_PORT: "1433"
