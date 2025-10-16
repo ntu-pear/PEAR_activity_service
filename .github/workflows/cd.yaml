@@ -51,6 +51,7 @@ jobs:
 
           # Origins
           echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+          echo "WEB_FE_ORIGIN_STG=${{ secrets.WEB_FE_ORIGIN_STG }}" >> .env     # To be shifted into Environment Secrets with _STG removed when Activity stg server is up
           echo "PATIENT_BE_ORIGIN=${{ secrets.PATIENT_BE_ORIGIN }}" >> .env
           echo "USER_BE_ORIGIN=${{ secrets.USER_BE_ORIGIN }}" >> .env
 
@@ -61,16 +62,16 @@ jobs:
           echo "RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}" >> .env
           echo "RABBITMQ_VIRTUAL_HOST=${{ secrets.RABBITMQ_VIRTUAL_HOST }}" >> .env
 
-      - name: Apply Kubernetes ConfigMap
-        run: |
-          echo "Applying ConfigMap..."
-          kubectl apply -f './k8s/configmap.yaml'
-          kubectl apply -f './k8s/secret.yaml'
+      #- name: Apply Kubernetes ConfigMap
+      #  run: |
+      #    echo "Applying ConfigMap..."
+      #    kubectl apply -f './k8s/configmap.yaml'
+      #    kubectl apply -f './k8s/secret.yaml'
 
       - name: Delete old deployment
         run: |
           echo "Deleting old deployment..."
-          kubectl delete deployment.apps/activity-service-dev service/activity-service-dev
+          kubectl delete deployment.apps/activity-service-dev service/activity-service-dev --ignore-not-found
 
       - name: Delete old docker images
         run: |
