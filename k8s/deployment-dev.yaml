@@ -19,6 +19,9 @@ spec:
         image: host.minikube.internal:5000/activity_service_dev:latest  # Replace with your Docker image
         ports:
         - containerPort: 8000
+        env:
+        - name: TZ
+          value: "Asia/Singapore"  # GMT+8 timezone
         volumeMounts:
         - name: log-volume
           mountPath: /app/logs  # Path inside the container
@@ -26,7 +29,8 @@ spec:
       - name: log-volume
         hostPath:
           path: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs  # Path on the host machine
-          type: DirectoryOrCreate  # Ensures directory is created if it doesn’t exist
+          type: DirectoryOrCreate  # Ensures directory is created if it doesn't exist
+
 ---
 apiVersion: v1
 kind: Service

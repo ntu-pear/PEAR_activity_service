@@ -27,7 +27,7 @@ jobs:
   deploy:
     needs: precheck
     runs-on: [self-hosted, Linux, X64, activity]
-
+    environment: 'prod'
     steps:
       - uses: actions/checkout@v4
       - name: Print working directory
@@ -42,12 +42,12 @@ jobs:
           echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> .env
 
           # Database
-          echo "DB_SERVER_DEV=${{ secrets.DB_SERVER_DEV }}" >> .env
-          echo "DB_DATABASE_DEV=${{ secrets.DB_DATABASE_DEV }}" >> .env
+          echo "DB_SERVER=${{ secrets.DB_SERVER }}" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
           echo "DB_DATABASE_PORT=${{ secrets.DB_DATABASE_PORT }}" >> .env
-          echo "DB_USERNAME_DEV=${{ secrets.DB_USERNAME_DEV }}" >> .env
-          echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
-          echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_DRIVER=${{ secrets.DB_DRIVER }}" >> .env
 
           # Origins
           echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
@@ -55,7 +55,7 @@ jobs:
           echo "USER_BE_ORIGIN=${{ secrets.USER_BE_ORIGIN }}" >> .env
 
           # RabbitMQ
-          echo "RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST_PROD }}" >> .env
+          echo "RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}" >> .env
           echo "RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}" >> .env
           echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}" >> .env
           echo "RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}" >> .env

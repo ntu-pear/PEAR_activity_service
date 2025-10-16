@@ -25,35 +25,34 @@ def get_env_var(name, required=True, service=None):
         sys.exit(1)
     return value
 
-DB_DRIVER_DEV = get_env_var("DB_DRIVER_DEV")
-DB_SERVER_DEV = get_env_var("DB_SERVER_DEV")
+DB_DRIVER = get_env_var("DB_DRIVER")
+DB_SERVER = get_env_var("DB_SERVER")
 DB_DATABASE_PORT = get_env_var("DB_DATABASE_PORT")
-DB_DATABASE_DEV = get_env_var("DB_DATABASE_DEV")
-DB_USERNAME_DEV = get_env_var("DB_USERNAME_DEV")
-DB_PASSWORD_DEV = get_env_var("DB_PASSWORD_DEV")
+DB_DATABASE = get_env_var("DB_DATABASE")
+DB_USERNAME = get_env_var("DB_USERNAME")
+DB_PASSWORD = get_env_var("DB_PASSWORD")
 
 
 ##### Note that this connection is to the DEV environment ####
-# COMMMENT out this section when doing local development
-# OR change your env var accordingly to point to your db
+# CHANGE your env var accordingly to point to your db
 connection_url = sa.URL.create(
     "mssql+pyodbc",
-    database=DB_DATABASE_DEV,
-    username=DB_USERNAME_DEV,
-    password=DB_PASSWORD_DEV,
-    host=DB_SERVER_DEV,
+    database=DB_DATABASE,
+    username=DB_USERNAME,
+    password=DB_PASSWORD,
+    host=DB_SERVER,
     port=DB_DATABASE_PORT,
-    query={"driver": DB_DRIVER_DEV, "TrustServerCertificate": "yes"},
+    query={"driver": DB_DRIVER, "TrustServerCertificate": "yes"},
 )
 
 ###############################################################
 # Get the database URL from environment (DOCKER LOCAL)
-DB_URL_LOCAL = os.getenv("DB_URL_LOCAL")
-DB_DRIVER = os.getenv("DB_DRIVER")
-DB_SERVER = os.getenv("DB_SERVER")
-DB_DATABASE = os.getenv("DB_DATABASE")
-DB_USERNAME = os.getenv("DB_USERNAME")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+#DB_URL_LOCAL = os.getenv("DB_URL_LOCAL")
+#DB_DRIVER = os.getenv("DB_DRIVER")
+#DB_SERVER = os.getenv("DB_SERVER")
+#DB_DATABASE = os.getenv("DB_DATABASE")
+#DB_USERNAME = os.getenv("DB_USERNAME")
+#DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 #===== Local Docker Development =========
 # connection_url = sa.URL.create(
