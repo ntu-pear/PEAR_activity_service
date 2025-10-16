@@ -12,8 +12,9 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
-
+    # runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, activity]
+    
     env:
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}
       DB_SERVER_DEV: ${{ secrets.DB_SERVER_DEV }}
