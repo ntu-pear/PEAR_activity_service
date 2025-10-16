@@ -13,8 +13,7 @@ permissions:
 jobs:
   main:
     build:
-      # runs-on: ubuntu-24.04
-      runs-on: [self-hosted, Linux, X64, activity]
+      runs-on: ubuntu-24.04
       environment: 'prod'
       env:
         SERVICE_NAME: ${{ vars.SERVICE_NAME }}
