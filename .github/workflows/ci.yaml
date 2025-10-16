@@ -55,7 +55,7 @@ jobs:
 
   integration-test:
     runs-on: [self-hosted, Linux, X64, activity]
-    needs: main
+    needs: build
     environment: 'test'
     env:
         SERVICE_NAME: ${{ vars.SERVICE_NAME }}
