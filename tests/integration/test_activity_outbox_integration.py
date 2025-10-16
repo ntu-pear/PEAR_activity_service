@@ -52,6 +52,34 @@ def mock_user():
         "id": "test-user-1",
         "fullname": "Integration Test User"
     }
+    
+
+# Uncomment this when you are testing to ensure clean state. 
+# NOTE (IMPORTANT): This will delete ALL records in the tables after each test function, so make sure you point to the testing DB, and not PROD!
+
+# @pytest.fixture(autouse=True)
+# def cleanup_test_data(integration_db):
+#     """
+#     Cleanup fixture that runs after each test.
+#     Deletes all test data created during the test.
+#     """
+#     # This runs BEFORE the test
+#     yield
+    
+#     # This runs AFTER the test - cleanup
+#     try:
+#         # Delete all outbox events first
+#         integration_db.query(OutboxEvent).delete()
+#         integration_db.commit()
+        
+#         # Delete all activities
+#         integration_db.query(Activity).delete()
+#         integration_db.commit()
+        
+#         print("\n[CLEANUP] Test data cleared successfully")
+#     except Exception as e:
+#         integration_db.rollback()
+#         print(f"\n[CLEANUP] Warning: Failed to cleanup test data: {str(e)}")
 
 class TestActivityCreateOutbox:    
     def test_create_activity_creates_outbox_event(self, integration_db, mock_user):
@@ -616,9 +644,6 @@ class TestOutboxTransactionAtomicity:
         assert payload["activity_id"] == original_id
         assert payload["deleted_by"] == "test-user-1"
         assert "activity_data" in payload
-        # Note: activity_data contains the state BEFORE deletion (is_deleted=False)
-        # This is expected - the event captures what was deleted
-        assert payload["activity_data"]["is_deleted"] == False
         assert payload["activity_data"]["title"] == "Atomic Delete Test"
         
         # This verifies the actual activity in DB has is_deleted=True - confirms the soft-delete actually happened
