@@ -1,9 +1,10 @@
 import os
 import sys
+
 import sqlalchemy as sa
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Load environment variables from .env file
 load_dotenv()       
@@ -24,7 +25,8 @@ def get_env_var(name, required=True, service=None):
         sys.exit(1)
     return value
 
-DB_DRIVER_DEV = get_env_var("DB_DRIVER_DEV")
+# DB_DRIVER_DEV = get_env_var("DB_DRIVER_DEV")
+DB_DRIVER_DEV = "ODBC Driver 18 for SQL Server"
 DB_SERVER_DEV = get_env_var("DB_SERVER_DEV")
 DB_DATABASE_PORT = get_env_var("DB_DATABASE_PORT")
 DB_DATABASE_DEV = get_env_var("DB_DATABASE_DEV")
