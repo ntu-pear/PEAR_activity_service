@@ -89,8 +89,5 @@ jobs:
           python -c "from app.main import app; print('All imports successful')"
       
       - name: Test integration tests with pytest
-        env:
-          DB_DATABASE_DEV: ${{ secrets.DB_DATABASE }}
-          DB_DRIVER_DEV: ${{ secrets.DB_DRIVER }}
         run: |
           python -m pytest tests/integration
