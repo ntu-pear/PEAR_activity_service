@@ -178,7 +178,7 @@ class TestActivityRecommendationUpdateOutbox:
         
         # Update recommendation
         update_data = CentreActivityRecommendationUpdate(
-            centre_activity_recommendation_id=original_id,
+            id=original_id,
             centre_activity_id=1,
             patient_id=1,
             doctor_recommendation=1,  # Changed from 0 to 1
@@ -251,7 +251,7 @@ class TestActivityRecommendationUpdateOutbox:
         
         # "Update" with same values (no actual changes)
         update_data = CentreActivityRecommendationUpdate(
-            centre_activity_recommendation_id=recommendation.id,
+            id=recommendation.id,
             centre_activity_id=1,
             patient_id=1,
             doctor_recommendation=0,
@@ -430,7 +430,7 @@ class TestOutboxTransactionAtomicity:
         
         # Update recommendation
         update_data = CentreActivityRecommendationUpdate(
-            centre_activity_recommendation_id=original_id,
+            id=original_id,
             centre_activity_id=1,
             patient_id=1,
             doctor_recommendation=1,  # Changed from -1 to 1

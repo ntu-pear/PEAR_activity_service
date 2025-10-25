@@ -173,7 +173,7 @@ class TestActivityPreferenceUpdateOutbox:
         
         # Update preference
         update_data = CentreActivityPreferenceUpdate(
-            centre_activity_preference_id=original_id,
+            id=original_id,
             centre_activity_id=1,
             patient_id=1,
             is_like=-1,  # Changed from 1 to -1
@@ -242,7 +242,7 @@ class TestActivityPreferenceUpdateOutbox:
         
         # "Update" with same values (no actual changes)
         update_data = CentreActivityPreferenceUpdate(
-            centre_activity_preference_id=preference.id,
+            id=preference.id,
             centre_activity_id=1,
             patient_id=1,
             is_like=0,
@@ -417,7 +417,7 @@ class TestOutboxTransactionAtomicity:
         
         # Update preference
         update_data = CentreActivityPreferenceUpdate(
-            centre_activity_preference_id=original_id,
+            id=original_id,
             centre_activity_id=1,
             patient_id=1,
             is_like=1,  # Changed from 0 to 1

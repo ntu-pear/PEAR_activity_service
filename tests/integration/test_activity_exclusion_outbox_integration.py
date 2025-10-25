@@ -7,6 +7,8 @@ Run Pytest with command:
 2. Run specific test class: pytest tests/integration/test_activity_exclusion_outbox_integration.py::TestActivityExclusionCreateOutbox -v -s
 3. Run specific test function: pytest tests/integration/test_activity_exclusion_outbox_integration.py::TestActivityExclusionCreateOutbox::test_create_exclusion_creates_outbox_event -v -s
 
+** If there are any errors when running any of the integration tests, ensure that the ACTIVITY(id=1) and CENTRE_ACTIVITY(id=1, and links to Activity_id=1 via FK) exists. You can insert them manually into the testing DB if needed.
+
 """
 
 import json
@@ -55,7 +57,7 @@ def mock_user():
 
 # Uncomment this when you are testing to ensure clean state. 
 # NOTE (IMPORTANT): This will delete ALL records in the tables after each test function, so make sure you point to the testing DB, and not PROD!
-
+# If you comment this out, then you will need to manually clear the tables before re-running tests to avoid conflicts.
 # @pytest.fixture(autouse=True)
 # def cleanup_test_data(integration_db):
 #     """

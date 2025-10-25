@@ -52,30 +52,31 @@ def mock_user():
 
 # Uncomment this when you are testing to ensure clean state. 
 # NOTE (IMPORTANT): This will delete ALL records in the tables after each test function, so make sure you point to the testing DB, and not PROD!
+# If you comment this out, then you will need to manually clear the tables before re-running tests to avoid conflicts.
 
-@pytest.fixture(autouse=True)
-def cleanup_test_data(integration_db):
-    """
-    Cleanup fixture that runs after each test.
-    Deletes all test data created during the test.
-    """
-    # This runs BEFORE the test
-    yield
+# @pytest.fixture(autouse=True)
+# def cleanup_test_data(integration_db):
+#     """
+#     Cleanup fixture that runs after each test.
+#     Deletes all test data created during the test.
+#     """
+#     # This runs BEFORE the test
+#     yield
     
-    # This runs AFTER the test - cleanup
-    try:
-        # Delete all outbox events first
-        integration_db.query(OutboxEvent).delete()
-        integration_db.commit()
+#     # This runs AFTER the test - cleanup
+#     try:
+#         # Delete all outbox events first
+#         integration_db.query(OutboxEvent).delete()
+#         integration_db.commit()
         
-        # Delete all activities
-        integration_db.query(Activity).delete()
-        integration_db.commit()
+#         # Delete all activities
+#         integration_db.query(Activity).delete()
+#         integration_db.commit()
         
-        print("\n[CLEANUP] Test data cleared successfully")
-    except Exception as e:
-        integration_db.rollback()
-        print(f"\n[CLEANUP] Warning: Failed to cleanup test data: {str(e)}")
+#         print("\n[CLEANUP] Test data cleared successfully")
+#     except Exception as e:
+#         integration_db.rollback()
+#         print(f"\n[CLEANUP] Warning: Failed to cleanup test data: {str(e)}")
 
 class TestActivityCreateOutbox:    
     def test_create_activity_creates_outbox_event(self, integration_db, mock_user):

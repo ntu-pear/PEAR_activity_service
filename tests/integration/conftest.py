@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.centre_activity_crud import create_centre_activity
 from app.database import SessionLocal
+from app.models.activity_model import Activity
 from app.models.centre_activity_exclusion_model import CentreActivityExclusion
 from app.models.centre_activity_model import CentreActivity
 from app.models.centre_activity_preference_model import CentreActivityPreference
@@ -240,50 +241,47 @@ def caregiver_user():
 @pytest.fixture(autouse=True)
 def cleanup_test_data(integration_db):
     """
-    Automatically cleans up test data after each test.
-    
-    Runs AFTER each test (autouse=True).
-    No need to add this fixture to your test functions!
-    
-    Cleans up:
-    - OutboxEvents
-    - CentreActivityExclusions
-    - CentreActivityPreferences
-    - CentreActivityRecommendations
-    - Test-created CentreActivities (keeps prerequisite ID=1)
-    
-    To disable cleanup and see records in DB, comment out this entire fixture.
+    Global cleanup - cleans ALL test data after each test.
+    Preserves prerequisites for dependent tests.
     """
-    # This runs BEFORE the test
     yield
     
-    # This runs AFTER the test - cleanup time!
     try:
-        # Delete outbox events
-        integration_db.query(OutboxEvent).delete()
+        # Clean in correct order (child → parent)
+        
+        # 1. Outbox events (no dependencies)
+        integration_db.query(OutboxEvent).delete(synchronize_session=False)
         integration_db.commit()
         
-        # Delete test exclusions
-        integration_db.query(CentreActivityExclusion).delete()
+        # 2. Activity children (grandchildren of Activity)
+        integration_db.query(CentreActivityPreference).delete(synchronize_session=False)
         integration_db.commit()
         
-        # Delete test preferences
-        integration_db.query(CentreActivityPreference).delete()
+        integration_db.query(CentreActivityExclusion).delete(synchronize_session=False)
         integration_db.commit()
         
-        # Delete test recommendations
-        integration_db.query(CentreActivityRecommendation).delete()
+        integration_db.query(CentreActivityRecommendation).delete(synchronize_session=False)
         integration_db.commit()
         
-        # Delete test-created centre activities (preserve prerequisite ID=1)
+        # 3. Centre activities (child of Activity)
+        # Preserve ID=1 - needed by preference/exclusion/recommendation tests
         integration_db.query(CentreActivity).filter(
             CentreActivity.id != 1
-        ).delete()
+        ).delete(synchronize_session=False)
         integration_db.commit()
+        
+        # 4. Activities (parent)
+        # Preserve ID=1 - needed by centre_activity tests
+        integration_db.query(Activity).filter(
+            Activity.id != 1
+        ).delete(synchronize_session=False)
+        integration_db.commit()
+        
+        print("[CLEANUP] ✓ All test data cleaned (prerequisites preserved)")
         
     except Exception as e:
         integration_db.rollback()
-        print(f"\n[CLEANUP] Warning: Cleanup failed: {str(e)}")
+        print(f"[CLEANUP] Warning: {str(e)}")
 
 
 # ============================================================================
