@@ -18,7 +18,8 @@ def _check_for_duplicate_availability(
     essential_fields = {
         "centre_activity_id": centre_activity_availability_data.centre_activity_id,
         "start_time": centre_activity_availability_data.start_time,
-        "end_time": centre_activity_availability_data.end_time
+        "end_time": centre_activity_availability_data.end_time,
+        "is_fixed": centre_activity_availability_data.is_fixed
     }
     
     query = db.query(models.CentreActivityAvailability).filter_by(**essential_fields)
@@ -215,7 +216,7 @@ def update_centre_activity_availability(
 
     modified_by_id = current_user_info.get("id") or centre_activity_availability_data.modified_by_id
     
-    for field in schemas.CentreActivityAvailabilityUpdate.__fields__:
+    for field in schemas.CentreActivityAvailabilityUpdate.model_fields:
         if field != "Id" and hasattr(centre_activity_availability_data, field):
             setattr(db_centre_activity_availability, field, getattr(centre_activity_availability_data, field))
     db_centre_activity_availability.modified_by_id = modified_by_id
