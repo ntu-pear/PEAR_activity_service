@@ -1,15 +1,12 @@
 """
-conftest.py - Final Configuration for PEAR Activity Service Integration Tests
-==============================================================================
+This file sets up global fixtures and configurations for integration tests.
 
-Simple, clean, mocked approach:
-- ✅ Mocks all external services (Patient Service, User Service)
-- ✅ No need for any external services to be running
-- ✅ Fast, reliable, always works
-- ✅ Industry standard for integration testing
+Conftest includes:
+1. Automatic mocking of external services (Patient Service, User Service).
+2. Session-scoped fixture to create prerequisite data (Activity ID=1, CentreActivity ID=1).
+3. Function-scoped fixture to provide a fresh database session for each test.
 
-Run tests:
-    pytest tests/integration/ -v -s
+Run tests: pytest tests/integration/ -v -s
 """
 
 from datetime import date, datetime
@@ -35,10 +32,9 @@ from app.schemas.centre_activity_schema import CentreActivityCreate
 @pytest.fixture(autouse=True, scope="function")
 def mock_external_services():
     """
-    Automatically mock all external service calls.
+    Here we mock all external service calls.
     
     This runs for EVERY test automatically (autouse=True).
-    No need to add this fixture to your test functions!
     
     Mocks:
     - Patient Service API calls (get_patient_by_id, get_patient_allocation_by_patient_id)
@@ -93,7 +89,7 @@ def mock_external_services():
             }
             return mock_response
         
-        # Mock User Service calls (if needed)
+        # Mock User Service calls
         if '/users/' in url:
             user_id = url.split('/')[-1]
             mock_response.status_code = 200
@@ -108,8 +104,8 @@ def mock_external_services():
         
         # Catch any unmocked external calls
         raise Exception(
-            f"⚠️  Unmocked external HTTP call detected: {url}\n"
-            f"   Add mocking for this endpoint in conftest.py if needed."
+            f"WARNING: Unmocked external HTTP call detected: {url}\n"
+            f"Add mocking for this endpoint in conftest.py if needed."
         )
     
     # Patch requests.get for all tests
@@ -127,7 +123,7 @@ def setup_test_database():
     Runs once before all tests in the session.
     Creates prerequisite data that all tests need.
     
-    Prerequisites created:
+    Prerequisites created *** IMPORTANT! ***:
     - Activity ID=1 (required by CentreActivity)
     - CentreActivity ID=1 (required by exclusions/preferences/recommendations)
     """
@@ -155,10 +151,6 @@ def setup_test_database():
         db.close()
     
     yield
-    
-    # Optional: Cleanup after all tests
-    # (Usually we keep test data for debugging)
-
 
 # ============================================================================
 # FUNCTION-SCOPED FIXTURES (Run for each test)
@@ -246,9 +238,7 @@ def cleanup_test_data(integration_db):
     """
     yield
     
-    try:
-        # Clean in correct order (child → parent)
-        
+    try:        
         # 1. Outbox events (no dependencies)
         integration_db.query(OutboxEvent).delete(synchronize_session=False)
         integration_db.commit()
@@ -277,7 +267,7 @@ def cleanup_test_data(integration_db):
         ).delete(synchronize_session=False)
         integration_db.commit()
         
-        print("[CLEANUP] ✓ All test data cleaned (prerequisites preserved)")
+        print("[CLEANUP] All test data cleaned (prerequisites preserved)")
         
     except Exception as e:
         integration_db.rollback()
@@ -285,7 +275,7 @@ def cleanup_test_data(integration_db):
 
 
 # ============================================================================
-# HELPER FUNCTIONS (Internal use)
+# HELPER FUNCTIONS FOR SETUP
 # ============================================================================
 
 def _create_base_activity_if_not_exists(db: Session) -> int:
@@ -299,7 +289,7 @@ def _create_base_activity_if_not_exists(db: Session) -> int:
         activity = result.fetchone()
         
         if activity:
-            print("[SETUP] ✓ Activity ID=1 already exists")
+            print("[SETUP] Activity ID=1 already exists")
             return 1
         
         # Create Activity ID=1
@@ -309,7 +299,7 @@ def _create_base_activity_if_not_exists(db: Session) -> int:
         """, {"created_date": datetime.now()})
         db.commit()
         
-        print("[SETUP] ✓ Created Activity ID=1")
+        print("[SETUP] Created Activity ID=1")
         return 1
         
     except Exception as e:
@@ -326,7 +316,7 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
     # Check if already exists
     existing = db.query(CentreActivity).filter(CentreActivity.id == 1).first()
     if existing:
-        print(f"[SETUP] ✓ CentreActivity ID=1 already exists")
+        print(f"[SETUP] CentreActivity ID=1 already exists")
         return existing
     
     # Create mock user for the creation
@@ -356,7 +346,7 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
         current_user_info=mock_user
     )
     
-    print(f"[SETUP] ✓ Created CentreActivity ID={centre_activity.id}")
+    print(f"[SETUP] Created CentreActivity ID={centre_activity.id}")
     return centre_activity
 
 

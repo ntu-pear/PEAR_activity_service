@@ -55,34 +55,6 @@ def mock_user():
         "bearer_token": "test-token-123"
     }
     
-
-# Uncomment this when you are testing to ensure clean state. 
-# NOTE (IMPORTANT): This will delete ALL records in the tables after each test function, so make sure you point to the testing DB, and not PROD!
-
-# @pytest.fixture(autouse=True)
-# def cleanup_test_data(integration_db):
-#     """
-#     Cleanup fixture that runs after each test.
-#     Deletes all test data created during the test.
-#     """
-#     # This runs BEFORE the test
-#     yield
-    
-#     # This runs AFTER the test - cleanup
-#     try:
-#         # Delete all outbox events first
-#         integration_db.query(OutboxEvent).delete()
-#         integration_db.commit()
-        
-#         # Delete all activity recommendations
-#         integration_db.query(CentreActivityRecommendation).delete()
-#         integration_db.commit()
-        
-#         print("\n[CLEANUP] Test data cleared successfully")
-#     except Exception as e:
-#         integration_db.rollback()
-#         print(f"\n[CLEANUP] Warning: Failed to cleanup test data: {str(e)}")
-
 class TestActivityRecommendationCreateOutbox:    
     def test_create_recommendation_creates_outbox_event(self, integration_db, mock_user):
         """
