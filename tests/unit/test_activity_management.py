@@ -1,22 +1,23 @@
-import pytest
-from unittest import mock
 from datetime import datetime, timedelta
+from unittest import mock
 
+import pytest
+
+# from conftest import existing_activity, get_db_session_mock
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+import app.models.activity_model as models
 from app.crud.activity_crud import (
-    get_activity_by_id,
-    get_activities,
     create_activity,
-    update_activity_by_id,
     delete_activity_by_id,
+    get_activities,
+    get_activity_by_id,
+    update_activity_by_id,
 )
 from app.models.activity_model import Activity
 from app.schemas.activity_schema import ActivityCreate
-import app.models.activity_model as models
 
-from conftest import get_db_session_mock, existing_activity
 
 # Stub out real logging so we don’t try to JSON‑serialize MagicMocks
 @pytest.fixture(autouse=True)

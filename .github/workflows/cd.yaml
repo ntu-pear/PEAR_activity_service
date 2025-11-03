@@ -27,7 +27,7 @@ jobs:
   deploy:
     needs: precheck
     runs-on: [self-hosted, Linux, X64, activity]
-
+    environment: 'prod'
     steps:
       - uses: actions/checkout@v4
       - name: Print working directory
@@ -42,35 +42,36 @@ jobs:
           echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> .env
 
           # Database
-          echo "DB_SERVER_DEV=${{ secrets.DB_SERVER_DEV }}" >> .env
-          echo "DB_DATABASE_DEV=${{ secrets.DB_DATABASE_DEV }}" >> .env
+          echo "DB_SERVER=${{ secrets.DB_SERVER }}" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
           echo "DB_DATABASE_PORT=${{ secrets.DB_DATABASE_PORT }}" >> .env
-          echo "DB_USERNAME_DEV=${{ secrets.DB_USERNAME_DEV }}" >> .env
-          echo "DB_PASSWORD_DEV=${{ secrets.DB_PASSWORD_DEV }}" >> .env
-          echo "DB_DRIVER_DEV=${{ secrets.DB_DRIVER_DEV }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_DRIVER=${{ secrets.DB_DRIVER }}" >> .env
 
           # Origins
           echo "WEB_FE_ORIGIN=${{ secrets.WEB_FE_ORIGIN }}" >> .env
+          echo "WEB_FE_ORIGIN_STG=${{ secrets.WEB_FE_ORIGIN_STG }}" >> .env     # To be shifted into Environment Secrets with _STG removed when Activity stg server is up
           echo "PATIENT_BE_ORIGIN=${{ secrets.PATIENT_BE_ORIGIN }}" >> .env
           echo "USER_BE_ORIGIN=${{ secrets.USER_BE_ORIGIN }}" >> .env
 
           # RabbitMQ
-          echo "RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST_PROD }}" >> .env
+          echo "RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}" >> .env
           echo "RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}" >> .env
           echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}" >> .env
           echo "RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}" >> .env
           echo "RABBITMQ_VIRTUAL_HOST=${{ secrets.RABBITMQ_VIRTUAL_HOST }}" >> .env
 
-      - name: Apply Kubernetes ConfigMap
-        run: |
-          echo "Applying ConfigMap..."
-          kubectl apply -f './k8s/configmap.yaml'
-          kubectl apply -f './k8s/secret.yaml'
+      #- name: Apply Kubernetes ConfigMap
+      #  run: |
+      #    echo "Applying ConfigMap..."
+      #    kubectl apply -f './k8s/configmap.yaml'
+      #    kubectl apply -f './k8s/secret.yaml'
 
       - name: Delete old deployment
         run: |
           echo "Deleting old deployment..."
-          kubectl delete deployment.apps/activity-service-dev service/activity-service-dev
+          kubectl delete deployment.apps/activity-service-dev service/activity-service-dev --ignore-not-found
 
       - name: Delete old docker images
         run: |
