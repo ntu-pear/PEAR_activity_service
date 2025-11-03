@@ -94,6 +94,7 @@ def create_centre_activity_availability(
 
         db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
         db_centre_activity_availability.created_by_id = current_user_id
+        db_centre_activity_availability.created_date = datetime.now()
         db.add(db_centre_activity_availability)
         
     else:
@@ -106,6 +107,7 @@ def create_centre_activity_availability(
             db_centre_activity_availability.created_by_id = current_user_id
             db_centre_activity_availability.start_time = datetime.combine(monday + timedelta(days=i), extracted_start_time)
             db_centre_activity_availability.end_time = datetime.combine(monday + timedelta(days=i), extracted_end_time)
+            db_centre_activity_availability.created_date = datetime.now()
             list_db_centre_activity_availability.append(db_centre_activity_availability)
 
         for item in list_db_centre_activity_availability:
