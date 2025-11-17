@@ -82,11 +82,11 @@ jobs:
       - name: Ensure deployment exists
         run: |
           kubectl get deployment activity-service-dev || kubectl apply -f ./k8s/deployment-dev.yaml
-          
+
       - name: Deploy to Kubernetes (rolling update)
         run: |
           echo "Updating deployment with commit SHA image..."
-          kubectl set image deployment/activity-service-dev \
+          kubectl set image deployment/activity-service-dev \                               # Overwrites image defined in deployment manifest
             activity-service=host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
           kubectl rollout status deployment/activity-service-dev --timeout=300s
