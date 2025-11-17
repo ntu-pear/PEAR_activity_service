@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "Updating deployment with commit SHA image..."
           kubectl set image deployment/activity-service-dev \
-            activity-service-dev=localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
+            activity-service=localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
           kubectl rollout status deployment/activity-service-dev
 
       - name: Deploy Filebeat DaemonSet
