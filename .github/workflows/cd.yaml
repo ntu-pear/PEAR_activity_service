@@ -98,3 +98,12 @@ jobs:
           echo "Deploying..."
           kubectl apply -f './k8s/deployment-dev.yaml'
           kubectl apply -f './k8s/filebeat-daemonset.yaml'
+
+      - name: Docker maintenace cleanup
+        run: |
+          echo "Running Docker maintenance cleanup..."
+          docker container prune -f
+          docker image prune -f
+          
+          # Cleaning up inside minikube docker environment
+          minikube ssh -- "docker container prune -f && docker image prune -f"
