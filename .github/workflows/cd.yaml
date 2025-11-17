@@ -71,17 +71,19 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          docker tag activity_service_dev:${{ env.COMMIT_SHA }} localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
+          # Tag the image so minikube can reach the host registry
+          docker tag activity_service_dev:${{ env.COMMIT_SHA }} host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
       - name: Push Docker image to local registry
         run: |
-          docker push localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
+          # Push to the host registry address that minikube can access
+          docker push host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
       - name: Deploy to Kubernetes (rolling update)
         run: |
           echo "Updating deployment with commit SHA image..."
           kubectl set image deployment/activity-service-dev \
-            activity-service=localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
+            activity-service=host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
           kubectl rollout status deployment/activity-service-dev --timeout=300s
 
       - name: Deploy Filebeat DaemonSet
