@@ -66,8 +66,8 @@ jobs:
 
       - name: Build Docker image
         run: |
-          echo "Building Docker image"
-          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
+          echo "Building Docker image with commit SHA: ${{ env.COMMIT_SHA }}"
+          docker build --no-cache -f Dockerfile.dev -t activity_service_dev:${{ env.COMMIT_SHA }} .
 
       - name: Tag Docker image
         run: |
