@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: activity-service
-        image: host.minikube.internal:5000/activity_service_dev:latest  # Replace with your Docker image
+        image: activity_service_dev:__COMMIT_SHA__ 
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
