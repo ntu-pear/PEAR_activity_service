@@ -79,12 +79,16 @@ jobs:
           # Push to the host registry address that minikube can access
           docker push localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
+      - name: Ensure deployment exists
+        run: |
+          kubectl get deployment activity-service-dev || kubectl apply -f ./k8s/deployment-dev.yaml
+
       - name: Deploy to Kubernetes (rolling update)
         run: |
           echo "Updating deployment with commit SHA image..."
-          kubectl set image deployment/activity-service-dev \
+          kubectl set image deployment/activity-service-dev \                               # Overwrites image defined in deployment manifest
             activity-service=host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
-            
+
           kubectl rollout status deployment/activity-service-dev --timeout=300s
 
       - name: Deploy Filebeat DaemonSet
@@ -93,6 +97,8 @@ jobs:
 
       - name: Kubernetes maintenance cleanup
         run: |
-          docker container prune -f
-          docker image prune -f
-          minikube ssh -- "docker container prune -f && docker image prune -f"
+
+          # Removes any image not currently referenced by a container
+          docker container prune -a -f
+          docker image prune -a -f
+          minikube ssh -- "docker container prune -a -f && docker image prune -a -f"
