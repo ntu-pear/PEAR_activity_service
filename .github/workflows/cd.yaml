@@ -84,7 +84,7 @@ jobs:
           echo "Updating deployment with commit SHA image..."
           kubectl set image deployment/activity-service-dev \
             activity-service=host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
-            
+
           kubectl rollout status deployment/activity-service-dev --timeout=300s
 
       - name: Deploy Filebeat DaemonSet
@@ -93,6 +93,8 @@ jobs:
 
       - name: Kubernetes maintenance cleanup
         run: |
-          docker container prune -f
-          docker image prune -f
-          minikube ssh -- "docker container prune -f && docker image prune -f"
+
+          # Removes any image not currently referenced by a container
+          docker container prune -a -f
+          docker image prune -a -f
+          minikube ssh -- "docker container prune -a -f && docker image prune -a -f"
