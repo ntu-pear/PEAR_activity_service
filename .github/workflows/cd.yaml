@@ -85,8 +85,9 @@ jobs:
 
       - name: Deploy to Kubernetes (rolling update)
         run: |
+          # Overwrites image defined in deployment manifest
           echo "Updating deployment with commit SHA image..."
-          kubectl set image deployment/activity-service-dev \                               # Overwrites image defined in deployment manifest
+          kubectl set image deployment/activity-service-dev \
             activity-service=host.minikube.internal:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
           kubectl rollout status deployment/activity-service-dev --timeout=300s
