@@ -79,6 +79,10 @@ jobs:
           # Push to the host registry address that minikube can access
           docker push localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
 
+      - name: Ensure deployment exists
+        run: |
+          kubectl get deployment activity-service-dev || kubectl apply -f ./k8s/deployment-dev.yaml
+          
       - name: Deploy to Kubernetes (rolling update)
         run: |
           echo "Updating deployment with commit SHA image..."
