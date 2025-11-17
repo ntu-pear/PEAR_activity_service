@@ -67,7 +67,7 @@ jobs:
       - name: Build Docker image
         run: |
           echo "Building Docker image"
-          docker build --no-cache -f Dockerfile.dev -t activity_service_dev.
+          docker build --no-cache -f Dockerfile.dev -t activity_service_dev .
 
       - name: Tag Docker image
         run: |
