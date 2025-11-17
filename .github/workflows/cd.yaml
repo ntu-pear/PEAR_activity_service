@@ -66,13 +66,13 @@ jobs:
 
       - name: Build Docker image
         run: |
-          echo "Building Docker image with commit SHA tag..."
-          docker build --no-cache -f Dockerfile.dev -t activity_service_dev:${{ env.COMMIT_SHA }} .
+          echo "Building Docker image"
+          docker build --no-cache -f Dockerfile.dev -t activity_service_dev.
 
-      #- name: Tag Docker image
-      #  run: |
-      #    docker tag activity_service_dev:${{ env.COMMIT_SHA }} localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
-#
+      - name: Tag Docker image
+        run: |
+          docker tag activity_service_dev:${{ env.COMMIT_SHA }} localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
+
       - name: Push Docker image to local registry
         run: |
           docker push localhost:5000/activity_service_dev:${{ env.COMMIT_SHA }}
