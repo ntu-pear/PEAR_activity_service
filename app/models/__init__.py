@@ -8,6 +8,9 @@ from .centre_activity_preference_model import CentreActivityPreference
 from .centre_activity_recommendation_model import CentreActivityRecommendation
 from .adhoc_model import Adhoc
 from .outbox_model import OutboxEvent
+from .processed_events_model import ProcessedEvent
+from .ref_patient_model import RefPatient
+from .ref_patient_allocation_model import RefPatientAllocation
 
 # Export all models
 __all__ = [
@@ -19,5 +22,8 @@ __all__ = [
     'CentreActivityPreference',
     'CentreActivityRecommendation',
     'Adhoc',
-    'OutboxEvent'
+    'OutboxEvent',
+    'ProcessedEvent',
+    'RefPatient',
+    'RefPatientAllocation'
 ]
