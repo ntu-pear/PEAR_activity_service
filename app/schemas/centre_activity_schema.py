@@ -42,8 +42,6 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
         if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
             raise ValueError("Duration must be 60 minutes.")
-        if start_date and start_date < datetime.now(timezone.utc).date():
-            raise ValueError("Start date cannot be in the past.")
         if end_date and end_date < self.start_date:
             raise ValueError("End date cannot be before start date.")
 
@@ -62,6 +60,17 @@ class ValidatedCentreActivity(CentreActivityBase):
 
 class CentreActivityCreate(ValidatedCentreActivity):
     created_by_id: str = Field(..., description="ID of the user who created this activity")
+
+    @model_validator(mode='after')
+    def validate_input(self):
+        # Run the shared validations from the mixin first
+        super().validate_input()
+
+        start_date = self.start_date
+        if start_date and start_date < datetime.now(timezone.utc).date():
+            raise ValueError("Start date cannot be in the past.")
+
+        return self
 
 class CentreActivityUpdate(ValidatedCentreActivity):
     id: int = Field(..., description="ID of the Centre Activity to update")

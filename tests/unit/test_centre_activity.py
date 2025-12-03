@@ -48,8 +48,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         # Invalid: duration not 60
         ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
 
-        # Invalid: start_date in the past
-        ({"start_date": datetime.now(timezone.utc).date() - timedelta(days=1)}, "Start date cannot be in the past"),
+        # (start_date in the past) - validated only on Create, tested separately below
 
         # Invalid: end_date before start_date
         ({"end_date": datetime.now(timezone.utc).date() - timedelta(days=1)}, "End date cannot be before start date"),
@@ -71,6 +70,19 @@ def test_centre_activity_schema_validation_fails(base_centre_activity_data, sche
         schema_class(**data)
 
     assert expected_error in str(exc.value)
+
+
+def test_centre_activity_create_old_start_date(base_centre_activity_data):
+    """Old start_date validation applies to CentreActivityCreate only"""
+    data = {**base_centre_activity_data, "start_date": datetime.now(timezone.utc).date() - timedelta(days=1)}
+
+    # Create should raise
+    with pytest.raises(ValidationError) as exc:
+        CentreActivityCreate(**data)
+    assert "Start date cannot be in the past" in str(exc.value)
+
+    # Update should not raise (start_date allowed to be old for updates)
+    CentreActivityUpdate(**{**data, "id": 1})
 
 
 @pytest.mark.parametrize(
