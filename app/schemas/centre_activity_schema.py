@@ -63,9 +63,14 @@ class CentreActivityCreate(ValidatedCentreActivity):
 
     @model_validator(mode='after')
     def validate_input(self):
+        # Run the shared validations from the mixin first
+        super().validate_input()
+
         start_date = self.start_date
         if start_date and start_date < datetime.now(timezone.utc).date():
             raise ValueError("Start date cannot be in the past.")
+
+        return self
 
 class CentreActivityUpdate(ValidatedCentreActivity):
     id: int = Field(..., description="ID of the Centre Activity to update")
