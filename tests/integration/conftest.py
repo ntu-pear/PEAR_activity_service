@@ -364,18 +364,7 @@ def pytest_configure(config):
     Hook that runs when pytest starts.
     Prints configuration information.
     """
-    print("\n" + "="*80)
     print("PEAR ACTIVITY SERVICE - INTEGRATION TESTS")
-    print("="*80)
-    print("\nConfiguration:")
-    print("  - Mode: Mocked External Services")
-    print("  - Database: Testing Database")
-    print("  - Services Required: None (all mocked)")
-    print("  - Patient Service Endpoints Mocked:")
-    print("    • GET /api/v1/patients/{id}")
-    print("    • GET /api/v1/allocation/patient/{id}")
-    print("  - Speed: Fast (~30 seconds for 43 tests)")
-    print("="*80 + "\n")
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -383,13 +372,9 @@ def pytest_sessionfinish(session, exitstatus):
     Hook that runs when test session ends.
     Prints final results.
     """
-    print("\n" + "="*80)
-    print("TEST SESSION COMPLETE")
-    print("="*80)
     
     if exitstatus == 0:
-        print("✓ All tests passed successfully!")
+        print("All tests passed successfully!")
     else:
-        print(f"✗ Tests finished with exit status: {exitstatus}")
-    
-    print("="*80 + "\n")
+        print(f"Tests finished with exit status: {exitstatus}")
+
