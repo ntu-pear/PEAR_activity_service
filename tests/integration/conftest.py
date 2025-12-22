@@ -285,26 +285,30 @@ def _create_base_activity_if_not_exists(db: Session) -> int:
     """
     try:
         # Check if Activity ID=1 exists
-        result = db.execute("SELECT id FROM ACTIVITY WHERE id = 1")
-        activity = result.fetchone()
+        activity = db.query(Activity).filter(Activity.id == 1).first()
         
         if activity:
             print("[SETUP] Activity ID=1 already exists")
             return 1
         
         # Create Activity ID=1
-        db.execute("""
-            INSERT INTO ACTIVITY (id, name, description, category, created_date, created_by_id)
-            VALUES (1, 'Test Activity', 'Activity for integration tests', 'TEST', :created_date, 'system')
-        """, {"created_date": datetime.now()})
+        new_activity = Activity(
+            id=1,  # CRITICAL: Explicitly set ID to 1
+            name='Test Activity',
+            description='Activity for integration tests',
+            category='TEST',
+            created_date=datetime.now(),
+            created_by_id='system'
+        )
+        db.add(new_activity)
         db.commit()
-        
-        print("[SETUP] Created Activity ID=1")
-        return 1
+        db.refresh(new_activity)
+        print(f"[SETUP] Created Activity ID={new_activity.id}")
+        return new_activity.id
         
     except Exception as e:
         db.rollback()
-        print(f"[SETUP] ⚠ Warning: Could not ensure Activity ID=1: {str(e)}")
+        print(f"[SETUP] Warning: Could not ensure Activity ID=1: {str(e)}")
         return 1
 
 
@@ -327,8 +331,9 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
     
     # Create CentreActivity
     centre_activity_data = CentreActivityCreate(
+        id=1,
         activity_id=1,
-        is_compulsory=False,
+        is_compulsory=True,
         is_fixed=True,
         is_group=False,
         start_date=date.today(),
@@ -336,7 +341,7 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
         min_duration=60,
         max_duration=60,
         min_people_req=1,
-        fixed_time_slots="09:00-10:00",
+        fixed_time_slots="0-3,1-3,2-3,3-3,4-3",
         created_by_id="test-setup-system"
     )
     
@@ -359,18 +364,7 @@ def pytest_configure(config):
     Hook that runs when pytest starts.
     Prints configuration information.
     """
-    print("\n" + "="*80)
     print("PEAR ACTIVITY SERVICE - INTEGRATION TESTS")
-    print("="*80)
-    print("\nConfiguration:")
-    print("  - Mode: Mocked External Services")
-    print("  - Database: Testing Database")
-    print("  - Services Required: None (all mocked)")
-    print("  - Patient Service Endpoints Mocked:")
-    print("    • GET /api/v1/patients/{id}")
-    print("    • GET /api/v1/allocation/patient/{id}")
-    print("  - Speed: Fast (~30 seconds for 43 tests)")
-    print("="*80 + "\n")
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -378,13 +372,9 @@ def pytest_sessionfinish(session, exitstatus):
     Hook that runs when test session ends.
     Prints final results.
     """
-    print("\n" + "="*80)
-    print("TEST SESSION COMPLETE")
-    print("="*80)
     
     if exitstatus == 0:
-        print("✓ All tests passed successfully!")
+        print("All tests passed successfully!")
     else:
-        print(f"✗ Tests finished with exit status: {exitstatus}")
-    
-    print("="*80 + "\n")
+        print(f"Tests finished with exit status: {exitstatus}")
+
