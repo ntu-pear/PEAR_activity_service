@@ -13,13 +13,12 @@ router = APIRouter()
     summary = "Create Centre Activity Availability",
     description = "Create a Centre Activity Availability record.",
     status_code = status.HTTP_201_CREATED,
-    response_model = list[schemas.CentreActivityAvailabilityResponse]
+    response_model = schemas.CentreActivityAvailabilityResponse
 )
 def create_centre_activity_availability(
     payload: schemas.CentreActivityAvailabilityCreate,
     db: Session = Depends(get_db),
-    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
-    is_recurring_everyday: bool = False
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token)
 ):
     current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
@@ -39,7 +38,6 @@ def create_centre_activity_availability(
         db = db,
         centre_activity_availability_data = payload,
         current_user_info = current_user_info,
-        is_recurring_everyday = is_recurring_everyday
     )
 
 @router.get(
@@ -53,7 +51,6 @@ def get_all_centre_activity_availabilities(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
-    current_user
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
