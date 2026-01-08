@@ -58,6 +58,8 @@ def test_get_centre_activity_availabilities_success(get_db_session_mock, existin
         assert actual_data.days_of_week == expected_data.days_of_week
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
@@ -75,6 +77,8 @@ def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock,
         assert actual_data.days_of_week == expected_data.days_of_week
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
@@ -110,6 +114,8 @@ def test_create_centre_activity_availability_success(
     assert result.days_of_week == create_centre_activity_availability_schema.days_of_week
     assert result.start_time == create_centre_activity_availability_schema.start_time
     assert result.end_time == create_centre_activity_availability_schema.end_time
+    assert result.start_date == create_centre_activity_availability_schema.start_date
+    assert result.end_date == create_centre_activity_availability_schema.end_date
 
 def test_create_centre_activity_availability_duplicate_found(
     get_db_session_mock,
@@ -194,6 +200,8 @@ def test_update_centre_activity_availability_success(
     assert result.days_of_week == update_centre_activity_availability_schema.days_of_week
     assert result.start_time == update_centre_activity_availability_schema.start_time
     assert result.end_time == update_centre_activity_availability_schema.end_time
+    assert result.start_date == update_centre_activity_availability_schema.start_date
+    assert result.end_date == update_centre_activity_availability_schema.end_date
     assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
     assert result.modified_date.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.modified_date
 
@@ -314,7 +322,7 @@ def test_create_centre_activity_availability_role_access_success(
         existing_centre_activity_availability,
         create_centre_activity_availability_schema
     ):
-    mock_crud_create.return_value = [existing_centre_activity_availability]
+    mock_crud_create.return_value = existing_centre_activity_availability
 
     result = router_create_centre_activity_availability(
         payload=create_centre_activity_availability_schema,
@@ -322,11 +330,13 @@ def test_create_centre_activity_availability_role_access_success(
         user_and_token=(mock_supervisor_jwt, "test-token")
     )
 
-    assert result[0].centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
-    assert result[0].created_by_id == create_centre_activity_availability_schema.created_by_id
-    assert result[0].days_of_week == create_centre_activity_availability_schema.days_of_week
-    assert result[0].start_time == create_centre_activity_availability_schema.start_time
-    assert result[0].end_time == create_centre_activity_availability_schema.end_time
+    assert result.centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
+    assert result.created_by_id == create_centre_activity_availability_schema.created_by_id
+    assert result.days_of_week == create_centre_activity_availability_schema.days_of_week
+    assert result.start_time == create_centre_activity_availability_schema.start_time
+    assert result.end_time == create_centre_activity_availability_schema.end_time
+    assert result.start_date == create_centre_activity_availability_schema.start_date
+    assert result.end_date == create_centre_activity_availability_schema.end_date
 
 @pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
 def test_create_centre_activity_availability_role_access_fail(
@@ -378,6 +388,8 @@ def test_update_centre_activity_availability_role_access_success(
     assert result.centre_activity_id == update_centre_activity_availability_schema.centre_activity_id
     assert result.start_time == update_centre_activity_availability_schema.start_time
     assert result.end_time == update_centre_activity_availability_schema.end_time
+    assert result.start_date == update_centre_activity_availability_schema.start_date
+    assert result.end_date == update_centre_activity_availability_schema.end_date
     assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
     assert result.modified_date.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.modified_date
 
@@ -487,6 +499,8 @@ def test_get_centre_activity_availabilities_role_access_success(
         assert actual_data.is_deleted == expected_data.is_deleted
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 

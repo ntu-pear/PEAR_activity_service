@@ -539,6 +539,8 @@ def base_centre_activity_availability_data_list():
             "centre_activity_id": 1,
             "start_time": time(9),
             "end_time": time(10),
+            "start_date": None,
+            "end_date": None,
             "days_of_week": 7,  # Monday to Wednesday
             "is_deleted": False,
             "created_date": datetime.now(timezone.utc),
@@ -551,6 +553,8 @@ def base_centre_activity_availability_data_list():
             "centre_activity_id": 1,
             "start_time": time(10),
             "end_time": time(11),
+            "start_date": None,
+            "end_date": None,
             "is_deleted": False,
             "days_of_week": 7,  # Monday to Wednesday
             "created_date": datetime.now(timezone.utc),

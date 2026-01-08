@@ -42,6 +42,11 @@ def _check_for_duplicate_availability(
         models.CentreActivityAvailability.days_of_week.op('&')(centre_activity_availability_data.days_of_week) != 0
     )
     
+    if centre_activity_availability_data.start_date is not None:
+        query = query.filter(models.CentreActivityAvailability.start_date == centre_activity_availability_data.start_date)
+    if centre_activity_availability_data.end_date is not None:
+        query = query.filter(models.CentreActivityAvailability.end_date == centre_activity_availability_data.end_date)
+    
     if exclude_id is not None:
         query = query.filter(models.CentreActivityAvailability.id != exclude_id)
     
