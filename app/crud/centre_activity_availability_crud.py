@@ -35,22 +35,22 @@ def _check_for_duplicate_availability(
         exclude_id: int = None
     ):
     
-    query = db.query(models.CentreActivityAvailability).filter(
+    conditions = [
         models.CentreActivityAvailability.centre_activity_id == centre_activity_availability_data.centre_activity_id,
         models.CentreActivityAvailability.start_time == centre_activity_availability_data.start_time,
         models.CentreActivityAvailability.end_time == centre_activity_availability_data.end_time,
         models.CentreActivityAvailability.days_of_week.op('&')(centre_activity_availability_data.days_of_week) != 0
-    )
+    ]
     
     if centre_activity_availability_data.start_date is not None:
-        query = query.filter(models.CentreActivityAvailability.start_date == centre_activity_availability_data.start_date)
+        conditions.append(models.CentreActivityAvailability.start_date == centre_activity_availability_data.start_date)
     if centre_activity_availability_data.end_date is not None:
-        query = query.filter(models.CentreActivityAvailability.end_date == centre_activity_availability_data.end_date)
+        conditions.append(models.CentreActivityAvailability.end_date == centre_activity_availability_data.end_date)
     
     if exclude_id is not None:
-        query = query.filter(models.CentreActivityAvailability.id != exclude_id)
+        conditions.append(models.CentreActivityAvailability.id != exclude_id)
     
-    existing_availability = query.first()
+    existing_availability = db.query(models.CentreActivityAvailability).filter(*conditions).first()
 
     if existing_availability:
         raise HTTPException(status_code=400,

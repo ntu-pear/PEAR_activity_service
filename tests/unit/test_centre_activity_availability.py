@@ -179,12 +179,14 @@ def test_update_centre_activity_availability_success(
     existing_centre_activity,
     existing_care_centre
 ):
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
-
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = None
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
     
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]
+        
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
     
@@ -229,11 +231,13 @@ def test_update_centre_activity_availability_duplicate_found(
         existing_centre_activity_availability
     ):
 
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
-
-    #Mock duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = update_centre_activity_availability_duplicate
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
+    
+    mock_query_for_duplicate = MagicMock()
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]
+    
+    mock_query_for_duplicate.filter.return_value.first.return_value = update_centre_activity_availability_duplicate
 
     with pytest.raises(HTTPException) as exc_info:
         update_centre_activity_availability(
@@ -259,11 +263,13 @@ def test_update_centre_activity_availability_invalid_days(
         existing_care_centre
     ):
 
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
 
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = None
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]    
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -296,6 +302,9 @@ def test_delete_centre_activity_availability_success(
         current_user_info=mock_supervisor_user
     )
     assert result == existing_centre_activity_availability
+    assert result.is_deleted == True
+    assert result.modified_by_id == mock_supervisor_user.get("id")
+    assert result.modified_date is not None
 
 def test_delete_centre_activity_availability_fail(
     get_db_session_mock,
@@ -369,11 +378,13 @@ def test_update_centre_activity_availability_role_access_success(
         existing_centre_activity,
         update_centre_activity_availability_schema
     ):
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
 
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter.return_value.filter.return_value.first.return_value = None
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]    
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -497,6 +508,7 @@ def test_get_centre_activity_availabilities_role_access_success(
         assert actual_data.id == expected_data.id
         assert actual_data.centre_activity_id == expected_data.centre_activity_id
         assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.days_of_week == expected_data.days_of_week
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
         assert actual_data.start_date == expected_data.start_date
