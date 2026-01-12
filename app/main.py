@@ -24,6 +24,7 @@ from app.models import(
     adhoc_model,
     outbox_model,
     centre_activity_availability_model,
+    routine_model,
 )
 
 from app.routers import(
@@ -37,7 +38,8 @@ from app.routers import(
     adhoc_router,
     outbox_router,
     centre_activity_availability_router,
-    integrity_router
+    integrity_router,
+    routine_router
 )
 
 
@@ -210,6 +212,7 @@ routers = [
     (adhoc_router.router, f"{API_VERSION_PREFIX}/adhocs", ["Adhoc Activities"]),
     (centre_activity_exclusion_router.router, f"{API_VERSION_PREFIX}/centre_activity_exclusions", ["Centre Activity Exclusions"]),
     (centre_activity_availability_router.router, f"{API_VERSION_PREFIX}/centre_activity_availabilities", ["Centre Activity Availabilities"]),
+    (routine_router.router, f"{API_VERSION_PREFIX}/routines", ["Routines"]),
     (integrity_router.router, f"{API_VERSION_PREFIX}/integrity", ["Integrity"]),
 ]
 

@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 from .config import logger
 import json
 from enum import Enum
@@ -23,7 +23,7 @@ def model_to_dict(obj):
     return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
 def serialize_data(data):
-    if isinstance(data, (datetime, date)):
+    if isinstance(data, (datetime, date, time)):
         return data.isoformat()
     # Handle SQLAlchemy model instances
     try:
