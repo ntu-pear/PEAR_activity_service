@@ -148,6 +148,7 @@ def update_routine(
     
     original_data_dict = serialize_data(model_to_dict(db_routine))
     
+    db_routine.name = routine_data.name
     db_routine.activity_id = routine_data.activity_id
     db_routine.patient_id = routine_data.patient_id
     db_routine.day_of_week = routine_data.day_of_week

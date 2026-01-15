@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Boolean, DateTime, Time, Date, ForeignKey
+from sqlalchemy import Column, Integer, Boolean, DateTime, Time, Date, String, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -7,6 +7,7 @@ class Routine(Base):
     __tablename__ = "ROUTINE"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
     activity_id = Column(Integer, ForeignKey("ACTIVITY.id"), nullable=False)
     patient_id = Column(Integer, nullable=False)
     day_of_week = Column(Integer, nullable=False)
