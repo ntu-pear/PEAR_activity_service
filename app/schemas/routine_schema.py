@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, date, time, timezone
 
 class RoutineBase(BaseModel):
+    name: str = Field(..., max_length=255, description="Name of the routine")
     activity_id: int = Field(..., description="Activity assigned to patient")
     patient_id: int = Field(..., description="ID of the patient")
     day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
