@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, create_autospec
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta, date, time
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
@@ -679,3 +679,76 @@ def update_centre_activity_availability_schema_invalid(base_centre_activity_avai
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     return CentreActivityAvailabilityUpdate(**model_data)
+
+
+# ====== Routine Fixtures ======
+@pytest.fixture
+def base_routine_data_list():
+    """Base data list for Routine (for create and update scenarios)"""
+    tomorrow = date.today() + timedelta(days=1)
+    end_date = date.today() + timedelta(days=30)
+
+    return [
+        {
+            "id": 1,
+            "name": "Morning Exercise",
+            "activity_id": 1,
+            "patient_id": 1,
+            "day_of_week": 1,
+            "start_time": time(9, 0),
+            "end_time": time(10, 0),
+            "start_date": tomorrow,
+            "end_date": end_date,
+            "is_deleted": False,
+            "created_by_id": "2",
+            "created_date": datetime.now(),
+            "modified_by_id": None,
+            "modified_date": None,
+        },
+        {
+            "id": 1,
+            "name": "Updated Morning Exercise",
+            "activity_id": 1,
+            "patient_id": 1,
+            "day_of_week": 3,
+            "start_time": time(10, 0),
+            "end_time": time(11, 0),
+            "start_date": tomorrow,
+            "end_date": end_date,
+            "is_deleted": False,
+            "created_by_id": "2",
+            "created_date": datetime.now(),
+            "modified_by_id": "2",
+            "modified_date": datetime.now(),
+        },
+    ]
+
+@pytest.fixture
+def base_routine_data(base_routine_data_list):
+    """Single base routine data for create operations"""
+    return base_routine_data_list[0]
+
+@pytest.fixture
+def existing_routine(base_routine_data):
+    """A Routine model instance for mocking DB data"""
+    from app.models.routine_model import Routine
+    return Routine(**base_routine_data)
+
+@pytest.fixture
+def existing_routines(base_routine_data_list):
+    """A list of Routine instances for mocking DB data"""
+    from app.models.routine_model import Routine
+    return [Routine(**data) for data in base_routine_data_list]
+
+@pytest.fixture
+def soft_deleted_routine(base_routine_data):
+    """Soft-deleted Routine instance"""
+    from app.models.routine_model import Routine
+    data = base_routine_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now(),
+        "modified_by_id": "2"
+    })
+    return Routine(**data)
