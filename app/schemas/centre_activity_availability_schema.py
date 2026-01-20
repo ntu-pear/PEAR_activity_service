@@ -1,36 +1,34 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time, date
 
 class CentreActivityAvailabilityBase(BaseModel):
     centre_activity_id: int = Field(..., description="Reference to Centre Activity")
-    start_time: datetime = Field(..., description="Specific Date and Start time of the Centre Activity Availability. If recurring every day, it will hold the specific start time of the Centre Activity Availability.")
-    end_time: datetime = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date. If recurring every day, it will hold the specific end time of the Centre Activity Availability.")
+    start_time: time = Field(..., description="Specific Date and Start time of the Centre Activity Availability. If recurring every day, it will hold the specific start time of the Centre Activity Availability.")
+    end_time: time = Field(..., description="Specific Date and End time of the Centre Activity Availability. Must be same date as start_date. If recurring every day, it will hold the specific end time of the Centre Activity Availability.")
+    start_date: Optional[date] = Field(None, description="Start date for the availability period. Optional, used for date-specific availabilities.")
+    end_date: Optional[date] = Field(None, description="End date for the availability period. Optional, used for date-specific availabilities.")
+    days_of_week: int = Field(..., description="Bitmask representing the days of the week the activity recurs on. 0 means non-recurring. 1 means Monday, 2 means Tuesday, 4 means Wednesday, and so on. For example, a value of 3 (1+2) means the activity recurs on Monday and Tuesday.")
 
 class ValidatedCentreActivityAvailability(CentreActivityAvailabilityBase):
     @model_validator(mode='after')
     def validate_input(self):
         #Clean datetime variables
-        self.start_time = self.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0)
-        self.end_time = self.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0)
+        self.start_time = self.start_time.replace(tzinfo=None, second=0, microsecond=0)
+        self.end_time = self.end_time.replace(tzinfo=None, second=0, microsecond=0)
         
         start_time = self.start_time
         end_time = self.end_time
 
-        if start_time and start_time.date() < datetime.now(timezone.utc).date():
-            raise ValueError("The start date cannot be in the past.")
-        if end_time and end_time.date() < start_time.date():
-            raise ValueError("The end date cannot be before the start date.")
-        if end_time and end_time.date() > (datetime.now(timezone.utc) + timedelta(days=365)).date():
-            raise ValueError("End date cannot be more than 1 year in the future.")
-        if start_time.date() != end_time.date():
-            raise ValueError("Both the start time date and end time date are not the same.")
-        if start_time.time() > end_time.time():
+        if start_time > end_time:
             raise ValueError("Start time cannot be after end time.")
-        if end_time.time() < start_time.time():
-            raise ValueError("End time cannot be before start time.")
-        if start_time.time() == end_time.time():
+        if start_time == end_time:
             raise ValueError("Both the start time and end time are the same.")
+        
+        if self.start_date and self.end_date:
+            if self.start_date > self.end_date:
+                raise ValueError("Start date cannot be after end date.")
+        
         return self
     
 class CentreActivityAvailabilityCreate(ValidatedCentreActivityAvailability):
@@ -45,7 +43,8 @@ class CentreActivityAvailabilityUpdate(ValidatedCentreActivityAvailability):
 class CentreActivityAvailabilityResponse(CentreActivityAvailabilityBase):
     id: int = Field(..., description="ID of the Centre Activity Availability")
     is_deleted: bool = Field(..., description="Is the Centre Activity Availability deleted")
-
+    start_date: Optional[date] = Field(None, description="Start date for the availability period")
+    end_date: Optional[date] = Field(None, description="End date for the availability period")
     created_date: datetime = Field(..., description="Creation date of the Centre Activity Availability")
     modified_date: Optional[datetime] = Field(..., description="Last modification date of the Centre Activity Availability")
     created_by_id: str = Field(..., description="ID of the user who created this Centre Activity Availability")

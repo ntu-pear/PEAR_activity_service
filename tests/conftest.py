@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, create_autospec
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta, date, time
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
@@ -36,7 +36,7 @@ def mock_caregiver_user():
 
 @pytest.fixture
 def mock_supervisor_jwt():
-     return JWTPayload(
+    return JWTPayload(
         userId="2",
         fullName="Test User",
         email="test@test.com",
@@ -529,31 +529,19 @@ def soft_deleted_centre_activity_recommendation(base_centre_activity_recommendat
 
 
 # ====== Centre Activity Availability Fixtures ======
-def _get_next_monday():
-    current_date = datetime.now(timezone.utc)
-    current_day = current_date.isoweekday()
-    days_ahead_to_monday = 7 - current_day + 1 if current_day != 1 else 7
-    next_monday = current_date + timedelta(days=days_ahead_to_monday)
-    return next_monday
-
-def _get_weekend():
-    today = datetime.now(timezone.utc)
-    current_weekday = today.isoweekday()
-    days_until_saturday = (6 - current_weekday) % 7
-    new_date = today + timedelta(days=days_until_saturday)
-    return new_date
-
 @pytest.fixture
 def base_centre_activity_availability_data_list():
     """Base data for Centre Activity Availability"""
-    modified_datetime = _get_next_monday()
 
     return [
         {
             "id": 1,
             "centre_activity_id": 1,
-            "start_time": datetime.combine(modified_datetime, datetime.strptime('9:00:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(modified_datetime, datetime.strptime('10:00:00', '%H:%M:%S').time()),
+            "start_time": time(9),
+            "end_time": time(10),
+            "start_date": None,
+            "end_date": None,
+            "days_of_week": 7,  # Monday to Wednesday
             "is_deleted": False,
             "created_date": datetime.now(timezone.utc),
             "modified_date": None,
@@ -563,9 +551,12 @@ def base_centre_activity_availability_data_list():
         {
             "id": 2,
             "centre_activity_id": 1,
-            "start_time": datetime.combine(modified_datetime, datetime.strptime('10:00:00', '%H:%M:%S').time()),
-            "end_time": datetime.combine(modified_datetime, datetime.strptime('11:00:00', '%H:%M:%S').time()),
+            "start_time": time(10),
+            "end_time": time(11),
+            "start_date": None,
+            "end_date": None,
             "is_deleted": False,
+            "days_of_week": 7,  # Monday to Wednesday
             "created_date": datetime.now(timezone.utc),
             "modified_date": None,
             "created_by_id": "2",
@@ -619,52 +610,31 @@ def create_centre_activity_availability_schema(base_centre_activity_availability
     return CentreActivityAvailabilityCreate(**base_centre_activity_availability_data)
 
 @pytest.fixture
-def create_centre_activity_availability_schema_recurring(base_centre_activity_availability_data):
-    model_data = base_centre_activity_availability_data.copy()
-    modified_datetime = _get_next_monday()
-    
-    extracted_start_time = model_data["start_time"].time()
-    extracted_end_time = model_data["end_time"].time()
-    model_data_list = []
-
-    for i in range(5):
-        model_data_copy = model_data.copy()
-        model_data_copy.update({
-            "start_time" : datetime.combine(modified_datetime + timedelta(days=i), extracted_start_time),
-            "end_time" : datetime.combine(modified_datetime + timedelta(days=i), extracted_end_time)
-        })
-        model_data_list.append(model_data_copy)
-
-    return [CentreActivityAvailabilityCreate(**data) for data in model_data_list]
-
-@pytest.fixture
 def create_centre_activity_availability_schema_invalid(base_centre_activity_availability_data):
-    weekend_datetime = _get_weekend()
     model_data = base_centre_activity_availability_data.copy()
     model_data.update({
         "id": 1,
-        "start_time": datetime.combine(weekend_datetime, model_data["start_time"].time()),
-        "end_time": datetime.combine(weekend_datetime, model_data["end_time"].time())
+        "days_of_week": 96,  # Saturday and Sunday
+        "start_time": model_data["start_time"],
+        "end_time": model_data["end_time"]
     })
     return CentreActivityAvailabilityCreate(**model_data)
 
 @pytest.fixture
 def update_centre_activity_availability_schema(base_centre_activity_availability_data):
-    monday_datetime = _get_next_monday()
     model_data = base_centre_activity_availability_data.copy()
-    model_data["start_time"] = datetime.combine(monday_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
-    model_data["end_time"] = datetime.combine(monday_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
+    model_data["start_time"] = time(14)
+    model_data["end_time"] = time(15)
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     return CentreActivityAvailabilityUpdate(**model_data)
 
 @pytest.fixture
 def update_centre_activity_availability_duplicate(base_centre_activity_availability_data):
-    monday_datetime = _get_next_monday()
     model_data = base_centre_activity_availability_data.copy()
     model_data.update({
-        "start_time": datetime.combine(monday_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0),
-        "end_time": datetime.combine(monday_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0),
+        "start_time": time(14),
+        "end_time": time(15),
         "modified_by_id": "2",
         "modified_date": datetime.now(timezone.utc).replace(second=0, microsecond=0)
     })
@@ -672,10 +642,10 @@ def update_centre_activity_availability_duplicate(base_centre_activity_availabil
 
 @pytest.fixture
 def update_centre_activity_availability_schema_invalid(base_centre_activity_availability_data):
-    weekend_datetime = _get_weekend()
     model_data = base_centre_activity_availability_data.copy()
-    model_data["start_time"] = datetime.combine(weekend_datetime, datetime.strptime('14:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
-    model_data["end_time"] = datetime.combine(weekend_datetime, datetime.strptime('15:00:00', '%H:%M:%S').time()).replace(second=0, microsecond=0)
+    model_data["days_of_week"] = 96  # Saturday and Sunday
+    model_data["start_time"] = time(14)
+    model_data["end_time"] = time(15)
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     return CentreActivityAvailabilityUpdate(**model_data)

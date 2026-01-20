@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi import HTTPException, status
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time
 from types import SimpleNamespace
 from app.models.centre_activity_availability_model import CentreActivityAvailability
 from app.schemas.centre_activity_availability_schema import CentreActivityAvailabilityCreate
@@ -55,19 +55,11 @@ def test_get_centre_activity_availabilities_success(get_db_session_mock, existin
         assert actual_data.id == expected_data.id
         assert actual_data.centre_activity_id == expected_data.centre_activity_id
         assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.days_of_week == expected_data.days_of_week
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
-        assert actual_data.created_by_id == expected_data.created_by_id
-        assert actual_data.modified_by_id == expected_data.modified_by_id
-
-def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock, soft_deleted_centre_activity_availabilities):
-    
-    get_db_session_mock.query.return_value.filter.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = soft_deleted_centre_activity_availabilities
-
-    result = get_centre_activity_availabilities(get_db_session_mock, include_deleted=True)
-    for actual_data, expected_data in zip(result, soft_deleted_centre_activity_availabilities):
-        assert actual_data.id == expected_data.id
-        assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
@@ -82,15 +74,18 @@ def test_get_centre_activity_availabilities_include_deleted(get_db_session_mock,
         assert actual_data.id == expected_data.id
         assert actual_data.centre_activity_id == expected_data.centre_activity_id
         assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.days_of_week == expected_data.days_of_week
         assert actual_data.start_time == expected_data.start_time
         assert actual_data.end_time == expected_data.end_time
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
         assert actual_data.created_by_id == expected_data.created_by_id
         assert actual_data.modified_by_id == expected_data.modified_by_id
 
 # ===== CREATE tests ======
 @patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
 @patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
-def test_create_centre_activity_availability_not_recurring_success(
+def test_create_centre_activity_availability_success(
     mock_get_centre_activity,
     mock_get_care_centre_by_id,
     get_db_session_mock,
@@ -100,7 +95,7 @@ def test_create_centre_activity_availability_not_recurring_success(
     existing_care_centre
 ):
     #Mock no duplicate record found
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
 
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -114,44 +109,13 @@ def test_create_centre_activity_availability_not_recurring_success(
         current_user_info=mock_supervisor_user
     )
     
-    assert result[0].centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
-    assert result[0].created_by_id == create_centre_activity_availability_schema.created_by_id
-    assert result[0].start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == create_centre_activity_availability_schema.start_time
-    assert result[0].end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == create_centre_activity_availability_schema.end_time
-
-@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
-@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
-def test_create_centre_activity_availability_recurring_success(
-    mock_get_centre_activity,
-    mock_get_care_centre_by_id,
-    get_db_session_mock,
-    mock_supervisor_user,
-    create_centre_activity_availability_schema,
-    create_centre_activity_availability_schema_recurring,
-    existing_centre_activity,
-    existing_care_centre
-):
-    #Mock no duplicate record found
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
-
-    #Mock centre activity exists
-    mock_get_centre_activity.return_value = existing_centre_activity
-
-    #Mock care centre response
-    mock_get_care_centre_by_id.return_value = existing_care_centre
-    
-    result = create_centre_activity_availability(
-        db=get_db_session_mock,
-        centre_activity_availability_data=create_centre_activity_availability_schema,
-        current_user_info=mock_supervisor_user,
-        is_recurring_everyday=True
-    )
-
-    for actual_data, expected_data in zip(result, create_centre_activity_availability_schema_recurring):
-        assert actual_data.centre_activity_id == expected_data.centre_activity_id
-        assert actual_data.created_by_id == expected_data.created_by_id
-        assert actual_data.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == expected_data.start_time
-        assert actual_data.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == expected_data.end_time
+    assert result.centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
+    assert result.created_by_id == create_centre_activity_availability_schema.created_by_id
+    assert result.days_of_week == create_centre_activity_availability_schema.days_of_week
+    assert result.start_time == create_centre_activity_availability_schema.start_time
+    assert result.end_time == create_centre_activity_availability_schema.end_time
+    assert result.start_date == create_centre_activity_availability_schema.start_date
+    assert result.end_date == create_centre_activity_availability_schema.end_date
 
 def test_create_centre_activity_availability_duplicate_found(
     get_db_session_mock,
@@ -160,7 +124,7 @@ def test_create_centre_activity_availability_duplicate_found(
     existing_centre_activity_availability
 ):
     #Mock duplicate record found
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = existing_centre_activity_availability
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
     
     with pytest.raises(HTTPException) as exc_info:
         create_centre_activity_availability(
@@ -169,13 +133,13 @@ def test_create_centre_activity_availability_duplicate_found(
             current_user_info=mock_supervisor_user
         )
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Centre Activity Availability with these attributes exists or already soft deleted." in exc_info.value.detail["message"]
+    assert "Centre Activity Availability conflicts with an existing record" in exc_info.value.detail["message"]
     assert existing_centre_activity_availability.id == int(exc_info.value.detail["existing_id"])
     assert existing_centre_activity_availability.is_deleted == exc_info.value.detail["existing_is_deleted"]
 
 @patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
 @patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
-def test_create_centre_activity_availability_invalid_date(
+def test_create_centre_activity_availability_invalid_days(
     mock_get_centre_activity,
     mock_get_care_centre_by_id,
     get_db_session_mock,
@@ -185,7 +149,7 @@ def test_create_centre_activity_availability_invalid_date(
     existing_care_centre
 ):
     #Mock no duplicate record found
-    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
 
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -200,7 +164,7 @@ def test_create_centre_activity_availability_invalid_date(
             current_user_info=mock_supervisor_user
         )
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Centre Activity Availability date cannot be on saturdays and sundays as the Care Centre is closed." in exc_info.value.detail["message"]
+    assert "Care centre is closed on" in exc_info.value.detail["message"]
 
 # ===== UPDATE tests ======
 @patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
@@ -215,12 +179,14 @@ def test_update_centre_activity_availability_success(
     existing_centre_activity,
     existing_care_centre
 ):
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
-
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
     
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]
+        
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
     
@@ -233,8 +199,11 @@ def test_update_centre_activity_availability_success(
         current_user_info=mock_supervisor_user
     )
     assert result.centre_activity_id == update_centre_activity_availability_schema.centre_activity_id
-    assert result.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.start_time
-    assert result.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.end_time
+    assert result.days_of_week == update_centre_activity_availability_schema.days_of_week
+    assert result.start_time == update_centre_activity_availability_schema.start_time
+    assert result.end_time == update_centre_activity_availability_schema.end_time
+    assert result.start_date == update_centre_activity_availability_schema.start_date
+    assert result.end_date == update_centre_activity_availability_schema.end_date
     assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
     assert result.modified_date.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.modified_date
 
@@ -262,11 +231,13 @@ def test_update_centre_activity_availability_duplicate_found(
         existing_centre_activity_availability
     ):
 
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
-
-    #Mock duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = update_centre_activity_availability_duplicate
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
+    
+    mock_query_for_duplicate = MagicMock()
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]
+    
+    mock_query_for_duplicate.filter.return_value.first.return_value = update_centre_activity_availability_duplicate
 
     with pytest.raises(HTTPException) as exc_info:
         update_centre_activity_availability(
@@ -275,13 +246,13 @@ def test_update_centre_activity_availability_duplicate_found(
             current_user_info=mock_supervisor_user
         )
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Centre Activity Availability with these attributes exists or already soft deleted." in exc_info.value.detail["message"]
+    assert "Centre Activity Availability conflicts with an existing record" in exc_info.value.detail["message"]
     assert existing_centre_activity_availability.id == int(exc_info.value.detail["existing_id"])
     assert existing_centre_activity_availability.is_deleted == exc_info.value.detail["existing_is_deleted"]
 
 @patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
 @patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
-def test_update_centre_activity_availability_invalid(
+def test_update_centre_activity_availability_invalid_days(
         mock_get_centre_activity,
         mock_get_care_centre_by_id,
         get_db_session_mock,
@@ -292,11 +263,13 @@ def test_update_centre_activity_availability_invalid(
         existing_care_centre
     ):
 
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
 
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]    
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -312,7 +285,7 @@ def test_update_centre_activity_availability_invalid(
         )
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Centre Activity Availability date cannot be on saturdays and sundays as the Care Centre is closed." in exc_info.value.detail["message"]
+    assert "Care centre is closed on" in exc_info.value.detail["message"]
 
 # ===== DELETE tests ======
 def test_delete_centre_activity_availability_success(
@@ -329,6 +302,9 @@ def test_delete_centre_activity_availability_success(
         current_user_info=mock_supervisor_user
     )
     assert result == existing_centre_activity_availability
+    assert result.is_deleted == True
+    assert result.modified_by_id == mock_supervisor_user.get("id")
+    assert result.modified_date is not None
 
 def test_delete_centre_activity_availability_fail(
     get_db_session_mock,
@@ -365,8 +341,11 @@ def test_create_centre_activity_availability_role_access_success(
 
     assert result.centre_activity_id == create_centre_activity_availability_schema.centre_activity_id
     assert result.created_by_id == create_centre_activity_availability_schema.created_by_id
-    assert result.start_time.replace(tzinfo=timezone.utc) == create_centre_activity_availability_schema.start_time
-    assert result.end_time.replace(tzinfo=timezone.utc) == create_centre_activity_availability_schema.end_time
+    assert result.days_of_week == create_centre_activity_availability_schema.days_of_week
+    assert result.start_time == create_centre_activity_availability_schema.start_time
+    assert result.end_time == create_centre_activity_availability_schema.end_time
+    assert result.start_date == create_centre_activity_availability_schema.start_date
+    assert result.end_date == create_centre_activity_availability_schema.end_date
 
 @pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
 def test_create_centre_activity_availability_role_access_fail(
@@ -399,11 +378,13 @@ def test_update_centre_activity_availability_role_access_success(
         existing_centre_activity,
         update_centre_activity_availability_schema
     ):
-    #Mock centre activity availability record found
-    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing_centre_activity_availability
 
-    #Mock no duplicate of updated centre activity availability
-    get_db_session_mock.query.return_value.filter_by.return_value.filter.return_value.first.return_value = None
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    
+    get_db_session_mock.query.side_effect = [mock_query_for_update, mock_query_for_duplicate]    
     
     #Mock centre activity exists
     mock_get_centre_activity.return_value = existing_centre_activity
@@ -416,8 +397,10 @@ def test_update_centre_activity_availability_role_access_success(
         user_and_token=(mock_supervisor_jwt, "test-token")
     )
     assert result.centre_activity_id == update_centre_activity_availability_schema.centre_activity_id
-    assert result.start_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.start_time
-    assert result.end_time.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.end_time
+    assert result.start_time == update_centre_activity_availability_schema.start_time
+    assert result.end_time == update_centre_activity_availability_schema.end_time
+    assert result.start_date == update_centre_activity_availability_schema.start_date
+    assert result.end_date == update_centre_activity_availability_schema.end_date
     assert result.modified_by_id == update_centre_activity_availability_schema.modified_by_id
     assert result.modified_date.replace(tzinfo=timezone.utc, second=0, microsecond=0) == update_centre_activity_availability_schema.modified_date
 
@@ -522,13 +505,16 @@ def test_get_centre_activity_availabilities_role_access_success(
         current_user=mock_supervisor_jwt
     )
     for actual_data, expected_data in zip(result, existing_centre_activity_availabilities):
-            assert actual_data.id == expected_data.id
-            assert actual_data.centre_activity_id == expected_data.centre_activity_id
-            assert actual_data.is_deleted == expected_data.is_deleted
-            assert actual_data.start_time == expected_data.start_time
-            assert actual_data.end_time == expected_data.end_time
-            assert actual_data.created_by_id == expected_data.created_by_id
-            assert actual_data.modified_by_id == expected_data.modified_by_id
+        assert actual_data.id == expected_data.id
+        assert actual_data.centre_activity_id == expected_data.centre_activity_id
+        assert actual_data.is_deleted == expected_data.is_deleted
+        assert actual_data.days_of_week == expected_data.days_of_week
+        assert actual_data.start_time == expected_data.start_time
+        assert actual_data.end_time == expected_data.end_time
+        assert actual_data.start_date == expected_data.start_date
+        assert actual_data.end_date == expected_data.end_date
+        assert actual_data.created_by_id == expected_data.created_by_id
+        assert actual_data.modified_by_id == expected_data.modified_by_id
 
 @pytest.mark.parametrize("mock_user_fixtures", ["mock_doctor_jwt", "mock_caregiver_jwt", "mock_admin_jwt"])
 def test_get_centre_activity_availabilities_role_access_fail(
