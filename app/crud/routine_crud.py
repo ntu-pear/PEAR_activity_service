@@ -57,7 +57,7 @@ def create_routine(
     routine_data: schemas.RoutineCreate,
     current_user_info: dict
 ):
-    current_user_id = current_user_info.get("id") or routine_data.created_by_id
+    current_user_id = current_user_info.get("id")
     
     _check_for_duplicate_routine(db, routine_data)
     _validate_routine_data(db, routine_data, bearer_token=current_user_info.get("bearer_token"))
@@ -156,9 +156,8 @@ def update_routine(
     db_routine.end_time = routine_data.end_time
     db_routine.start_date = routine_data.start_date
     db_routine.end_date = routine_data.end_date
-    db_routine.is_deleted = routine_data.is_deleted
-    db_routine.modified_by_id = routine_data.modified_by_id
-    db_routine.modified_date = routine_data.modified_date or datetime.now()
+    db_routine.modified_by_id = current_user_info.get("id")
+    db_routine.modified_date = datetime.now()
     
     try:
         db.commit()

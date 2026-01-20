@@ -14,7 +14,7 @@ class Adhoc(Base):
     status = Column(String, nullable=False)
     start_date = Column(DateTime, nullable=False)
     end_date   = Column(DateTime, nullable=False)
-    created_date  = Column(DateTime, nullable=False, default=datetime.now())
+    created_date  = Column(DateTime, nullable=False, default=datetime.now)
     modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.now)
     created_by_id  = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
