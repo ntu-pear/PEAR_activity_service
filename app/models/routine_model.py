@@ -16,9 +16,9 @@ class Routine(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     is_deleted = Column(Boolean, nullable=False, default=False)
-    created_date = Column(DateTime, nullable=False, default=datetime.now())
+    created_date = Column(DateTime, nullable=False, default=datetime.now)
     modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.now)
-    created_by_id = Column(Integer, nullable=False)
-    modified_by_id = Column(Integer, nullable=True)
+    created_by_id = Column(String(50), nullable=False)
+    modified_by_id = Column(String(50), nullable=True)
 
     activity = relationship("Activity", foreign_keys=[activity_id])

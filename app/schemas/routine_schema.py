@@ -28,13 +28,10 @@ class ValidatedRoutine(RoutineBase):
         return self
 
 class RoutineCreate(ValidatedRoutine):
-    created_by_id: str = Field(..., description="User who creates this record")
+    pass
 
 class RoutineUpdate(ValidatedRoutine):
     id: int = Field(..., description="ID of the routine to update")
-    is_deleted: bool = Field(False, description="Soft-delete flag")
-    modified_by_id: str = Field(..., description="User who last modified this record")
-    modified_date: Optional[datetime] = Field(None, description="Timestamp of last modification")
 
 class RoutineResponse(RoutineBase):
     id: int = Field(..., description="Record ID")
