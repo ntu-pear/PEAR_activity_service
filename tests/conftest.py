@@ -722,3 +722,83 @@ def soft_deleted_routine(base_routine_data):
         "modified_by_id": "2"
     })
     return Routine(**data)
+
+
+# ====== Routine Exclusion Fixtures ======
+@pytest.fixture
+def base_routine_exclusion_data_list():
+    """Base data list for Routine Exclusion (for create and update scenarios)"""
+    start_date = date.today() + timedelta(days=1)
+    end_date = date.today() + timedelta(days=10)
+
+    return [
+        {
+            "routine_id": 1,
+            "start_date": start_date,
+            "end_date": end_date,
+            "remarks": "Scheduled maintenance",
+        },
+        {
+            "routine_id": 1,
+            "start_date": end_date + timedelta(days=1),
+            "end_date": end_date + timedelta(days=10),
+            "remarks": "Updated remarks",
+        },
+    ]
+
+
+@pytest.fixture
+def base_routine_exclusion_data(base_routine_exclusion_data_list):
+    """Single base routine exclusion data for create operations"""
+    return base_routine_exclusion_data_list[0]
+
+
+@pytest.fixture
+def existing_routine_exclusion(base_routine_exclusion_data):
+    """A RoutineExclusion model instance for mocking DB data"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    data = base_routine_exclusion_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": False,
+        "created_date": datetime.now(),
+        "modified_date": None,
+        "created_by_id": "2",
+        "modified_by_id": None,
+    })
+    return RoutineExclusion(**data)
+
+
+@pytest.fixture
+def existing_routine_exclusions(base_routine_exclusion_data_list):
+    """A list of RoutineExclusion instances for mocking DB data"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    result = []
+    for i, data in enumerate(base_routine_exclusion_data_list):
+        exclusion_data = data.copy()
+        exclusion_data.update({
+            "id": i + 1,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": None,
+            "created_by_id": "2",
+            "modified_by_id": None,
+        })
+        result.append(RoutineExclusion(**exclusion_data))
+    return result
+
+
+@pytest.fixture
+def soft_deleted_routine_exclusion(base_routine_exclusion_data):
+    """Soft-deleted RoutineExclusion instance"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    data = base_routine_exclusion_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "created_date": datetime.now(),
+        "modified_date": datetime.now(),
+        "created_by_id": "2",
+        "modified_by_id": "2",
+    })
+    return RoutineExclusion(**data)
