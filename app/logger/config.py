@@ -21,7 +21,7 @@ class ConditionalFormatter(logging.Formatter):
     
     def format(self, record):
         # Check if this is a detailed log record with user info
-        if hasattr(record, 'user') and hasattr(record, 'table'):
+        if all(hasattr(record, f) for f in ["user", "user_full_name", "table", "action", "log_text"]):
             # Use detailed format for CRUD operations
             formatter = logging.Formatter(self.detailed_format, datefmt=self.datefmt)
         else:

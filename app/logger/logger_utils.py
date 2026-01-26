@@ -58,9 +58,6 @@ def log_crud_action(
     "original_data": filter_data(original_data),
     "updated_data": filter_data(updated_data),
 }
-
-    serializable_log_data = serialize_data(log_data)
-
     extra = {
         "table": table,
         "user": user,
@@ -68,4 +65,7 @@ def log_crud_action(
         "user_full_name": user_full_name,
         "log_text": message,
     }
-    logger.info(json.dumps(serializable_log_data), extra=extra)
+
+    # IMPORTANT: pass the message object, not a JSON string
+    # Conditional Formatter will handle JSON serialization
+    logger.info(log_data, extra=extra)
