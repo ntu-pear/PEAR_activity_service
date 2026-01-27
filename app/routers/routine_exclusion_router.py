@@ -79,6 +79,24 @@ def get_routine_exclusion_by_id(
     )
 
 @router.get(
+    "/patient/{patient_id}",
+    response_model=list[schemas.RoutineExclusionResponse],
+    summary="List routine exclusions by patient"
+)
+def list_routine_exclusions_by_patient(
+    patient_id: int,
+    include_deleted: bool = Query(False, description="Include soft-deleted"),
+    db: Session = Depends(get_db),
+    current_user: Optional[JWTPayload] = Depends(get_current_user)
+):
+    if current_user and not is_supervisor(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view routine exclusions."
+        )
+    return crud.get_routine_exclusions_by_patient_id(db, patient_id, include_deleted)
+
+@router.get(
     "/routine/{routine_id}",
     response_model=list[schemas.RoutineExclusionResponse],
     summary="List routine exclusions by routine"

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from datetime import datetime
+from app.models.routine_model import Routine
 import app.models.routine_exclusion_model as models
 import app.schemas.routine_exclusion_schema as schemas
 from app.crud.routine_crud import get_routine_by_id
@@ -106,6 +107,25 @@ def get_routine_exclusions(
     if not exclusions:
         raise HTTPException(status_code=404, detail="No Routine Exclusion records found")
     return exclusions
+
+def get_routine_exclusions_by_patient_id(
+    db: Session,
+    patient_id: int,
+    include_deleted: bool = False
+):
+    query = db.query(models.RoutineExclusion).join(
+        Routine,
+        models.RoutineExclusion.routine_id == Routine.id
+    ).filter(
+        Routine.patient_id == patient_id
+    )
+    if not include_deleted:
+        query = query.filter(models.RoutineExclusion.is_deleted == False)
+    query = query.order_by(models.RoutineExclusion.start_date.asc())
+    results = query.all()
+    if not results:
+        raise HTTPException(status_code=404, detail="No Routine Exclusion records for this patient")
+    return results
 
 def get_routine_exclusions_by_routine_id(
     db: Session,
