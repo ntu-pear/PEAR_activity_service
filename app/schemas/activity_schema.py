@@ -1,15 +1,13 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class ActivityBase(BaseModel):
-    title: str = Field(..., example="Morning Walk")
-    description: Optional[str] = Field(
-        None, example="Gentle stroll around the garden"
-    )
+    title: str = Field(..., json_schema_extra={"example": "Morning Walk"})
+    description: Optional[str] = Field(None, json_schema_extra={"example": "Gentle stroll around the garden"})
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
+
 
 class ActivityCreate(ActivityBase):
     pass
@@ -22,9 +20,7 @@ class ActivityRead(ActivityBase):
     created_by_id: Optional[str] = Field(None, description="ID of the user who created this activity")
     modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified this activity")
 
-    class Config:
-        from_attributes = True    
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class ActivityUpdate(ActivityBase):
     id: int = Field(..., description="ID of the Activity to update")

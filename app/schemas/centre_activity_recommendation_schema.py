@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 
@@ -26,6 +26,4 @@ class CentreActivityRecommendationResponse(CentreActivityRecommendationBase):
     created_by_id: str = Field(..., description="ID of the user who created it")
     modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified it")
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

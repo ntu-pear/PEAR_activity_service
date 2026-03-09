@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional
 from datetime import datetime, timedelta, timezone, time, date
 
@@ -50,5 +50,4 @@ class CentreActivityAvailabilityResponse(CentreActivityAvailabilityBase):
     created_by_id: str = Field(..., description="ID of the user who created this Centre Activity Availability")
     modified_by_id: Optional[str] = Field(..., description="ID of the user who last modified this Centre Activity Availability")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
