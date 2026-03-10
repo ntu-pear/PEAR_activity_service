@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, List
 from datetime import date, datetime
 
@@ -25,5 +25,4 @@ class CentreActivityExclusionResponse(CentreActivityExclusionBase):
     created_by_id: Optional[str]
     modified_by_id: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
