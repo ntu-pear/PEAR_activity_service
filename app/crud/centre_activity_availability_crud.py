@@ -136,15 +136,20 @@ def create_centre_activity_availability(
     
     updated_data_dict = serialize_data(centre_activity_availability_data.model_dump())
 
+    centre_activity = get_centre_activity_by_id(db, centre_activity_availability_data.centre_activity_id)
+    activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
     log_crud_action(
         action = ActionType.CREATE,
         user = current_user_id,
         user_full_name = current_user_info.get("fullname"),
-        message = "Created a new record.",
+        message = f"Created centre activity availability: {activity_name}",
         table = "CENTRE_ACTIVITY_AVAILABILITY",
         entity_id = db_centre_activity_availability.id,
         original_data = None,
-        updated_data = updated_data_dict
+        updated_data = updated_data_dict,
+        log_type= "system",
+        is_system_config= True,
     )
     return db_centre_activity_availability
 
@@ -222,16 +227,21 @@ def update_centre_activity_availability(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code = 500, detail = f"Error updating Centre Activity Availability: {str(e)}") from e
-    
+
+    centre_activity = get_centre_activity_availability_by_id(db, centre_activity_availability_data.centre_activity_id)
+    activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
     log_crud_action(
         action = ActionType.UPDATE,
         user = modified_by_id,
         user_full_name = current_user_info.get("fullname"),
-        message = "Updated one record.",
+        message = f"Updated centre activity availability: {activity_name}.",
         table = "CENTRE_ACTIVITY_AVAILABILITY",
         entity_id = db_centre_activity_availability.id,
         original_data = original_data,
-        updated_data = updated_data
+        updated_data = updated_data,
+        log_type= "system",
+        is_system_config= True,
     )
     return db_centre_activity_availability
 
@@ -261,14 +271,19 @@ def delete_centre_activity_availability(
     
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
 
+    centre_activity = get_centre_activity_availability_by_id(db, db_centre_activity_availability.centre_activity_id)
+    activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
     log_crud_action(
         action = ActionType.DELETE,
         user = current_user_info.get("id"),
         user_full_name = current_user_info.get("fullname"),
-        message = "Soft Deleted one record.",
+        message = f"Deleted centre activity availability: {activity_name}.",
         table = "CENTRE_ACTIVITY_AVAILABILITY",
         entity_id = db_centre_activity_availability.id,
         original_data = original_data_dict,
-        updated_data = None
+        updated_data = None,
+        log_type= "system",
+        is_system_config= True,
     )
     return db_centre_activity_availability

@@ -42,3 +42,21 @@ def get_patient_allocation_by_patient_id(require_auth: bool, bearer_token: str, 
     logger.debug("\nGet Patient Allocation by Patient ID response body:")
     logger.debug(response.json())  # Try to parse as JSON
     return response
+
+def get_patient_name(patient_id: int, bearer_token: str = "") -> str:
+    """
+    Get patient full name by ID
+    """
+    try:
+        patient_data = get_patient_by_id(
+            require_auth=True,
+            bearer_token=bearer_token,
+            patient_id=patient_id,
+        )
+
+        if patient_data.status_code == 200:
+            patient_json = patient_data.json()
+            return patient_json.get('name', 'Unknown')
+    except Exception:
+        pass
+    return 'Unknown'

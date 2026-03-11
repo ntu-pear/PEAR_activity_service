@@ -4,10 +4,12 @@ import app.models.centre_activity_preference_model as models
 import app.schemas.centre_activity_preference_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
+from tests.conftest import existing_centre_activity_preference
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
 from datetime import datetime
 import app.services.patient_service as patient_service
+from app.services.patient_service import get_patient_name
 import logging
 
 logger = logging.getLogger(__name__)
@@ -230,15 +232,23 @@ def create_centre_activity_preference(
 
         # 3. Log the action
         updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
+        patient_name = get_patient_name(centre_activity_preference_data.patient_id, current_user_info.get('bearer_token', ''))
+        activity_name = db_centre_activity_preference.centre_activity.activity.title if db_centre_activity_preference.centre_activity and db_centre_activity_preference.centre_activity.activity else  "Unknown"
+        preference_type = "liked" if centre_activity_preference_data.is_like == 1 else "disliked" if centre_activity_preference_data.is_like == -1 else "neutral"
+
         log_crud_action(
             action=ActionType.CREATE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Created a new Centre Activity Preference",
+            message=f"Created activity preference: {activity_name} marked as {preference_type} for {patient_name}",
             table="CENTRE_ACTIVITY_PREFERENCE",
             entity_id=db_centre_activity_preference.id,
             original_data=None,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            patient_id=centre_activity_preference_data.patient_id,
+            patient_full_name=patient_name,
+            log_type = "preference",
+            is_system_config = False,
         )
 
         # 4. Commit both preference and outbox event atomically
@@ -391,15 +401,29 @@ def update_centre_activity_preference_by_id(
 
         # 4. Log the action
         updated_data_dict = serialize_data(centre_activity_preference_data.model_dump())
+        patient_name = get_patient_name(centre_activity_preference_data.patient_id, current_user_info.get("bearer_token", ''))
+        activity_name = "Unknown"
+        if existing_centre_activity_preference.centre_activity is not None:
+            if hasattr(existing_centre_activity_preference.centre_activity,
+                       'activity') and existing_centre_activity_preference.centre_activity.activity is not None:
+                activity_name = existing_centre_activity_preference.centre_activity.activity.title
+            elif hasattr(existing_centre_activity_preference.centre_activity, 'title'):
+                activity_name = existing_centre_activity_preference.centre_activity.title
+        preference_type = "liked" if centre_activity_preference_data.is_like == 1 else "disliked" if centre_activity_preference_data.is_like == -1 else "neutral"
+
         log_crud_action(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Updated Centre Activity Preference",
+            message=f"Updated activity preference: {activity_name} marked as {preference_type} for {patient_name}",
             table="CENTRE_ACTIVITY_PREFERENCE",
             entity_id=existing_centre_activity_preference.id,
             original_data=original_data_dict,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            patient_id=centre_activity_preference_data.patient_id,
+            patient_full_name=patient_name,
+            log_type = "preference",
+            is_system_config = False,
         )
 
         # 5. Commit atomically
@@ -470,16 +494,23 @@ def delete_centre_activity_preference_by_id(
             created_by=current_user_info.get("id")
         )
 
+        patient_name = get_patient_name(db_centre_activity_preference.patient_id, current_user_info.get('bearer_token', ''))
+        activity_name = db_centre_activity_preference.centre_activity.activity.title if db_centre_activity_preference.centre_activity and db_centre_activity_preference.centre_activity.activity else "Unknown"
+
         # 4. Log the action
         log_crud_action(
             action=ActionType.DELETE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message="Deleted Centre Activity Preference",
+            message=f"Deleted activity preference: {activity_name} for {patient_name}",
             table="CENTRE_ACTIVITY_PREFERENCE",
             entity_id=db_centre_activity_preference.id,
             original_data=model_to_dict(db_centre_activity_preference),
-            updated_data=None
+            updated_data=None,
+            patient_id=db_centre_activity_preference.patient_id,
+            patient_full_name=patient_name,
+            log_type = "preference",
+            is_system_config = False,
         )
 
         # 5. Commit atomically
