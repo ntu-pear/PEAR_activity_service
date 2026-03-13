@@ -97,7 +97,7 @@ jobs:
 
       - name: Deploy Filebeat DaemonSet
         run: |
-          kubectl apply -f './k8s/filebeat-daemonset-stg.yaml' -n staging
+          kubectl apply -f './k8s/filebeat-daemonset-stg.yaml'
 
       - name: Kubernetes maintenance cleanup
         run: |
