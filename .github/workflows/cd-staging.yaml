@@ -1,4 +1,4 @@
-name: CD
+name: CD-staging
 
 on:
   push:
@@ -18,8 +18,8 @@ jobs:
       - name: Check kubectl permissions
         run: |
           echo "Checking Kubernetes permissions..."
-          kubectl auth can-i delete deployments || (echo "No permission to delete deployments" && exit 1)
-          kubectl auth can-i create deployments || (echo "No permission to create deployments" && exit 1)
+          kubectl auth can-i delete deployments -n staging || (echo "No permission to delete deployments" && exit 1)
+          kubectl auth can-i create deployments -n staging || (echo "No permission to create deployments" && exit 1)
       - name: Check Docker registry access
         run: |
           echo "Checking Docker registry access..."
@@ -84,20 +84,20 @@ jobs:
 
       - name: Ensure deployment exists
         run: |
-          kubectl get deployment activity-service-stg || kubectl apply -f ./k8s/deployment-stg.yaml
+          kubectl get deployment activity-service-stg -n staging || kubectl apply -f ./k8s/deployment-stg.yaml -n staging
 
       - name: Deploy to Kubernetes (rolling update)
         run: |
           # Overwrites image defined in deployment manifest
           echo "Updating deployment with commit SHA image..."
           kubectl set image deployment/activity-service-stg \
-            activity-service=host.minikube.internal:5000/activity_service_stg:${{ env.COMMIT_SHA }}
+            activity-service=host.minikube.internal:5000/activity_service_stg:${{ env.COMMIT_SHA }} -n staging
 
-          kubectl rollout status deployment/activity-service-stg --timeout=300s
+          kubectl rollout status deployment/activity-service-stg -n staging --timeout=300s
 
       - name: Deploy Filebeat DaemonSet
         run: |
-          kubectl apply -f './k8s/filebeat-daemonset-stg.yaml'
+          kubectl apply -f './k8s/filebeat-daemonset-stg.yaml' -n staging
 
       - name: Kubernetes maintenance cleanup
         run: |
