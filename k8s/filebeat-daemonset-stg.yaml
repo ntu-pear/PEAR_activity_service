@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: filebeat
+  template:
+    metadata:
+      labels:
+        k8s-app: filebeat
+    spec:
+      containers:
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.17.14
+        args: ["-c", "/etc/filebeat.yml", "-e"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/filebeat.yml
+          subPath: filebeat.yml
+        - name: logs-prod
+          mountPath: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+        - name: logs-stg
+          mountPath: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
+      volumes:
+      - name: config
+        configMap:
+          name: filebeat-config
+      - name: logs-prod
+        hostPath:
+          path: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+      - name: logs-stg
+        hostPath:
+          path: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: kube-system
+data:
+  filebeat.yml: |-
+    filebeat.inputs:
+    - type: filestream
+      enabled: true
+      paths:
+        - /home/VMadmin/FYP_microservices/PEAR_activity_service/logs/*.log
+      ignore_older: 24h
+      fields:
+        environment: production
+        service: activity
+
+    - type: filestream
+      enabled: true
+      paths:
+        - /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs/*.log
+      ignore_older: 24h
+      fields:
+        environment: staging
+        service: activity
+
+    logging.level: warning
+    output.logstash:
+      hosts: ["192.168.188.184:5044"]

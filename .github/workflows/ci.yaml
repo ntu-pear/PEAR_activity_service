@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    environment: 'prod'
+    environment: ${{ github.base_ref == 'main' && 'prod' || 'staging' }}
     env:
       SERVICE_NAME: ${{ vars.SERVICE_NAME }}
       DB_SERVER: ${{ secrets.DB_SERVER }}
