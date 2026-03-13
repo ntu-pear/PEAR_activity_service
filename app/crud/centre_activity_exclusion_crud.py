@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 import app.models.centre_activity_exclusion_model as models
 import app.schemas.centre_activity_exclusion_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
-from app.services.patient_service import get_patient_by_id
+from app.services.patient_service import get_patient_by_id, get_patient_name
 from app.logger.logger_utils import (
     log_crud_action, ActionType, serialize_data, model_to_dict
 )
@@ -123,16 +123,24 @@ def create_centre_activity_exclusion(
             created_by=current_user_id
         )
 
+        patient_name = get_patient_name(exclusion_data.patient_id, current_user_info.get("bearer_token", ""))
+        centre_activity = get_centre_activity_by_id(db, exclusion_data.centre_activity_id)
+        activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
         # 3. Log the action
         log_crud_action(
             action=ActionType.CREATE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Created Centre Activity Exclusion",
+            message=f"Created centre activity exclusion: {activity_name} for patient {patient_name}",
             table="CENTRE_ACTIVITY_EXCLUSION",
             entity_id=obj.id,
             original_data=None,
-            updated_data=serialize_data(model_to_dict(obj))
+            updated_data=serialize_data(model_to_dict(obj)),
+            patient_id = exclusion_data.patient_id,
+            patient_full_name= patient_name,
+            log_type = "patient_activity",
+            is_system_config= False,
         )
 
         # 4. Commit both exclusion and outbox event atomically
@@ -237,15 +245,22 @@ def update_centre_activity_exclusion(
 
             # 5. Log the action
             updated_data_dict = serialize_data(exclusion_data.model_dump())
+            patient_name = get_patient_name(exclusion_data.patient_id, current_user_info.get("bearer_token", ""))
+            activity_name = db_obj.centre_activity.activity.title if db_obj.centre_activity and db_obj.centre_activity.activity else "Unknown"
+
             log_crud_action(
                 action=ActionType.UPDATE,
                 user=modified_by_id,
                 user_full_name=current_user_info.get("fullname"),
-                message="Updated Centre Activity Exclusion",
+                message=f"Updated activity exclusion: {activity_name}",
                 table="CENTRE_ACTIVITY_EXCLUSION",
                 entity_id=db_obj.id,
                 original_data=original_data_dict,
-                updated_data=updated_data_dict
+                updated_data=updated_data_dict,
+                patient_id = db_obj.patient_id,
+                patient_full_name= patient_name,
+                log_type = "patient_activity",
+                is_system_config= False,
             )
 
             # 6. Commit atomically
@@ -313,15 +328,21 @@ def delete_centre_activity_exclusion(
 
         # 4. Log the action
         original = serialize_data(model_to_dict(obj))
+        patient_name = get_patient_name(obj.patient_id, current_user_info.get("bearer_token", ""))
+        activity_name = obj.centre_activity.activity.title if obj.centre_activity and obj.centre_activity.activity else "Unknown"
         log_crud_action(
             action=ActionType.DELETE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message="Deleted Centre Activity Exclusion",
+            message=f"Deleted Centre Activity Exclusion:  {activity_name} for patient {patient_name}",
             table="CENTRE_ACTIVITY_EXCLUSION",
             entity_id=obj.id,
             original_data=original,
-            updated_data=None
+            updated_data=None,
+            patient_id = obj.patient_id,
+            patient_full_name= patient_name,
+            log_type = "patient_activity",
+            is_system_config= False,
         )
 
         # 5. Commit atomically

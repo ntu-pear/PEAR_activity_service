@@ -23,6 +23,9 @@ class ConditionalFormatter(logging.Formatter):
         # Check if this is a detailed log record with user info
         if all(hasattr(record, f) for f in ["user", "user_full_name", "table", "action", "log_text"]):
             # Use detailed format for CRUD operations
+            for field, default in [("patient_id", ""), ("patient_full_name", ""), ("log_type", ""), ("is_system_config", False)]:
+                if not hasattr(record, field):
+                    setattr(record, field, default)
             formatter = logging.Formatter(self.detailed_format, datefmt=self.datefmt)
         else:
             # Use simple format for general logging
@@ -31,7 +34,9 @@ class ConditionalFormatter(logging.Formatter):
         return formatter.format(record)
 
 # Detailed format for CRUD operations (when user context is available)
-detailed_format = '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "user": "%(user)s", "user_full_name": "%(user_full_name)s", "table": "%(table)s", "action": "%(action)s", "log_text": "%(log_text)s", "message": %(message)s}'
+detailed_format = ('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "user": "%(user)s", "user_full_name": "%(user_full_name)s", "table": "%(table)s", "action": "%(action)s", "log_text": "%(log_text)s", '
+                   '"patient_id": "%(patient_id)s", "patient_full_name": "%(patient_full_name)s", "log_type": "%(log_type)s", "is_system_config": "%(is_system_config)s", '
+                   '"message": %(message)s}')
 
 # Simple format for general logging (when user context is not available)
 simple_format = '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}'

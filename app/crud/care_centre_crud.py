@@ -66,11 +66,13 @@ def create_care_centre(
         action=ActionType.CREATE,
         user=current_user_info.get("id") or care_centre_data.created_by_id,
         user_full_name=current_user_info.get("fullname"),
-        message="Created a new Care Centre",
+        message=f"Created Care Centre: {care_centre_data.name}",
         table="CARE_CENTRE",
         entity_id=db_care_centre.id,
         original_data=None,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        log_type= "system",
+        is_system_config= True,
     )   
     return db_care_centre
 
@@ -153,11 +155,13 @@ def update_care_centre(
         action=ActionType.UPDATE,
         user=modified_by_id,
         user_full_name=current_user_info.get("fullname"),
-        message="Updated Care Centre",
+        message=f"Updated Care Centre: {db_care_centre.name}",
         table="CARE_CENTRE",
         entity_id=db_care_centre.id,
         original_data=original_data_dict,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        log_type= "system",
+        is_system_config= True,
     )
     return db_care_centre
 
@@ -192,10 +196,12 @@ def delete_care_centre(
         action=ActionType.DELETE,
         user=db_care_centre.modified_by_id,
         user_full_name=current_user_info.get("fullname"),
-        message="Deleted Care Centre",
+        message=f"Deleted care centre: {db_care_centre.name}",
         table="CARE_CENTRE",
         entity_id=db_care_centre.id,
         original_data=original_data_dict,
-        updated_data=None
+        updated_data=None,
+        log_type= "system",
+        is_system_config= True,
     )
     return db_care_centre

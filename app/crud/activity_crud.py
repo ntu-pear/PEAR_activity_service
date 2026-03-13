@@ -127,11 +127,13 @@ def create_activity(
             action=ActionType.CREATE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message="Created a new Activity",
+            message=f"Created activity: {activity_in.title}",
             table="ACTIVITY",
             entity_id=obj.id,
             original_data=None,
             updated_data=updated,
+            log_type = "system",
+            is_system_config = True,
         )
 
         # 4. Commit both activity and outbox event atomically
@@ -231,11 +233,13 @@ def update_activity_by_id(
                 action=ActionType.UPDATE,
                 user=current_user_info.get("id"),
                 user_full_name=current_user_info.get("fullname"),
-                message="Updated an Activity",
+                message=f"Updated activity: {obj.title}",
                 table="ACTIVITY",
                 entity_id=obj.id,
                 original_data=original,
                 updated_data=serialize_data(update_data),
+                log_type = "system",
+                is_system_config = True,
             )
 
             # 6. Commit atomically
@@ -317,11 +321,13 @@ def delete_activity_by_id(
             action=ActionType.DELETE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message="Deleted an Activity",
+            message=f"Deleted activity: {obj.title}",
             table="ACTIVITY",
             entity_id=obj.id,
             original_data=original,
             updated_data=None,
+            log_type = "system",
+            is_system_config = True,
         )
 
         # 6. Commit atomically

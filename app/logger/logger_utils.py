@@ -46,6 +46,10 @@ def log_crud_action(
     entity_id: Optional[int] = None,
     original_data: Optional[dict] = None,
     updated_data: Optional[dict] = None,
+    patient_id: Optional[int] = None,
+    patient_full_name: Optional[str] = None,
+    log_type: Optional[str] = None,
+    is_system_config: bool = False,
 ):
 
     if action == ActionType.CREATE:
@@ -64,6 +68,10 @@ def log_crud_action(
         "action": action.value,
         "user_full_name": user_full_name,
         "log_text": message,
+        "patient_id": patient_id,
+        "patient_full_name": patient_full_name,
+        "log_type": log_type,
+        "is_system_config": is_system_config,
     }
 
     # IMPORTANT: pass the message object, not a JSON string

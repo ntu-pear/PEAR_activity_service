@@ -294,14 +294,15 @@ def test_get_routine_exclusions_by_routine_id_not_found(get_db_session_mock):
 
 
 # ===== UPDATE tests =====
-
+@patch("app.crud.routine_exclusion_crud.get_routine_by_id")
 @patch("app.crud.routine_exclusion_crud._validate_routine_exclusion_data")
 @patch("app.crud.routine_exclusion_crud._check_for_overlapping_exclusion")
 def test_update_routine_exclusion_success(
-    mock_check_overlap, mock_validate, get_db_session_mock, mock_supervisor_user, 
-    update_routine_exclusion_schema, existing_routine_exclusion
+    mock_check_overlap, mock_validate, mock_get_routine, get_db_session_mock, mock_supervisor_user,
+    update_routine_exclusion_schema, existing_routine_exclusion, existing_routine
 ):
     """Successfully updates routine exclusion"""
+    mock_get_routine.return_value = existing_routine
     mock_validate.return_value = None
     mock_check_overlap.return_value = None
     
@@ -381,11 +382,12 @@ def test_update_routine_exclusion_db_error(
 
 
 # ===== DELETE tests =====
-
+@patch("app.crud.routine_exclusion_crud.get_routine_by_id")
 def test_delete_routine_exclusion_success(
-    get_db_session_mock, mock_supervisor_user, existing_routine_exclusion
+    mock_get_routine, get_db_session_mock, mock_supervisor_user, existing_routine_exclusion, existing_routine
 ):
     """Successfully soft deletes routine exclusion"""
+    mock_get_routine.return_value = existing_routine
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine_exclusion
     
     result = delete_routine_exclusion(
@@ -412,11 +414,12 @@ def test_delete_routine_exclusion_not_found(get_db_session_mock, mock_supervisor
     
     assert exc.value.status_code == 404
 
-
+@patch("app.crud.routine_exclusion_crud.get_routine_by_id")
 def test_delete_routine_exclusion_db_error(
-    get_db_session_mock, mock_supervisor_user, existing_routine_exclusion
+    mock_get_routine, get_db_session_mock, mock_supervisor_user, existing_routine_exclusion, existing_routine
 ):
     """Raises HTTPException when database error occurs"""
+    mock_get_routine.return_value = existing_routine
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine_exclusion
     get_db_session_mock.commit.side_effect = Exception("Database error")
     
