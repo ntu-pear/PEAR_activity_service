@@ -37,23 +37,29 @@ class ValidatedCentreActivity(CentreActivityBase):
         if not is_group and min_people_req != 1:
             raise ValueError("Individual activities must have a minimum of 1 person required.")
         if is_fixed and (min_duration is None or max_duration is None or min_duration != max_duration):
-            raise ValueError("Fixed duration activities must have the same minimum and maximum duration.")
-        if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
-            raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
-        if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
-            raise ValueError("Duration must be 60 minutes.")
+            raise ValueError("Activities must have the same minimum and maximum duration.")
+        # if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
+        #     raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
+        # if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
+        #     raise ValueError("Duration must be 60 minutes.")
         if end_date and end_date < self.start_date:
             raise ValueError("End date cannot be before start date.")
 
         # Not in SRS, but Scheduler's limitation - compulsory activities must be fixed
         if is_compulsory and not is_fixed: 
             raise ValueError("Compulsory activities must be fixed.")
-        if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-            raise ValueError("Compulsory activities must have fixed time slots specified.")
-        #if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-        #    raise ValueError("Fixed activities must have fixed time slots specified.")
-        #if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
-        #    raise ValueError("Duration must be either 30 or 60 minutes.")
+        # if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
+        #     raise ValueError("Compulsory activities must have fixed time slots specified.")
+        if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
+           raise ValueError("Fixed activities must have fixed time slots specified.")
+        if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
+           raise ValueError("Duration must be either 30 or 60 minutes.")
+        fixed_time_slots_tmp = fixed_time_slots.split(",") if fixed_time_slots else []
+        for slot in fixed_time_slots_tmp:
+            try:
+                datetime.strptime(slot, "%A %H:%M")
+            except ValueError:
+                raise ValueError(f"Slot {slot} is not in the correct format. Expected format: 'Day HH:MM' (no space, separated by comma).")
         #if end_date and end_date > (datetime.now(timezone.utc) + timedelta(days=365)).date():
         #    raise ValueError("End date cannot be more than 1 year in the future.")
         return self
@@ -77,7 +83,11 @@ class CentreActivityUpdate(ValidatedCentreActivity):
     is_deleted: bool = Field(False, description="Is the Centre Activity deleted")
     modified_by_id: str = Field(..., description="ID of the user who last modified this activity")
     modified_date: datetime = Field(None, description="Last modification timestamp")
-    
+
+    @model_validator(mode='after')
+    def validate_input(self):
+        super().validate_input()
+        return self
 
 class CentreActivityResponse(CentreActivityBase):
     id: int = Field(..., description="ID of the Centre Activity")
