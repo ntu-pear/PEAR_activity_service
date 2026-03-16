@@ -237,15 +237,19 @@ def create_centre_activity(
 
         # 3. Log the action
         updated_data_dict = serialize_data(centre_activity_data.model_dump())
+        activity_name = db_centre_activity.activity.title if db_centre_activity.activity else "Unknown"
+
         log_crud_action(
             action=ActionType.CREATE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Created a new Centre Activity",
+            message=f"Created centre activity {activity_name}",
             table="CENTRE_ACTIVITY",
             entity_id=db_centre_activity.id,
             original_data=None,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            log_type= "system",
+            is_system_config= True,
         )
 
         # 4. Commit both centre activity and outbox event atomically
@@ -381,15 +385,19 @@ def update_centre_activity(
 
         # 4. Log the action
         updated_data_dict = serialize_data(centre_activity_data.model_dump())
+        activity_name = db_centre_activity.activity.title if db_centre_activity.activity else "Unknown"
+
         log_crud_action(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Updated Centre Activity",
+            message=f"Updated Centre Activity: {activity_name}",
             table="CENTRE_ACTIVITY",
             entity_id=db_centre_activity.id,
             original_data=original_data_dict,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            log_type= "system",
+            is_system_config= True,
         )
 
         # 5. Commit atomically
@@ -463,15 +471,19 @@ def delete_centre_activity(
 
         # 4. Log the action
         original_data_dict = serialize_data(model_to_dict(db_centre_activity))
+        activity_name = db_centre_activity.activity.title if db_centre_activity.activity else "Unknown"
+
         log_crud_action(
             action=ActionType.DELETE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Deleted Centre Activity",
+            message=f"Deleted Centre Activity: {activity_name}",
             table="CENTRE_ACTIVITY",
             entity_id=db_centre_activity.id,
             original_data=original_data_dict,
-            updated_data=None
+            updated_data=None,
+            log_type= "system",
+            is_system_config= True,
         )
 
         # 5. Commit atomically

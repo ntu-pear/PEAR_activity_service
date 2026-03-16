@@ -3,6 +3,7 @@ import app.models.adhoc_model as models
 import app.schemas.adhoc_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.services.patient_service import get_patient_by_id
+from app.services.patient_service import get_patient_name
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from typing import List
@@ -83,15 +84,25 @@ def create_adhoc(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating Adhoc record: {e}")
 
+    patient_name = get_patient_name(adhoc_data.patient_id, current_user_info.get("bearer_token", ""))
+    old_activity = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.old_centre_activity_id)
+    new_activity = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
+    old_activity_name = old_activity.activity.title if old_activity and old_activity.activity else "Unknown"
+    new_activity_name = new_activity.activity.title if new_activity and new_activity.activity else "Unknown"
+
     log_crud_action(
         action=ActionType.CREATE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Created Adhoc record",
+        message=f"Created Adhoc change: {old_activity_name} -> {new_activity_name} for patient: {patient_name}",
         table="ADHOC",
         entity_id=db_adhoc.id,
         original_data=None,
-        updated_data=serialize_data(model_to_dict(db_adhoc))
+        updated_data=serialize_data(model_to_dict(db_adhoc)),
+        patient_id = adhoc_data.patient_id,
+        patient_full_name= patient_name,
+        log_type = "activity",
+        is_system_config= False
     )
     return db_adhoc
 
@@ -140,15 +151,25 @@ def update_adhoc(
         raise HTTPException(status_code=500, detail=f"Error updating Adhoc record: {e}")
 
     updated = serialize_data(model_to_dict(db_adhoc))
+    patient_name = get_patient_name(adhoc_data.patient_id, current_user_info.get("bearer_token", ""))
+    old_activity = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.old_centre_activity_id)
+    new_activity = get_centre_activity_by_id(db, centre_activity_id=adhoc_data.new_centre_activity_id)
+    old_activity_name = old_activity.activity.title if old_activity and old_activity.activity else "Unknown"
+    new_activity_name = new_activity.activity.title if new_activity and new_activity.activity else "Unknown"
+
     log_crud_action(
         action=ActionType.UPDATE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Updated Adhoc record",
+        message=f"Updated Adhoc change: {old_activity_name} -> {new_activity_name} for patient: {patient_name}",
         table="ADHOC",
         entity_id=db_adhoc.id,
         original_data=original,
-        updated_data=updated
+        updated_data=updated,
+        patient_id = adhoc_data.patient_id,
+        patient_full_name= patient_name,
+        log_type = "activity",
+        is_system_config= False,
     )
     return db_adhoc
 
@@ -173,14 +194,22 @@ def delete_adhoc(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting Adhoc record: {e}")
 
+    patient_name = get_patient_name(db_adhoc.patient_id, current_user_info.get("bearer_token", ""))
+    old_activity_name = db_adhoc.old_centre_activity.activity.title if db_adhoc.old_centre_activity and db_adhoc.old_centre_activity.activity else "Unknown"
+    new_activity_name = db_adhoc.new_centre_activity.activity.title if db_adhoc.new_centre_activity and db_adhoc.new_centre_activity.activity  else "Unknown"
+
     log_crud_action(
         action=ActionType.DELETE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Deleted Adhoc record",
+        message=f"Deleted Adhoc change: {old_activity_name} -> {new_activity_name} for patient: {patient_name}",
         table="ADHOC",
         entity_id=db_adhoc.id,
         original_data=original,
-        updated_data=None
+        updated_data=None,
+        patient_id = db_adhoc.patient_id,
+        patient_full_name= patient_name,
+        log_type = "activity",
+        is_system_config= False,
     )
     return db_adhoc

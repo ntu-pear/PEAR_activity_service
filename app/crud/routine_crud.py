@@ -4,7 +4,7 @@ from datetime import datetime
 import app.models.routine_model as models
 import app.schemas.routine_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
-from app.services.patient_service import get_patient_by_id
+from app.services.patient_service import get_patient_by_id, get_patient_name
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 
 def _check_for_duplicate_routine(
@@ -75,16 +75,23 @@ def create_routine(
         raise HTTPException(status_code=500, detail=f"Error creating Routine record: {e}")
     
     updated_data_dict = serialize_data(routine_data.model_dump())
+    patient_name = get_patient_name(routine_data.patient_id, current_user_info.get("bearer_token"))
+    activity = get_activity_by_id(db, activity_id=routine_data.activity_id)
+    activity_name = activity.title if activity else "Unknown"
     
     log_crud_action(
         action=ActionType.CREATE,
         user=current_user_id,
         user_full_name=current_user_info.get("fullname"),
-        message="Created Routine record",
+        message=f"Created Routine: {routine_data.name} ({activity_name}) for {patient_name}",
         table="ROUTINE",
         entity_id=db_routine.id,
         original_data=None,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        patient_id=routine_data.patient_id,
+        patient_full_name=patient_name,
+        log_type = "activity",
+        is_system_config = False,
     )
     
     return db_routine
@@ -167,16 +174,23 @@ def update_routine(
         raise HTTPException(status_code=500, detail=f"Error updating Routine record: {e}")
     
     updated_data_dict = serialize_data(model_to_dict(db_routine))
+    patient_name = get_patient_name(routine_data.patient_id, current_user_info.get("bearer_token", ""))
+    activity = get_activity_by_id(db, activity_id=routine_data.activity_id)
+    activity_name = activity.title if activity else "Unknown"
     
     log_crud_action(
         action=ActionType.UPDATE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Updated Routine record",
+        message=f"Updated Routine: {routine_data.name} ({activity_name}) for {patient_name}",
         table="ROUTINE",
         entity_id=db_routine.id,
         original_data=original_data_dict,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        patient_id=routine_data.patient_id,
+        patient_full_name=patient_name,
+        log_type = "activity",
+        is_system_config = False,
     )
     
     return db_routine
@@ -192,6 +206,9 @@ def delete_routine(
         raise HTTPException(status_code=404, detail="Routine record not found")
     
     original_data_dict = serialize_data(model_to_dict(db_routine))
+    patient_name = get_patient_name(db_routine.patient_id, current_user_info.get("bearer_token", ""))
+    activity = get_activity_by_id(db, activity_id=db_routine.activity_id)
+    activity_name = activity.title if activity else "Unknown"
     
     db_routine.is_deleted = True
     db_routine.modified_by_id = current_user_info.get("id")
@@ -208,11 +225,15 @@ def delete_routine(
         action=ActionType.DELETE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Deleted Routine record",
+        message=f"Deleted Routine: {db_routine.name} ({activity_name}) for {patient_name})",
         table="ROUTINE",
         entity_id=db_routine.id,
         original_data=original_data_dict,
-        updated_data=None
+        updated_data=None,
+        patient_id=db_routine.patient_id,
+        patient_full_name=patient_name,
+        log_type = "activity",
+        is_system_config = False,
     )
     
     return db_routine
