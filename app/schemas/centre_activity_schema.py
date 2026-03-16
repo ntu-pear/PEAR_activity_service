@@ -36,7 +36,7 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Group activities must have a minimum of 2 people required.")
         if not is_group and min_people_req != 1:
             raise ValueError("Individual activities must have a minimum of 1 person required.")
-        if is_fixed and (min_duration is None or max_duration is None or min_duration != max_duration):
+        if min_duration is None or max_duration is None or min_duration != max_duration:
             raise ValueError("Activities must have the same minimum and maximum duration.")
         # if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
         #     raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
@@ -48,8 +48,8 @@ class ValidatedCentreActivity(CentreActivityBase):
         # Not in SRS, but Scheduler's limitation - compulsory activities must be fixed
         if is_compulsory and not is_fixed: 
             raise ValueError("Compulsory activities must be fixed.")
-        # if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-        #     raise ValueError("Compulsory activities must have fixed time slots specified.")
+        if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
+            raise ValueError("Compulsory activities must have fixed time slots specified.")
         if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
            raise ValueError("Fixed activities must have fixed time slots specified.")
         if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
