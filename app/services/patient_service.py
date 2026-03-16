@@ -56,7 +56,8 @@ def get_patient_name(patient_id: int, bearer_token: str = "") -> str:
 
         if patient_data.status_code == 200:
             patient_json = patient_data.json()
-            return patient_json.get('name', 'Unknown')
+            return patient_json.get("data", {}).get("name", "Unknown")
+
     except Exception:
         pass
     return 'Unknown'
