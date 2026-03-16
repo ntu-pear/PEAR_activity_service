@@ -11,6 +11,7 @@ Run Pytest with command:
 
 import json
 from datetime import date, datetime
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.orm import Session
@@ -52,8 +53,9 @@ def mock_user():
         "fullname": "Integration Test User"
     }
 
-class TestCentreActivityCreateOutbox:    
-    def test_create_centre_activity_creates_outbox_event(self, integration_db, mock_user):
+class TestCentreActivityCreateOutbox:
+    @patch("app.crud.centre_activity_crud._validate_time_slots")    
+    def test_create_centre_activity_creates_outbox_event(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: Centre Activity data
         WHEN: create_centre_activity is called
@@ -68,14 +70,14 @@ class TestCentreActivityCreateOutbox:
             is_fixed=True,
             is_group=False,
             start_date=date.today(),
-            end_date=date(2999, 12, 31),
+            end_date=date(2099, 12, 31), # existing duplicate entry
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
-        
+        mock_validate_time_slots.return_value = None
         # Create centre activity
         centre_activity = create_centre_activity(
             db=integration_db,
@@ -119,7 +121,8 @@ class TestCentreActivityCreateOutbox:
         assert "timestamp" in payload
 
 class TestCentreActivityUpdateOutbox:    
-    def test_update_centre_activity_creates_outbox_event(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_update_centre_activity_creates_outbox_event(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: An existing centre activity
         WHEN: update_centre_activity is called with changes
@@ -138,9 +141,10 @@ class TestCentreActivityUpdateOutbox:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
+        mock_validate_time_slots.return_value = None
         centre_activity = create_centre_activity(
             db=integration_db,
             centre_activity_data=centre_activity_data,
@@ -168,7 +172,7 @@ class TestCentreActivityUpdateOutbox:
             min_duration=60,
             max_duration=60,
             min_people_req=2,  # Changed from 1 to 2 (required for group activities)
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             is_deleted=False,
             modified_by_id="test-user-1",
             modified_date=datetime.now()
@@ -206,7 +210,8 @@ class TestCentreActivityUpdateOutbox:
         assert payload["changes"]["min_people_req"]["old"] == 1
         assert payload["changes"]["min_people_req"]["new"] == 2
     
-    def test_update_with_no_changes_does_not_create_outbox(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_update_with_no_changes_does_not_create_outbox(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: An existing centre activity
         WHEN: update_centre_activity is called with no actual changes
@@ -226,9 +231,10 @@ class TestCentreActivityUpdateOutbox:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
+        mock_validate_time_slots.return_value = None
         centre_activity = create_centre_activity(
             db=integration_db,
             centre_activity_data=centre_activity_data,
@@ -255,7 +261,7 @@ class TestCentreActivityUpdateOutbox:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             is_deleted=False,
             modified_by_id="test-user-1",
             modified_date=datetime.now()
@@ -278,7 +284,8 @@ class TestCentreActivityUpdateOutbox:
         print(f"DONE: Verified no UPDATE event created")
 
 class TestCentreActivityDeleteOutbox:    
-    def test_delete_centre_activity_creates_outbox_event(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_delete_centre_activity_creates_outbox_event(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: An existing centre activity
         WHEN: delete_centre_activity is called
@@ -297,9 +304,10 @@ class TestCentreActivityDeleteOutbox:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
+        mock_validate_time_slots.return_value = None
         centre_activity = create_centre_activity(
             db=integration_db,
             centre_activity_data=centre_activity_data,
@@ -351,8 +359,8 @@ class TestCentreActivityDeleteOutbox:
 
 class TestOutboxTransactionAtomicity:
     """Test that centre activity and outbox events are created atomically"""
-    
-    def test_centre_activity_and_outbox_created_together_or_not_at_all(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_centre_activity_and_outbox_created_together_or_not_at_all(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: Create operation succeeds
         WHEN: Transaction is committed
@@ -360,6 +368,7 @@ class TestOutboxTransactionAtomicity:
         
         Goal: This function checks if the creation of centre activity and outbox event are atomic - both created or neither.
         """
+        mock_validate_time_slots.return_value = None
         initial_centre_activity_count = integration_db.query(CentreActivity).count()
         initial_outbox_count = integration_db.query(OutboxEvent).count()
         
@@ -373,7 +382,7 @@ class TestOutboxTransactionAtomicity:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
         
@@ -403,7 +412,8 @@ class TestOutboxTransactionAtomicity:
         
         print(f"DONE: Verified atomic creation")
 
-    def test_centre_activity_update_and_outbox_created_atomically(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_centre_activity_update_and_outbox_created_atomically(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: An existing centre activity that will be updated
         WHEN: Update operation succeeds
@@ -422,9 +432,10 @@ class TestOutboxTransactionAtomicity:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
+        mock_validate_time_slots.return_value = None
         centre_activity = create_centre_activity(
             db=integration_db,
             centre_activity_data=centre_activity_data,
@@ -458,7 +469,7 @@ class TestOutboxTransactionAtomicity:
             min_duration=60,
             max_duration=60,
             min_people_req=3,  # Changed
-            fixed_time_slots="10:00-11:00",  # Changed
+            fixed_time_slots="Monday 15:00",  # Changed
             is_deleted=False,
             modified_by_id="test-user-1",
             modified_date=datetime.now()
@@ -479,7 +490,7 @@ class TestOutboxTransactionAtomicity:
         )
         assert refreshed_centre_activity.is_group == True
         assert refreshed_centre_activity.min_people_req == 3
-        assert refreshed_centre_activity.fixed_time_slots == "10:00-11:00"
+        assert refreshed_centre_activity.fixed_time_slots == "Monday 15:00"
         assert refreshed_centre_activity.modified_date > original_modified_date
         assert refreshed_centre_activity.modified_by_id == "test-user-1"
         
@@ -508,7 +519,8 @@ class TestOutboxTransactionAtomicity:
         
         print(f"DONE: Verified atomic update - centre activity modified and outbox event created together")
 
-    def test_centre_activity_delete_and_outbox_created_atomically(self, integration_db, mock_user):
+    @patch("app.crud.centre_activity_crud._validate_time_slots")
+    def test_centre_activity_delete_and_outbox_created_atomically(self, mock_validate_time_slots, integration_db, mock_user):
         """
         GIVEN: An existing centre activity that will be deleted
         WHEN: Delete operation succeeds
@@ -527,9 +539,10 @@ class TestOutboxTransactionAtomicity:
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="09:00-10:00",
+            fixed_time_slots="Monday 10:00",
             created_by_id="test-user-1"
         )
+        mock_validate_time_slots.return_value = None
         centre_activity = create_centre_activity(
             db=integration_db,
             centre_activity_data=centre_activity_data,

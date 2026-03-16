@@ -294,9 +294,9 @@ def _create_base_activity_if_not_exists(db: Session) -> int:
         # Create Activity ID=1
         new_activity = Activity(
             id=1,  # CRITICAL: Explicitly set ID to 1
-            name='Test Activity',
+            title='Test Activity',
             description='Activity for integration tests',
-            category='TEST',
+            # category='TEST',
             created_date=datetime.now(),
             created_by_id='system'
         )
@@ -341,7 +341,7 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
         min_duration=60,
         max_duration=60,
         min_people_req=1,
-        fixed_time_slots="0-3,1-3,2-3,3-3,4-3",
+        fixed_time_slots="Monday 12:00,Tuesday 12:00,Wednesday 12:00,Thursday 12:00,Friday 12:00",
         created_by_id="test-setup-system"
     )
     

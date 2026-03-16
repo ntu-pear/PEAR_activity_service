@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 import app.models.centre_activity_model as models
+from app.models.care_centre_model import CareCentre
 import app.schemas.centre_activity_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
@@ -60,6 +61,66 @@ def _validate_compulsory_fixed_time_slots_unique(
                 "conflicting_fixed_time_slots": conflicting_activity.fixed_time_slots
             }
         )
+    
+def _validate_group_fixed_time_slots(
+    centre_activity_data: Union[schemas.CentreActivityCreate, schemas.CentreActivityUpdate]
+):
+    """
+    On the scheduler's end, fixed group activities scheduled at time slots other than the allocated
+    group time slots will cause a crash. Even if handled, user may be unbeknownst to why the group
+    activity failed to schedule. This function performs validation to prevent that from happening.
+    """
+    group_time_slots = ["Monday 10:00", "Monday 15:00", "Monday 16:00", "Tuesday 10:00", "Tuesday 15:00", 
+                        "Tuesday 16:00", "Wednesday 10:00", "Wednesday 15:00", "Wednesday 16:00", "Thursday 10:00", 
+                        "Thursday 15:00", "Thursday 16:00", "Friday 10:00", "Friday 15:00", "Friday 16:00"]
+    
+    if not centre_activity_data.is_group or not centre_activity_data.fixed_time_slots:
+        return
+    
+    tmp = centre_activity_data.fixed_time_slots.split(",")
+    list_diff = [x for x in tmp if x not in group_time_slots]
+    if len(list_diff) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": f"Fixed group activities must have fixed_time_slots within allocated group time slots. Invalid time slots: {', '.join(list_diff)}",
+                "valid_group_time_slots": ", ".join(group_time_slots)
+            }
+        )
+
+def _validate_time_slots(
+    db: Session,
+    centre_activity_data: Union[schemas.CentreActivityCreate, schemas.CentreActivityUpdate],
+):
+    """
+    Validates each time slot in fixed_time_slots against the care centre's working hours.
+    Only care centre with id 1 is being used for now. Expects there to be an existing care centre record
+    """
+    query_result = db.query(CareCentre).filter(CareCentre.id == 1)
+    working_hours = query_result.first().working_hours
+    open_days = [day for day, hours in working_hours.items() if hours.get("open") and hours.get("close")]
+    
+    tmp = centre_activity_data.fixed_time_slots.split(",")
+    for slot in tmp:
+        day = slot.split(" ")[0]
+        starting_time = datetime.strptime(slot.split(" ")[1], "%H:%M")
+        if day.lower() not in open_days:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": f"Time slot '{slot}' is invalid as it falls on a non-working day for the care centre.",
+                    "open_days": ", ".join(open_days)
+                }
+            )
+        if starting_time < datetime.strptime(working_hours[day.lower()]["open"], "%H:%M") \
+            or starting_time > datetime.strptime(working_hours[day.lower()]["close"], "%H:%M"):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": f"Time slot '{slot}' is invalid as it falls outside of working hours for the care centre.",
+                    "working_hours": f"{working_hours[day.lower()]['open']} - {working_hours[day.lower()]['close']} on {day}"
+                }
+            )
 
 def _validate_and_detect_changes(
     db: Session,
@@ -193,6 +254,8 @@ def create_centre_activity(
     _validate_activity_exists(db, centre_activity_data.activity_id)
     _validate_and_detect_changes(db, centre_activity_data)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data)
+    _validate_group_fixed_time_slots(centre_activity_data)
+    _validate_time_slots(db, centre_activity_data)
     
     # Generate correlation ID if not provided
     if not correlation_id:
@@ -324,6 +387,8 @@ def update_centre_activity(
     # Validate dependencies and check for duplicates (excluding current record)
     _validate_activity_exists(db, centre_activity_data.activity_id)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data, exclude_id=centre_activity_data.id)
+    _validate_group_fixed_time_slots(centre_activity_data)
+    _validate_time_slots(db, centre_activity_data)
     
     # Validate + detect changes
     changes = _validate_and_detect_changes(
