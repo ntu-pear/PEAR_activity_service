@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from typing import List, Union
 from datetime import datetime
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
