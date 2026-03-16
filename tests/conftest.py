@@ -754,7 +754,7 @@ def base_routine_exclusion_data(base_routine_exclusion_data_list):
 
 
 @pytest.fixture
-def existing_routine_exclusion(base_routine_exclusion_data):
+def existing_routine_exclusion(base_routine_exclusion_data, existing_routine):
     """A RoutineExclusion model instance for mocking DB data"""
     from app.models.routine_exclusion_model import RoutineExclusion
     data = base_routine_exclusion_data.copy()
@@ -766,11 +766,14 @@ def existing_routine_exclusion(base_routine_exclusion_data):
         "created_by_id": "2",
         "modified_by_id": None,
     })
-    return RoutineExclusion(**data)
+    exclusion = RoutineExclusion(**data)
+    # Mock routine relationship
+    exclusion.routine = existing_routine
+    return exclusion
 
 
 @pytest.fixture
-def existing_routine_exclusions(base_routine_exclusion_data_list):
+def existing_routine_exclusions(base_routine_exclusion_data_list, existing_routines):
     """A list of RoutineExclusion instances for mocking DB data"""
     from app.models.routine_exclusion_model import RoutineExclusion
     result = []
@@ -784,7 +787,11 @@ def existing_routine_exclusions(base_routine_exclusion_data_list):
             "created_by_id": "2",
             "modified_by_id": None,
         })
-        result.append(RoutineExclusion(**exclusion_data))
+        exclusion = RoutineExclusion(**exclusion_data)
+        # Mock routine relationship
+        if i < len(existing_routines):
+            exclusion.routine = existing_routines[i]
+        result.append(exclusion)
     return result
 
 

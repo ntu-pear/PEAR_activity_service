@@ -6,6 +6,7 @@ import app.models.routine_exclusion_model as models
 import app.schemas.routine_exclusion_schema as schemas
 from app.crud.routine_crud import get_routine_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
+from app.services.patient_service import get_patient_name
 
 def _check_for_overlapping_exclusion(
     db: Session,
@@ -61,18 +62,24 @@ def create_routine_exclusion(
         raise HTTPException(status_code=500, detail=f"Error creating Routine Exclusion record: {e}")
     
     updated_data_dict = serialize_data(exclusion_data.model_dump())
+    routine = get_routine_by_id(db, routine_id=exclusion_data.routine_id)
+    patient_name = get_patient_name(routine.patient_id, current_user_info.get('bearer_token', ''))
     
     log_crud_action(
         action=ActionType.CREATE,
         user=current_user_id,
         user_full_name=current_user_info.get("fullname"),
-        message="Created Routine Exclusion record",
+        message=f"Created Routine Exclusion for {patient_name}",
         table="ROUTINE_EXCLUSION",
         entity_id=db_exclusion.id,
         original_data=None,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        patient_id=routine.patient_id,
+        patient_full_name=patient_name,
+        log_type = "patient_activity",
+        is_system_config = False,
     )
-    
+
     return db_exclusion
 
 def get_routine_exclusion_by_id(
@@ -87,10 +94,10 @@ def get_routine_exclusion_by_id(
             models.RoutineExclusion.id == exclusion_id,
             models.RoutineExclusion.is_deleted == False
         ).first()
-    
+
     if not db_exclusion:
         raise HTTPException(status_code=404, detail="Routine Exclusion record not found")
-    
+
     return db_exclusion
 
 def get_routine_exclusions(
@@ -147,42 +154,48 @@ def update_routine_exclusion(
     current_user_info: dict
 ):
     db_exclusion = db.query(models.RoutineExclusion).filter(models.RoutineExclusion.id == exclusion_data.id).first()
-    
+
     if not db_exclusion:
         raise HTTPException(status_code=404, detail="Routine Exclusion record not found")
-    
+
     _check_for_overlapping_exclusion(db, exclusion_data, exclude_id=exclusion_data.id)
     _validate_routine_exclusion_data(db, exclusion_data)
-    
+
     original_data_dict = serialize_data(model_to_dict(db_exclusion))
-    
+
     db_exclusion.routine_id = exclusion_data.routine_id
     db_exclusion.start_date = exclusion_data.start_date
     db_exclusion.end_date = exclusion_data.end_date
     db_exclusion.remarks = exclusion_data.remarks
     db_exclusion.modified_by_id = current_user_info.get("id")
     db_exclusion.modified_date = datetime.now()
-    
+
     try:
         db.commit()
         db.refresh(db_exclusion)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating Routine Exclusion record: {e}")
-    
+
     updated_data_dict = serialize_data(model_to_dict(db_exclusion))
-    
+    routine = get_routine_by_id(db, routine_id=db_exclusion.routine_id)
+    patient_name = get_patient_name(routine.patient_id, current_user_info.get('bearer_token', ''))
+
     log_crud_action(
         action=ActionType.UPDATE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Updated Routine Exclusion record",
+        message=f"Updated Routine Exclusion for {patient_name}",
         table="ROUTINE_EXCLUSION",
         entity_id=db_exclusion.id,
         original_data=original_data_dict,
-        updated_data=updated_data_dict
+        updated_data=updated_data_dict,
+        patient_id=routine.patient_id,
+        patient_full_name=patient_name,
+        log_type = "patient_activity",
+        is_system_config = False,
     )
-    
+
     return db_exclusion
 
 def delete_routine_exclusion(
@@ -191,32 +204,38 @@ def delete_routine_exclusion(
     current_user_info: dict
 ):
     db_exclusion = db.query(models.RoutineExclusion).filter(models.RoutineExclusion.id == exclusion_id).first()
-    
+
     if not db_exclusion:
         raise HTTPException(status_code=404, detail="Routine Exclusion record not found")
-    
+
     original_data_dict = serialize_data(model_to_dict(db_exclusion))
-    
+    routine = get_routine_by_id(db, db_exclusion.routine_id)
+    patient_name = get_patient_name(routine.patient_id, current_user_info.get('bearer_token', ''))
+
     db_exclusion.is_deleted = True
     db_exclusion.modified_by_id = current_user_info.get("id")
     db_exclusion.modified_date = datetime.now()
-    
+
     try:
         db.commit()
         db.refresh(db_exclusion)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting Routine Exclusion record: {e}")
-    
+
     log_crud_action(
         action=ActionType.DELETE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message="Deleted Routine Exclusion record",
+        message=f"Deleted Routine Exclusion for {patient_name}",
         table="ROUTINE_EXCLUSION",
         entity_id=db_exclusion.id,
         original_data=original_data_dict,
-        updated_data=None
+        updated_data=None,
+        patient_id=routine.patient_id,
+        patient_full_name=patient_name,
+        log_type = "patient_activity",
+        is_system_config = False,
     )
     
     return db_exclusion
