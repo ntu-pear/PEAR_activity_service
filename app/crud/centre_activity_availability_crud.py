@@ -271,7 +271,7 @@ def delete_centre_activity_availability(
     
     original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
 
-    centre_activity = get_centre_activity_availability_by_id(db, db_centre_activity_availability.centre_activity_id)
+    centre_activity = db_centre_activity_availability.centre_activity
     activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
 
     log_crud_action(
