@@ -96,31 +96,43 @@ def _validate_time_slots(
     Validates each time slot in fixed_time_slots against the care centre's working hours.
     Only care centre with id 1 is being used for now. Expects there to be an existing care centre record
     """
+    if not centre_activity_data.is_fixed or not centre_activity_data.fixed_time_slots:
+        return
+
     query_result = db.query(CareCentre).filter(CareCentre.id == 1)
     working_hours = query_result.first().working_hours
     open_days = [day for day, hours in working_hours.items() if hours.get("open") and hours.get("close")]
     
     tmp = centre_activity_data.fixed_time_slots.split(",")
-    for slot in tmp:
-        day = slot.split(" ")[0]
-        starting_time = datetime.strptime(slot.split(" ")[1], "%H:%M")
-        if day.lower() not in open_days:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": f"Time slot '{slot}' is invalid as it falls on a non-working day for the care centre.",
-                    "open_days": ", ".join(open_days)
-                }
-            )
-        if starting_time < datetime.strptime(working_hours[day.lower()]["open"], "%H:%M") \
-            or starting_time > datetime.strptime(working_hours[day.lower()]["close"], "%H:%M"):
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": f"Time slot '{slot}' is invalid as it falls outside of working hours for the care centre.",
-                    "working_hours": f"{working_hours[day.lower()]['open']} - {working_hours[day.lower()]['close']} on {day}"
-                }
-            )
+    try:
+        for slot in tmp:
+            day = slot.split(" ")[0]
+            starting_time = datetime.strptime(slot.split(" ")[1], "%H:%M")
+            if day.lower() not in open_days:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "message": f"Time slot '{slot}' is invalid as it falls on a non-working day for the care centre.",
+                        "open_days": ", ".join(open_days),
+                    },
+                )
+            if starting_time < datetime.strptime(
+                working_hours[day.lower()]["open"], "%H:%M"
+            ) or starting_time > datetime.strptime(working_hours[day.lower()]["close"], "%H:%M"):
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "message": f"Time slot '{slot}' is invalid as it falls outside of working hours for the care centre.",
+                        "working_hours": f"{working_hours[day.lower()]['open']} - {working_hours[day.lower()]['close']} on {day}",
+                    },
+                )
+    except IndexError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": f"Invalid time slot format: '{slot}'. Expected format 'Day HH:MM', e.g. 'Monday 10:00'.",
+            },
+        ) from e
 
 def _validate_and_detect_changes(
     db: Session,
