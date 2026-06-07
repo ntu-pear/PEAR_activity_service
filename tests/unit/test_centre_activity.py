@@ -35,7 +35,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"is_group": True, "min_people_req": 1}, "Group activities must have a minimum of 2"),
 
         # Invalid: fixed but min != max
-        ({"is_fixed": True, "min_duration": 30, "max_duration": 60}, "Fixed duration activities must have the same minimum and maximum duration."),
+        ({"min_duration": 30, "max_duration": 60}, "Activities must have the same minimum and maximum duration."),
 
         # Invalid: compulsory activities must be fixed (one-way implication)
         ({"is_compulsory": True, "is_fixed": False}, "Compulsory activities must be fixed."),
@@ -46,7 +46,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "   "}, "Compulsory activities must have fixed time slots specified."),
 
         # Invalid: duration not 60
-        ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
+        ({"min_duration": 45, "max_duration": 45}, "Duration must be either 30 or 60 minutes."),
 
         # (start_date in the past) - validated only on Create, tested separately below
 
@@ -89,13 +89,13 @@ def test_centre_activity_create_old_start_date(base_centre_activity_data):
     "override_fields",
     [
         # Valid: compulsory and fixed (both true)
-        {"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+        {"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "Monday 10:00,Tuesday 10:00"},
         
         # Valid: non-compulsory and flexible (both false)
         {"is_compulsory": False, "is_fixed": False, "fixed_time_slots": ""},
         
         # Valid: non-compulsory but fixed (allowed - this is the key difference!)
-        {"is_compulsory": False, "is_fixed": True, "fixed_time_slots": "0-1,1-1"},
+        {"is_compulsory": False, "is_fixed": True, "fixed_time_slots": "Monday 10:00,Tuesday 10:00"},
     ]
 )
 @pytest.mark.parametrize("schema_class", [CentreActivityCreate, CentreActivityUpdate])
@@ -112,7 +112,8 @@ def test_centre_activity_schema_validation_passes(base_centre_activity_data, sch
 #======= CREATE tests ===========
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
 @patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
-def test_create_centre_activity_success(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user, 
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_centre_activity_success(mock_validate_timeslot, mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user, 
                                      create_centre_activity_schema, existing_activity):
     '''Creates when activity exists and no dulpicate centre activity exists.'''
 
@@ -121,6 +122,7 @@ def test_create_centre_activity_success(mock_validate_compulsory, mock_get_activ
     
     # Mock the compulsory validation to do nothing (pass)
     mock_validate_compulsory.return_value = None
+    mock_validate_timeslot.return_value = None
     
     # Mock duplicate validation to return None (no duplicates)
     get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
@@ -203,7 +205,7 @@ def test_create_centre_activity_compulsory_fixed_time_slots_conflict_fail(
     existing_compulsory = conflicting_compulsory_centre_activities[0]
     
     # Set up data for compulsory activity with same time slots as fixture
-    compulsory_data = {**base_centre_activity_data, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-2,1-2,2-2"}  # Same as fixture
+    compulsory_data = {**base_centre_activity_data, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "Monday 11:00,Tuesday 11:00,Wednesday 11:00"}  # Same as fixture
     create_schema = CentreActivityCreate(**compulsory_data)
     
     # Valid Activity ID
@@ -305,7 +307,8 @@ def test_get_centre_activities_fail(get_db_session_mock):
 #======= UPDATE tests =====
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
 @patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
-def test_update_centre_activity_success(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_update_centre_activity_success(mock_validate_timeslot, mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Updates Centre Activity if target to be updated exists and activity id provided exists"""
@@ -316,6 +319,7 @@ def test_update_centre_activity_success(mock_validate_compulsory, mock_get_activ
     
     # Mock the compulsory validation to pass
     mock_validate_compulsory.return_value = None
+    mock_validate_timeslot.return_value = None
     
     # No duplicate Centre Activity
     mock_query_duplicate = MagicMock()
@@ -393,7 +397,8 @@ def test_update_centre_activity_invalid_activity_fail(mock_validate_compulsory, 
 
 @patch("app.crud.centre_activity_crud.get_activity_by_id")
 @patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
-def test_update_centre_activity_duplicate_fail(mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_update_centre_activity_duplicate_fail(mock_validate_timeslot, mock_validate_compulsory, mock_get_activity, get_db_session_mock, mock_supervisor_user,
                                      update_centre_activity_schema, existing_activity,
                                      existing_centre_activity):
     """Test update fails when an identical record of Centre Activity already exists"""
@@ -404,6 +409,7 @@ def test_update_centre_activity_duplicate_fail(mock_validate_compulsory, mock_ge
     
     # Mock the compulsory validation to pass (won't be reached due to duplicate failure)
     mock_validate_compulsory.return_value = None
+    mock_validate_timeslot.return_value = None
     
     # Second call: checking for duplicates (should return the duplicate)
     mock_query_duplicate = MagicMock()
@@ -440,7 +446,7 @@ def test_update_centre_activity_compulsory_fixed_time_slots_conflict_fail(
     conflicting_compulsory = conflicting_compulsory_centre_activities[0]
     
     # Set up data for updating to compulsory activity with conflicting time slots
-    update_data = {**base_centre_activity_data, "id": 1, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "0-2,1-2,2-2"}  # Same as fixture
+    update_data = {**base_centre_activity_data, "id": 1, "is_compulsory": True, "is_fixed": True, "fixed_time_slots": "Monday 11:00,Tuesday 11:00,Wednesday 11:00"}  # Same as fixture
     update_schema = CentreActivityUpdate(**update_data)
     
     # Mock existing centre activity being updated

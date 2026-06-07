@@ -215,7 +215,7 @@ def base_centre_activity_data_list():
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 1,
-            "fixed_time_slots": "0-2,1-2,2-2,3-2,4-2",
+            "fixed_time_slots": "Monday 11:00,Tuesday 11:00,Wednesday 11:00,Thursday 11:00,Friday 11:00",
             "created_by_id": "1",
             "modified_by_id": "1",
             "created_date": datetime.now(),
@@ -233,7 +233,7 @@ def base_centre_activity_data_list():
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 4,
-            "fixed_time_slots": "0-3,1-3,2-3,3-3,4-3",
+            "fixed_time_slots": "Monday 10:00,Tuesday 10:00,Wednesday 10:00,Thursday 10:00,Friday 10:00",
             "created_by_id": "2",
             "modified_by_id": "2",
             "created_date": datetime.now(),
@@ -282,7 +282,7 @@ def conflicting_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Same fixed_time_slots
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -300,7 +300,7 @@ def conflicting_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots - should conflict
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Same fixed_time_slots - should conflict
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -324,7 +324,7 @@ def unique_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Unique fixed_time_slots
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Unique fixed_time_slots
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -342,7 +342,7 @@ def unique_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="3-2,4-2,5-2",  # Different fixed_time_slots - should be valid
+            fixed_time_slots="Thursday 11:00,Friday 11:00,Saturday 11:00",  # Different fixed_time_slots - should be valid
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -649,3 +649,163 @@ def update_centre_activity_availability_schema_invalid(base_centre_activity_avai
     model_data["modified_by_id"] = "2"
     model_data["modified_date"] = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     return CentreActivityAvailabilityUpdate(**model_data)
+
+
+# ====== Routine Fixtures ======
+@pytest.fixture
+def base_routine_data_list():
+    """Base data list for Routine (for create and update scenarios)"""
+    tomorrow = date.today() + timedelta(days=1)
+    end_date = date.today() + timedelta(days=30)
+
+    return [
+        {
+            "id": 1,
+            "name": "Morning Exercise",
+            "activity_id": 1,
+            "patient_id": 1,
+            "day_of_week": 1,
+            "start_time": time(9, 0),
+            "end_time": time(10, 0),
+            "start_date": tomorrow,
+            "end_date": end_date,
+            "is_deleted": False,
+            "created_by_id": "2",
+            "created_date": datetime.now(),
+            "modified_by_id": None,
+            "modified_date": None,
+        },
+        {
+            "id": 1,
+            "name": "Updated Morning Exercise",
+            "activity_id": 1,
+            "patient_id": 1,
+            "day_of_week": 3,
+            "start_time": time(10, 0),
+            "end_time": time(11, 0),
+            "start_date": tomorrow,
+            "end_date": end_date,
+            "is_deleted": False,
+            "created_by_id": "2",
+            "created_date": datetime.now(),
+            "modified_by_id": "2",
+            "modified_date": datetime.now(),
+        },
+    ]
+
+@pytest.fixture
+def base_routine_data(base_routine_data_list):
+    """Single base routine data for create operations"""
+    return base_routine_data_list[0]
+
+@pytest.fixture
+def existing_routine(base_routine_data):
+    """A Routine model instance for mocking DB data"""
+    from app.models.routine_model import Routine
+    return Routine(**base_routine_data)
+
+@pytest.fixture
+def existing_routines(base_routine_data_list):
+    """A list of Routine instances for mocking DB data"""
+    from app.models.routine_model import Routine
+    return [Routine(**data) for data in base_routine_data_list]
+
+@pytest.fixture
+def soft_deleted_routine(base_routine_data):
+    """Soft-deleted Routine instance"""
+    from app.models.routine_model import Routine
+    data = base_routine_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "modified_date": datetime.now(),
+        "modified_by_id": "2"
+    })
+    return Routine(**data)
+
+
+# ====== Routine Exclusion Fixtures ======
+@pytest.fixture
+def base_routine_exclusion_data_list():
+    """Base data list for Routine Exclusion (for create and update scenarios)"""
+    start_date = date.today() + timedelta(days=1)
+    end_date = date.today() + timedelta(days=10)
+
+    return [
+        {
+            "routine_id": 1,
+            "start_date": start_date,
+            "end_date": end_date,
+            "remarks": "Scheduled maintenance",
+        },
+        {
+            "routine_id": 1,
+            "start_date": end_date + timedelta(days=1),
+            "end_date": end_date + timedelta(days=10),
+            "remarks": "Updated remarks",
+        },
+    ]
+
+
+@pytest.fixture
+def base_routine_exclusion_data(base_routine_exclusion_data_list):
+    """Single base routine exclusion data for create operations"""
+    return base_routine_exclusion_data_list[0]
+
+
+@pytest.fixture
+def existing_routine_exclusion(base_routine_exclusion_data, existing_routine):
+    """A RoutineExclusion model instance for mocking DB data"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    data = base_routine_exclusion_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": False,
+        "created_date": datetime.now(),
+        "modified_date": None,
+        "created_by_id": "2",
+        "modified_by_id": None,
+    })
+    exclusion = RoutineExclusion(**data)
+    # Mock routine relationship
+    exclusion.routine = existing_routine
+    return exclusion
+
+
+@pytest.fixture
+def existing_routine_exclusions(base_routine_exclusion_data_list, existing_routines):
+    """A list of RoutineExclusion instances for mocking DB data"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    result = []
+    for i, data in enumerate(base_routine_exclusion_data_list):
+        exclusion_data = data.copy()
+        exclusion_data.update({
+            "id": i + 1,
+            "is_deleted": False,
+            "created_date": datetime.now(),
+            "modified_date": None,
+            "created_by_id": "2",
+            "modified_by_id": None,
+        })
+        exclusion = RoutineExclusion(**exclusion_data)
+        # Mock routine relationship
+        if i < len(existing_routines):
+            exclusion.routine = existing_routines[i]
+        result.append(exclusion)
+    return result
+
+
+@pytest.fixture
+def soft_deleted_routine_exclusion(base_routine_exclusion_data):
+    """Soft-deleted RoutineExclusion instance"""
+    from app.models.routine_exclusion_model import RoutineExclusion
+    data = base_routine_exclusion_data.copy()
+    data.update({
+        "id": 1,
+        "is_deleted": True,
+        "created_date": datetime.now(),
+        "modified_date": datetime.now(),
+        "created_by_id": "2",
+        "modified_by_id": "2",
+    })
+    return RoutineExclusion(**data)

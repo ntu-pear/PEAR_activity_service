@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal
 from datetime import datetime, timedelta, timezone
 
@@ -54,5 +54,4 @@ class AdhocResponse(AdhocBase):
     created_by_id: str = Field(..., description="Who created it")
     modified_by_id: Optional[str] = Field(..., description="Who last modified it")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

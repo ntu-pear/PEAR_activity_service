@@ -14,7 +14,7 @@ class CentreActivityAvailability(Base):
     end_time = Column(Time, nullable=False, default=None)
     start_date = Column(Date, nullable=True, default=None)
     end_date = Column(Date, nullable=True, default=None)
-    created_date = Column(DateTime, nullable=False, default=datetime.now())
+    created_date = Column(DateTime, nullable=False, default=datetime.now)
     modified_date = Column(DateTime, nullable=True, default=None, onupdate=datetime.now(timezone.utc))
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator, ValidationInfo
+from pydantic import BaseModel, ConfigDict, Field, model_validator, ValidationInfo
 from typing import Optional, Dict, Literal, get_args
 from datetime import datetime
 
@@ -24,6 +24,4 @@ class CentreActivityPreferenceResponse(CentreActivityPreferenceBase):
     created_by_id: str = Field(..., description="ID of the user who created it")
     modified_by_id: Optional[str] = Field(None, description="ID of the user who last modified it")
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True 
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

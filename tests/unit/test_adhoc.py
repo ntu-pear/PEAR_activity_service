@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import ValidationError
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -18,14 +18,26 @@ from app.schemas.adhoc_schema import AdhocCreate, AdhocUpdate
 @pytest.fixture
 def valid_adhoc_data():
     """Returns a dict of minimal valid data for AdhocCreate."""
-    now = datetime.now() + timedelta(hours=1)
+    now = datetime.now(timezone.utc)
+    days_to_sunday = 6 - now.weekday()
+    end_of_week = now.replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(days=days_to_sunday)
+
+    # Keep test dates inside the current week while still in the future.
+    remaining = end_of_week - now
+    if remaining <= timedelta(minutes=2):
+        pytest.skip("No valid in-week datetime window left for adhoc tests")
+
+    start_date = now + timedelta(minutes=1)
+    max_duration = remaining - timedelta(minutes=1)
+    duration = min(timedelta(hours=1), max_duration)
+
     return {
         "old_centre_activity_id": 1,
         "new_centre_activity_id": 2,
         "patient_id": 1,
         "status": "PENDING",
-        "start_date": now,
-        "end_date": now + timedelta(hours=1),
+        "start_date": start_date,
+        "end_date": start_date + duration,
         "created_by_id": "user1",
     }
 
@@ -121,13 +133,18 @@ def test_get_adhocs_no_results(get_db_session_mock):
 
 @pytest.fixture
 def existing_adhoc_instance():
-    return AdhocModel(id=1, old_centre_activity_id=1, new_centre_activity_id=2,
-                      patient_id=1, status="PENDING",
-                      start_date=datetime.now() + timedelta(hours=1),
-                      end_date=datetime.now() + timedelta(hours=2),
-                      is_deleted=False,
-                      created_by_id="user1",
-                      created_date=datetime.now())
+    return AdhocModel(
+        id=1,
+        old_centre_activity_id=1,
+        new_centre_activity_id=2,
+        patient_id=1,
+        status="PENDING",
+        start_date=datetime.now() + timedelta(hours=1),
+        end_date=datetime.now() + timedelta(hours=2),
+        is_deleted=False,
+        created_by_id="user1",
+        created_date=datetime.now(),
+    )
 
 # def test_update_adhoc_success(get_db_session_mock, existing_adhoc_instance, valid_adhoc_data, mock_supervisor_user, monkeypatch):
 #     db = get_db_session_mock

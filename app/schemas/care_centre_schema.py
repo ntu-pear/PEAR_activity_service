@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator, ValidationInfo
+from pydantic import BaseModel, ConfigDict, Field, model_validator, ValidationInfo
 from typing import Optional, Dict, Literal, get_args
 from datetime import datetime
 from pycountry import countries
@@ -9,7 +9,7 @@ Day = Literal["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
 
 class CareCentreBase(BaseModel):
     name: str = Field(..., description="Name of the care centre")
-    country_code: str = Field(..., description="ISO 3166-1 alpha-3 country code", example="SGP")
+    country_code: str = Field(..., description="ISO 3166-1 alpha-3 country code", json_schema_extra={"example": "SGP"})
     address: str = Field(..., description="Address of the care centre")
     postal_code: str = Field(..., description="Postal code of the care centre")
     contact_no: str = Field(..., description="Contact number")
@@ -19,22 +19,24 @@ class CareCentreBase(BaseModel):
     working_hours: Dict[Day, Dict[str, Optional[str]]] = Field(
         ...,
         description="Working hours per day (both open and close must be specified or null)",
-        example={
-            "monday": {"open": "09:00", "close": "17:00"},
-            "tuesday": {"open": "09:00", "close": "17:00"},
-            "wednesday": {"open": "09:00", "close": "17:00"},
-            "thursday": {"open": "09:00", "close": "17:00"},
-            "friday": {"open": "09:00", "close": "17:00"},
-            "saturday": {"open": None, "close": None},
-            "sunday": {"open": None, "close": None}
-        }
+        json_schema_extra={
+            "example": {
+                "monday": {"open": "09:00", "close": "17:00"},
+                "tuesday": {"open": "09:00", "close": "17:00"},
+                "wednesday": {"open": "09:00", "close": "17:00"},
+                "thursday": {"open": "09:00", "close": "17:00"},
+                "friday": {"open": "09:00", "close": "17:00"},
+                "saturday": {"open": None, "close": None},
+                "sunday": {"open": None, "close": None},
+            }
+        },
     )
     remarks: Optional[str] = Field(None, description="Optional remarks")
 
     def _is_valid_time_format(self, time_str: str) -> bool:
-            import re
-            return bool(re.fullmatch(r"^([01][0-9]|2[0-3]):[0-5][0-9]$", time_str))
-    
+        import re
+
+        return bool(re.fullmatch(r"^([01][0-9]|2[0-3]):[0-5][0-9]$", time_str))
 
 class ValidatedCareCentre(CareCentreBase):
     """Mixin class that adds validation to CareCentreBase - used by Create and Update classes"""
@@ -93,6 +95,4 @@ class CareCentreResponse(CareCentreBase):
     created_by_id: str = Field(..., description="User ID who created it")
     modified_by_id: Optional[str] = Field(..., description="User ID who modified it")
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

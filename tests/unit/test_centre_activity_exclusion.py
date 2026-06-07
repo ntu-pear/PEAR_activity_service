@@ -31,7 +31,7 @@ def valid_exclusion_data():
 @pytest.fixture
 def existing_exclusion_instance(valid_exclusion_data):
     data = valid_exclusion_data.copy()
-    return CentreActivityExclusionModel(
+    exclusion =  CentreActivityExclusionModel(
         id=1,
         centre_activity_id=data["centre_activity_id"],
         patient_id=data["patient_id"],
@@ -44,6 +44,13 @@ def existing_exclusion_instance(valid_exclusion_data):
         created_by_id="user1",
         modified_by_id="user1",
     )
+    # Mock center activity relationship for logging
+    mock_activity = mock.MagicMock()
+    mock_activity.title = "Test activity"
+    mock_centre_activity = mock.MagicMock()
+    mock_centre_activity.activity = mock_activity
+    exclusion.centre_activity = mock_centre_activity
+    return exclusion
 
 def test_get_exclusion_by_id_success(get_db_session_mock, existing_exclusion_instance):
     db = get_db_session_mock
@@ -101,9 +108,14 @@ def test_create_exclusion_success(
     mock_supervisor_user,
     monkeypatch,
 ):
+    # Create mock center activity with activity.title
+    mock_activity = mock.MagicMock()
+    mock_activity.title = "Test activity"
+    mock_centre_activity = mock.MagicMock()
+    mock_centre_activity.activity = mock_activity
     monkeypatch.setattr(
         "app.crud.centre_activity_exclusion_crud.get_centre_activity_by_id",
-        lambda db, centre_activity_id: True
+        lambda db, centre_activity_id: mock_centre_activity
     )
     monkeypatch.setattr(
         "app.crud.centre_activity_exclusion_crud.get_patient_by_id",
@@ -170,9 +182,14 @@ def test_update_exclusion_success(
     valid_exclusion_data,
 ):
     mock_get.return_value = existing_exclusion_instance
+    # Create mock center activity
+    mock_activity = mock.MagicMock()
+    mock_activity.title = "Test activity"
+    mock_centre_activity = mock.MagicMock()
+    mock_centre_activity.activity = mock_activity
     monkeypatch.setattr(
         "app.crud.centre_activity_exclusion_crud.get_centre_activity_by_id",
-        lambda db, centre_activity_id: True
+        lambda db, centre_activity_id: mock_centre_activity
     )
     monkeypatch.setattr(
         "app.crud.centre_activity_exclusion_crud.get_patient_by_id",
@@ -235,6 +252,16 @@ def test_delete_exclusion_success(
         "app.crud.centre_activity_exclusion_crud.get_centre_activity_exclusion_by_id",
         lambda db, exclusion_id: existing_exclusion_instance
     )
+    # Mock get_centre_activity_by_id
+    mock_activity = mock.MagicMock()
+    mock_activity.title = "Test activity"
+    mock_centre_activity = mock.MagicMock()
+    mock_centre_activity.activity = mock_activity
+    monkeypatch.setattr(
+        "app.crud.centre_activity_exclusion_crud.get_centre_activity_by_id",
+        lambda db, centre_activity_id: mock_centre_activity
+    )
+
     monkeypatch.setattr(
         "app.crud.centre_activity_exclusion_crud.log_crud_action",
         lambda *args, **kwargs: None

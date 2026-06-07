@@ -31,7 +31,7 @@ class OutboxEvent(Base):
     retry_count = Column(Integer, nullable=False, default=0)
     error_message = Column(String(1000))
     correlation_id = Column(String(100), nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.now(), index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now, index=True)
     processed_at = Column(DateTime)
     created_by = Column(String(255), nullable=False)
 

@@ -8,6 +8,7 @@ from ..services.outbox_service import get_outbox_service, generate_correlation_i
 from fastapi import HTTPException
 from datetime import datetime
 import app.services.patient_service as patient_service
+from app.services.patient_service import get_patient_name
 import logging
 
 logger = logging.getLogger(__name__)
@@ -233,15 +234,22 @@ def create_centre_activity_recommendation(
 
         # 3. Log the action
         updated_data_dict = serialize_data(centre_activity_recommendation_data.model_dump())
+        patient_name = get_patient_name(centre_activity_recommendation_data.patient_id, current_user_info.get('bearer_token', ''))
+        activity_name = db_centre_activity_recommendation.centre_activity.activity.title if db_centre_activity_recommendation.centre_activity and db_centre_activity_recommendation.centre_activity.activity else "Unknown"
+        recommendation_status = "recommended" if centre_activity_recommendation_data.doctor_recommendation == 1 else "not recommended" if centre_activity_recommendation_data.doctor_recommendation == -1 else "neutral"
         log_crud_action(
             action=ActionType.CREATE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Created a new Centre Activity Recommendation",
+            message=f"Created activity recommendation: {activity_name} marked as {recommendation_status} for {patient_name}",
             table="CENTRE_ACTIVITY_RECOMMENDATION",
             entity_id=db_centre_activity_recommendation.id,
             original_data=None,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            patient_id = centre_activity_recommendation_data.patient_id,
+            patient_full_name=patient_name,
+            log_type = "patient_activity",
+            is_system_config = False,
         )
 
         # 4. Commit both recommendation and outbox event atomically
@@ -404,15 +412,30 @@ def update_centre_activity_recommendation(
 
         # 4. Log the action
         updated_data_dict = serialize_data(centre_activity_recommendation_data.model_dump())
+        patient_name = get_patient_name(centre_activity_recommendation_data.patient_id, current_user_info.get('bearer_token', ''))
+        centre_activity = get_centre_activity_by_id(db, centre_activity_recommendation_data.centre_activity_id)
+        activity_name = "Unknown"
+        if existing_centre_activity_recommendation.centre_activity is not None:
+            if hasattr(existing_centre_activity_recommendation.centre_activity,
+                       'activity') and existing_centre_activity_recommendation.centre_activity.activity is not None:
+                activity_name = existing_centre_activity_recommendation.centre_activity.activity.title
+            elif hasattr(existing_centre_activity_recommendation.centre_activity, 'title'):
+                activity_name = existing_centre_activity_recommendation.centre_activity.title
+        recommendation_status = "recommended" if centre_activity_recommendation_data.doctor_recommendation == 1 else "not recommended" if centre_activity_recommendation_data.doctor_recommendation == -1 else "neutral"
+
         log_crud_action(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Updated Centre Activity Recommendation",
+            message=f"Updated Centre Activity Recommendation: {activity_name} marked as {recommendation_status} for {patient_name}",
             table="CENTRE_ACTIVITY_RECOMMENDATION",
             entity_id=existing_centre_activity_recommendation.id,
             original_data=original_data_dict,
-            updated_data=updated_data_dict
+            updated_data=updated_data_dict,
+            patient_id= centre_activity_recommendation_data.patient_id,
+            patient_full_name= patient_name,
+            log_type = "patient_activity",
+            is_system_config = False,
         )
 
         # 5. Commit atomically
@@ -487,15 +510,22 @@ def delete_centre_activity_recommendation(
 
         # 4. Log the action
         original_data_dict = serialize_data(model_to_dict(existing_centre_activity_recommendation))
+        patient_name = get_patient_name(existing_centre_activity_recommendation.patient_id, current_user_info.get('bearer_token', ''))
+        activity_name = existing_centre_activity_recommendation.centre_activity.activity.title if existing_centre_activity_recommendation.centre_activity and existing_centre_activity_recommendation.centre_activity.activity else "Unknown"
+
         log_crud_action(
             action=ActionType.DELETE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message="Deleted Centre Activity Recommendation",
+            message=f"Deleted Centre Activity Recommendation: {activity_name} for {patient_name}",
             table="CENTRE_ACTIVITY_RECOMMENDATION",
             entity_id=existing_centre_activity_recommendation.id,
             original_data=original_data_dict,
-            updated_data=None
+            updated_data=None,
+            patient_id = existing_centre_activity_recommendation.patient_id,
+            patient_full_name= patient_name,
+            log_type = "patient_activity",
+            is_system_config = False,
         )
 
         # 5. Commit atomically
