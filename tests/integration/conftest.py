@@ -10,7 +10,7 @@ Run tests: pytest tests/integration/ -v -s
 """
 
 from datetime import date, datetime
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from sqlalchemy.orm import Session
@@ -28,6 +28,20 @@ from app.schemas.centre_activity_schema import CentreActivityCreate
 # ============================================================================
 # AUTOMATIC MOCKING OF EXTERNAL SERVICES
 # ============================================================================
+
+@pytest.fixture(autouse=True)
+def _no_real_producer():
+    """
+    Integration outbox tests only verify that an OutboxEvent row is written to
+    the DB. Constructing OutboxService eagerly starts the real producer manager
+    (thread + RabbitMQ connection + watchdog), which has no broker in CI and
+    spews "connection failed" / watchdog-restart logs. The watchdog is also a
+    non-daemon thread that loops forever and can hang pytest. Replace it with a
+    no-op mock for these tests so the producer never starts.
+    """
+    with patch("app.services.outbox_service.get_producer_manager", return_value=MagicMock()):
+        yield
+
 
 @pytest.fixture(autouse=True, scope="function")
 def mock_external_services():
