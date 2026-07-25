@@ -62,6 +62,19 @@ def get_centre_activity_exclusions(
          .all()
     )
 
+def get_centre_activity_exclusions_by_patient_id(
+    db: Session,
+    patient_id: int,
+    include_deleted: bool = False,
+) -> List[models.CentreActivityExclusion]:
+    q = db.query(models.CentreActivityExclusion).filter(
+        models.CentreActivityExclusion.patient_id == patient_id
+    )
+    if not include_deleted:
+        q = q.filter(models.CentreActivityExclusion.is_deleted == False)
+    return q.order_by(models.CentreActivityExclusion.id).all()
+
+
 def create_centre_activity_exclusion(
     db: Session,
     exclusion_data: schemas.CentreActivityExclusionCreate,

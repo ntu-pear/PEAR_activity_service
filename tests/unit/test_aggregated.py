@@ -326,3 +326,116 @@ def test_get_activity_exclusion_table_no_auth(
     )
 
     assert isinstance(result, ActivityExclusionTableData)
+
+
+# ===== activity-preference-table/patient/{patient_id} =====
+
+@patch("app.crud.centre_activity_exclusion_crud.get_centre_activity_exclusions_by_patient_id")
+@patch("app.crud.centre_activity_recommendation_crud.get_all_centre_activity_recommendations")
+@patch("app.crud.centre_activity_preference_crud.get_centre_activity_preferences_by_patient_id")
+@patch("app.crud.centre_activity_crud.get_centre_activities")
+@patch("app.crud.activity_crud.get_activities")
+@patch("app.crud.ref_patient_crud.get_ref_patient_by_id")
+def test_get_activity_preference_table_by_patient_returns_data(
+    mock_get_patient,
+    mock_get_activities,
+    mock_get_centre_activities,
+    mock_get_preferences,
+    mock_get_recommendations,
+    mock_get_exclusions,
+    mock_db,
+    mock_supervisor_jwt,
+    sample_activity,
+    sample_centre_activity,
+    sample_preference,
+    sample_recommendation,
+    sample_exclusion,
+    sample_patient,
+):
+    mock_get_patient.return_value = sample_patient
+    mock_get_activities.return_value = [sample_activity]
+    mock_get_centre_activities.return_value = [sample_centre_activity]
+    mock_get_preferences.return_value = [sample_preference]
+    mock_get_recommendations.return_value = [sample_recommendation]
+    mock_get_exclusions.return_value = [sample_exclusion]
+
+    from app.routers.aggregated_router import get_activity_preference_table_data_by_patient
+    result = get_activity_preference_table_data_by_patient(
+        patient_id=1,
+        db=mock_db,
+        current_user=mock_supervisor_jwt,
+        include_deleted=False,
+    )
+
+    assert isinstance(result, ActivityPreferenceTableData)
+    assert len(result.patients) == 1
+    assert len(result.preferences) == 1
+    assert len(result.exclusions) == 1
+
+
+@patch("app.crud.ref_patient_crud.get_ref_patient_by_id")
+def test_get_activity_preference_table_by_patient_not_found(mock_get_patient, mock_db, mock_supervisor_jwt):
+    from fastapi import HTTPException
+    mock_get_patient.return_value = None
+
+    from app.routers.aggregated_router import get_activity_preference_table_data_by_patient
+    with pytest.raises(HTTPException) as exc_info:
+        get_activity_preference_table_data_by_patient(
+            patient_id=999,
+            db=mock_db,
+            current_user=mock_supervisor_jwt,
+            include_deleted=False,
+        )
+    assert exc_info.value.status_code == 404
+
+
+# ===== activity-exclusion-table/patient/{patient_id} =====
+
+@patch("app.crud.centre_activity_exclusion_crud.get_centre_activity_exclusions_by_patient_id")
+@patch("app.crud.centre_activity_crud.get_centre_activities")
+@patch("app.crud.activity_crud.get_activities")
+@patch("app.crud.ref_patient_crud.get_ref_patient_by_id")
+def test_get_activity_exclusion_table_by_patient_returns_data(
+    mock_get_patient,
+    mock_get_activities,
+    mock_get_centre_activities,
+    mock_get_exclusions,
+    mock_db,
+    mock_supervisor_jwt,
+    sample_activity,
+    sample_centre_activity,
+    sample_exclusion,
+    sample_patient,
+):
+    mock_get_patient.return_value = sample_patient
+    mock_get_activities.return_value = [sample_activity]
+    mock_get_centre_activities.return_value = [sample_centre_activity]
+    mock_get_exclusions.return_value = [sample_exclusion]
+
+    from app.routers.aggregated_router import get_activity_exclusion_table_data_by_patient
+    result = get_activity_exclusion_table_data_by_patient(
+        patient_id=1,
+        db=mock_db,
+        current_user=mock_supervisor_jwt,
+        include_deleted=False,
+    )
+
+    assert isinstance(result, ActivityExclusionTableData)
+    assert len(result.patients) == 1
+    assert len(result.exclusions) == 1
+
+
+@patch("app.crud.ref_patient_crud.get_ref_patient_by_id")
+def test_get_activity_exclusion_table_by_patient_not_found(mock_get_patient, mock_db, mock_supervisor_jwt):
+    from fastapi import HTTPException
+    mock_get_patient.return_value = None
+
+    from app.routers.aggregated_router import get_activity_exclusion_table_data_by_patient
+    with pytest.raises(HTTPException) as exc_info:
+        get_activity_exclusion_table_data_by_patient(
+            patient_id=999,
+            db=mock_db,
+            current_user=mock_supervisor_jwt,
+            include_deleted=False,
+        )
+    assert exc_info.value.status_code == 404
