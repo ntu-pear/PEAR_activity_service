@@ -40,8 +40,8 @@ class ValidatedCentreActivity(CentreActivityBase):
             raise ValueError("Fixed duration activities must have the same minimum and maximum duration.")
         if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
             raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
-        if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
-            raise ValueError("Duration must be 60 minutes.")
+        if min_duration is None or max_duration is None or min_duration % 30 != 0 or max_duration % 30 != 0 or min_duration <= 0 or max_duration <= 0:
+            raise ValueError("Duration must be a positive multiple of 30 minutes.")
         if end_date and end_date < self.start_date:
             raise ValueError("End date cannot be before start date.")
 

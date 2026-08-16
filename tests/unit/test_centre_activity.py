@@ -46,7 +46,7 @@ def update_centre_activity_schema(base_centre_activity_data_list):
         ({"is_compulsory": True, "is_fixed": True, "fixed_time_slots": "   "}, "Compulsory activities must have fixed time slots specified."),
 
         # Invalid: duration not 60
-        ({"min_duration": 45, "max_duration": 45}, "Duration must be 60 minutes"),
+        ({"min_duration": 45, "max_duration": 45}, "Duration must be a positive multiple of 30 minutes"),
 
         # (start_date in the past) - validated only on Create, tested separately below
 
