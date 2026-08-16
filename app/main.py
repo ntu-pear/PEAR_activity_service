@@ -30,6 +30,7 @@ from app.models import(
 
 from app.routers import(
     auth_router,
+    aggregated_router,
     centre_activity_exclusion_router,
     centre_activity_router,
     activity_router,
@@ -217,6 +218,7 @@ routers = [
     (routine_router.router, f"{API_VERSION_PREFIX}/routines", ["Routines"]),
     (routine_exclusion_router.router, f"{API_VERSION_PREFIX}/routine_exclusions", ["Routine Exclusions"]),
     (integrity_router.router, f"{API_VERSION_PREFIX}/integrity", ["Integrity"]),
+    (aggregated_router.router, f"{API_VERSION_PREFIX}/aggregated", ["Aggregated"]),
 ]
 
 # Add auth router separately (without API version prefix for OAuth2 compatibility)
