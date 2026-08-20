@@ -25,14 +25,19 @@ spec:
           mountPath: /etc/filebeat.yml
           subPath: filebeat.yml
         - name: logs
-          mountPath: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+          mountPath: /home/VMadmin/FYP_microservices
       volumes:
       - name: config
         configMap:
           name: filebeat-config
       - name: logs
         hostPath:
-          path: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+          # Mounts the shared parent directory rather than one specific
+          # service directory, because production and staging write to two
+          # different sibling directories on this box (PEAR_activity_service
+          # vs PEAR_activity_service_stg) -- see filebeat.inputs.paths below
+          # for the specific subdirectories actually watched.
+          path: /home/VMadmin/FYP_microservices
 
 
 # Define ConfigMap for Filebeat configuration
@@ -49,7 +54,8 @@ data:
       enabled: true
       paths:
         - /home/VMadmin/FYP_microservices/PEAR_activity_service/logs/*.log
-      ignore_older: 24h 
+        - /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs/*.log
+      ignore_older: 24h
 
     logging.level: warning
     output.logstash:
