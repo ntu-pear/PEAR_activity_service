@@ -23,16 +23,19 @@ def get_activity_preference_table_data(
     activities = activity_crud.get_activities(db=db, include_deleted=include_deleted)
     centre_activities = centre_activity_crud.get_centre_activities(db=db, include_deleted=include_deleted)
     preferences = preference_crud.get_centre_activity_preferences(db=db, include_deleted=include_deleted)
-    recommendations = recommendation_crud.get_all_centre_activity_recommendations(
-        db=db,
-        current_user_info={
-            "id": current_user.userId if current_user else None,
-            "role_name": current_user.roleName if current_user else None,
-            "fullname": current_user.fullName if current_user else None,
-            "bearer_token": ""
-        },
-        include_deleted=include_deleted
-    )
+    try:
+        recommendations = recommendation_crud.get_all_centre_activity_recommendations(
+            db=db,
+            current_user_info={
+                "id": current_user.userId if current_user else None,
+                "role_name": current_user.roleName if current_user else None,
+                "fullname": current_user.fullName if current_user else None,
+                "bearer_token": ""
+            },
+            include_deleted=include_deleted
+        )
+    except Exception:
+        recommendations = []
     exclusions = exclusion_crud.get_centre_activity_exclusions(db=db, include_deleted=include_deleted)
     patients, _, _ = patient_crud.get_ref_patients(db=db, page_no=0, page_size=10000)
 
@@ -67,16 +70,19 @@ def get_activity_preference_table_data_by_patient(
     except Exception:
         preferences = []
 
-    all_recommendations = recommendation_crud.get_all_centre_activity_recommendations(
-        db=db,
-        current_user_info={
-            "id": current_user.userId if current_user else None,
-            "role_name": current_user.roleName if current_user else None,
-            "fullname": current_user.fullName if current_user else None,
-            "bearer_token": ""
-        },
-        include_deleted=include_deleted
-    )
+    try:
+        all_recommendations = recommendation_crud.get_all_centre_activity_recommendations(
+            db=db,
+            current_user_info={
+                "id": current_user.userId if current_user else None,
+                "role_name": current_user.roleName if current_user else None,
+                "fullname": current_user.fullName if current_user else None,
+                "bearer_token": ""
+            },
+            include_deleted=include_deleted
+        )
+    except Exception:
+        all_recommendations = []
     recommendations = [r for r in all_recommendations if r.patient_id == patient_id]
 
     exclusions = exclusion_crud.get_centre_activity_exclusions_by_patient_id(
