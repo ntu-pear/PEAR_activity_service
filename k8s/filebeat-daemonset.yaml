@@ -51,6 +51,7 @@ data:
   filebeat.yml: |-
     filebeat.inputs:
     - type: filestream
+      id: activity-service-logs
       enabled: true
       paths:
         - /home/VMadmin/FYP_microservices/PEAR_activity_service/logs/*.log
