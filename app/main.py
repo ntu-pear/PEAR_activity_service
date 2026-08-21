@@ -44,6 +44,7 @@ from app.routers import(
     routine_router,
     routine_exclusion_router
 )
+from app.auth.jwt_utils import JWTPayload, get_current_user, get_user_and_token, get_current_user_and_token_with_flag
 
 
 API_VERSION_PREFIX = "/api/v1"
@@ -229,6 +230,19 @@ app.include_router(outbox_router.router)
 
 for router, prefix, tags, in routers:
     app.include_router(router, prefix=prefix, tags=tags)
+
+if os.getenv("BYPASS_AUTH", "false").lower() == "true":
+    _mock_user = JWTPayload(
+        userId="1",
+        fullName="Dev User",
+        email="dev@local.com",
+        roleName="SUPERVISOR",
+        sessionId="dev-session",
+    )
+    app.dependency_overrides[get_current_user] = lambda: _mock_user
+    app.dependency_overrides[get_user_and_token] = lambda: (_mock_user, "mock-token")
+    app.dependency_overrides[get_current_user_and_token_with_flag] = lambda: (_mock_user, "mock-token")
+    logger.info("BYPASS_AUTH=true: all auth dependencies overridden with mock SUPERVISOR user")
 
 
 @app.get("/")
