@@ -1,6 +1,12 @@
 # All Filebeat logs will be sent to the ELK stack via Logstash.
 # This DaemonSet will run Filebeat on each node in the cluster to collect logs.
 # Ensure that the ELK stack is set up to receive logs from Filebeat. Please change output.logstash accordingly.
+#
+# NOTE: this file and filebeat-daemonset-stg.yaml both deploy a DaemonSet/ConfigMap
+# named "filebeat"/"filebeat-config" in the same "kube-system" namespace -- they are
+# not independent, they manage the SAME object (cd-prod.yaml applies this file,
+# cd-staging.yaml applies the -stg file). Keep them in sync; whichever pipeline
+# deploys last overwrites the other's config.
 
 apiVersion: apps/v1
 kind: DaemonSet
@@ -24,21 +30,20 @@ spec:
         - name: config
           mountPath: /etc/filebeat.yml
           subPath: filebeat.yml
-        - name: logs
-          mountPath: /home/VMadmin/FYP_microservices
+        - name: logs-prod
+          mountPath: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+        - name: logs-stg
+          mountPath: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
       volumes:
       - name: config
         configMap:
           name: filebeat-config
-      - name: logs
+      - name: logs-prod
         hostPath:
-          # Mounts the shared parent directory rather than one specific
-          # service directory, because production and staging write to two
-          # different sibling directories on this box (PEAR_activity_service
-          # vs PEAR_activity_service_stg) -- see filebeat.inputs.paths below
-          # for the specific subdirectories actually watched.
-          path: /home/VMadmin/FYP_microservices
-
+          path: /home/VMadmin/FYP_microservices/PEAR_activity_service/logs
+      - name: logs-stg
+        hostPath:
+          path: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
 
 # Define ConfigMap for Filebeat configuration
 ---
@@ -51,12 +56,24 @@ data:
   filebeat.yml: |-
     filebeat.inputs:
     - type: filestream
-      id: activity-service-logs
+      id: activity-production-logs
       enabled: true
       paths:
         - /home/VMadmin/FYP_microservices/PEAR_activity_service/logs/*.log
+      ignore_older: 24h
+      fields:
+        environment: production
+        service: activity
+
+    - type: filestream
+      id: activity-staging-logs
+      enabled: true
+      paths:
         - /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs/*.log
       ignore_older: 24h
+      fields:
+        environment: staging
+        service: activity
 
     logging.level: warning
     output.logstash:
