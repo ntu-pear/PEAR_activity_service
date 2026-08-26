@@ -18,6 +18,11 @@ jobs:
       DB_DATABASE: test_db
       DB_USERNAME: test_user
       DB_PASSWORD: test_pass
+      RABBITMQ_HOST: localhost
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RABBITMQ_VIRTUAL_HOST: /
 
     steps:
       - uses: actions/checkout@v4
