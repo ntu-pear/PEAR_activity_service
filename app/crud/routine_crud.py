@@ -110,7 +110,7 @@ def create_routine(
             event_type="ROUTINE_CREATED",
             aggregate_id=db_routine.id,
             payload=event_payload,
-            routing_key=f"routine.created.{db_routine.id}",
+            routing_key=f"activity.routine.created.{db_routine.id}",
             correlation_id=correlation_id,
             created_by=current_user_id,
         )
@@ -254,7 +254,7 @@ def update_routine(
             event_type="ROUTINE_UPDATED",
             aggregate_id=db_routine.id,
             payload=event_payload,
-            routing_key=f"routine.updated.{db_routine.id}",
+            routing_key=f"activity.routine.updated.{db_routine.id}",
             correlation_id=correlation_id,
             created_by=current_user_info.get("id"),
         )
@@ -331,7 +331,7 @@ def delete_routine(
             event_type="ROUTINE_DELETED",
             aggregate_id=db_routine.id,
             payload=event_payload,
-            routing_key=f"routine.deleted.{db_routine.id}",
+            routing_key=f"activity.routine.deleted.{db_routine.id}",
             correlation_id=correlation_id,
             created_by=current_user_info.get("id"),
         )

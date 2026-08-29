@@ -443,7 +443,7 @@ def test_create_routine_publishes_routine_created_event(
     mock_routine_outbox.create_event.assert_called_once()
     kwargs = mock_routine_outbox.create_event.call_args.kwargs
     assert kwargs["event_type"] == "ROUTINE_CREATED"
-    assert kwargs["routing_key"].startswith("routine.created.")
+    assert kwargs["routing_key"].startswith("activity.routine.created.")
     assert kwargs["payload"]["event_type"] == "ROUTINE_CREATED"
     assert kwargs["payload"]["routine_data"]["name"] == create_routine_schema.name
     assert kwargs["payload"]["routine_data"]["activity_title"] == existing_activity.title
@@ -473,7 +473,7 @@ def test_update_routine_publishes_routine_updated_event(
     mock_routine_outbox.create_event.assert_called_once()
     kwargs = mock_routine_outbox.create_event.call_args.kwargs
     assert kwargs["event_type"] == "ROUTINE_UPDATED"
-    assert kwargs["routing_key"] == f"routine.updated.{existing_routine.id}"
+    assert kwargs["routing_key"] == f"activity.routine.updated.{existing_routine.id}"
     assert kwargs["payload"]["new_data"]["name"] == update_routine_schema.name
     assert "old_data" in kwargs["payload"]
     assert "changes" in kwargs["payload"]
@@ -499,7 +499,7 @@ def test_delete_routine_publishes_routine_deleted_event(
     mock_routine_outbox.create_event.assert_called_once()
     kwargs = mock_routine_outbox.create_event.call_args.kwargs
     assert kwargs["event_type"] == "ROUTINE_DELETED"
-    assert kwargs["routing_key"] == f"routine.deleted.{existing_routine.id}"
+    assert kwargs["routing_key"] == f"activity.routine.deleted.{existing_routine.id}"
     assert kwargs["payload"]["routine_data"]["is_deleted"] is True
     get_db_session_mock.commit.assert_called_once()
 
