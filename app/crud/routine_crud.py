@@ -230,6 +230,10 @@ def update_routine(
         if getattr(db_routine, field) != new_value
     }
 
+    if not changes:
+        logger.info(f"Updated routine {db_routine.id} with no changes")
+        return db_routine
+
     try:
         timestamp = datetime.now()
         for field, new_value in new_values.items():

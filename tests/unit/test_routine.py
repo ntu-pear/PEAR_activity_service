@@ -361,6 +361,31 @@ def test_update_routine_success(
     mock_validate.assert_called_once()
 
 
+@patch("app.crud.routine_crud._validate_routine_data")
+@patch("app.crud.routine_crud._check_for_duplicate_routine")
+def test_update_routine_no_changes_skips_write(
+    mock_check_duplicate, mock_validate,
+    get_db_session_mock, mock_supervisor_user, base_routine_data,
+    existing_routine, mock_routine_outbox
+):
+    """update_routine is a no-op (no commit, no outbox event) when nothing actually changed"""
+    mock_check_duplicate.return_value = None
+    mock_validate.return_value = None
+
+    same_data_schema = RoutineUpdate(**base_routine_data)
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine
+
+    result = update_routine(
+        db=get_db_session_mock,
+        routine_data=same_data_schema,
+        current_user_info=mock_supervisor_user
+    )
+
+    assert result == existing_routine
+    get_db_session_mock.commit.assert_not_called()
+    mock_routine_outbox.create_event.assert_not_called()
+
+
 def test_update_routine_not_found(get_db_session_mock, mock_supervisor_user, update_routine_schema):
     """Raises HTTPException when routine not found"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
