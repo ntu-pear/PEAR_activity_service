@@ -215,7 +215,7 @@ def base_centre_activity_data_list():
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 1,
-            "fixed_time_slots": "0-2,1-2,2-2,3-2,4-2",
+            "fixed_time_slots": "Monday 11:00,Tuesday 11:00,Wednesday 11:00,Thursday 11:00,Friday 11:00",
             "created_by_id": "1",
             "modified_by_id": "1",
             "created_date": datetime.now(),
@@ -233,7 +233,7 @@ def base_centre_activity_data_list():
             "min_duration": 60,
             "max_duration": 60,
             "min_people_req": 4,
-            "fixed_time_slots": "0-3,1-3,2-3,3-3,4-3",
+            "fixed_time_slots": "Monday 10:00,Tuesday 10:00,Wednesday 10:00,Thursday 10:00,Friday 10:00",
             "created_by_id": "2",
             "modified_by_id": "2",
             "created_date": datetime.now(),
@@ -282,7 +282,7 @@ def conflicting_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Same fixed_time_slots
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -300,7 +300,7 @@ def conflicting_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Same fixed_time_slots - should conflict
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Same fixed_time_slots - should conflict
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -324,7 +324,7 @@ def unique_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="0-2,1-2,2-2",  # Unique fixed_time_slots
+            fixed_time_slots="Monday 11:00,Tuesday 11:00,Wednesday 11:00",  # Unique fixed_time_slots
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),
@@ -342,7 +342,7 @@ def unique_compulsory_centre_activities():
             min_duration=60,
             max_duration=60,
             min_people_req=1,
-            fixed_time_slots="3-2,4-2,5-2",  # Different fixed_time_slots - should be valid
+            fixed_time_slots="Thursday 11:00,Friday 11:00,Saturday 11:00",  # Different fixed_time_slots - should be valid
             created_by_id="1",
             modified_by_id="1",
             created_date=datetime.now(),

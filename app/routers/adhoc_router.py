@@ -131,8 +131,9 @@ def update_adhoc(
 def delete_adhoc(
     adhoc_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -140,6 +141,7 @@ def delete_adhoc(
         )
     user_info = {
         "id": current_user.userId if current_user else None,
-        "fullname": current_user.fullName if current_user else "Anonymous"
+        "fullname": current_user.fullName if current_user else "Anonymous",
+        "bearer_token": token
     }
     return crud.delete_adhoc(db=db, adhoc_id=adhoc_id, current_user_info=user_info)

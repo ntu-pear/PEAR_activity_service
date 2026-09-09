@@ -889,7 +889,7 @@ def test_delete_routine_role_access(
     result = router_delete_routine(
         db=get_db_session_mock,
         routine_id=1,
-        current_user=mock_user_roles
+        user_and_token=(mock_user_roles, "mock_token")
     )
 
     assert result is not None
@@ -906,7 +906,7 @@ def test_delete_routine_role_access_fail(
         router_delete_routine(
             db=get_db_session_mock,
             routine_id=1,
-            current_user=mock_user_roles
+            user_and_token=(mock_user_roles, "mock_token")
         )
 
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
