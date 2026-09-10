@@ -51,6 +51,13 @@ def second_centre_activity(integration_db, mock_user):
     """
     An adhoc needs two DIFFERENT centre activities. The session fixture only
     guarantees CentreActivity ID=1, so create a second, non-duplicate one here.
+
+    Schema constraints this has to satisfy (see ValidatedCentreActivity):
+      - min_duration must EQUAL max_duration, and both must be 30 or 60
+      - is_group=True requires min_people_req >= 2
+      - is_fixed/is_compulsory would require fixed_time_slots, so both stay False
+    It also differs from CentreActivity ID=1 on the essential fields, so the
+    duplicate check in create_centre_activity does not reject it.
     """
     centre_activity_data = CentreActivityCreate(
         activity_id=1,
@@ -60,7 +67,7 @@ def second_centre_activity(integration_db, mock_user):
         start_date=date.today(),
         end_date=date(2999, 12, 31),
         min_duration=30,
-        max_duration=90,
+        max_duration=30,
         min_people_req=2,
         created_by_id=mock_user["id"],
     )
@@ -109,9 +116,13 @@ class TestAdhocCreateOutbox:
         assert adhoc.status == "PENDING"
         assert adhoc.is_deleted == False
 
-        # Assertions: Outbox event created
+        # Assertions: Outbox event created.
+        # Filter on event_type too - the centre activity fixture writes its own
+        # outbox row, and the two tables have independent identity sequences,
+        # so aggregate_id alone is not unique across event types.
         outbox_event = integration_db.query(OutboxEvent).filter(
-            OutboxEvent.aggregate_id == str(adhoc.id)
+            OutboxEvent.event_type == "ADHOC_CREATED",
+            OutboxEvent.aggregate_id == str(adhoc.id),
         ).first()
 
         assert outbox_event is not None
@@ -149,7 +160,8 @@ class TestAdhocCreateOutbox:
         )
 
         outbox_event = integration_db.query(OutboxEvent).filter(
-            OutboxEvent.aggregate_id == str(adhoc.id)
+            OutboxEvent.event_type == "ADHOC_CREATED",
+            OutboxEvent.aggregate_id == str(adhoc.id),
         ).first()
 
         assert outbox_event is not None
@@ -401,9 +413,12 @@ class TestAdhocPayloadContract:
             current_user_info=mock_user,
         )
 
-        payload = integration_db.query(OutboxEvent).filter(
-            OutboxEvent.aggregate_id == str(adhoc.id)
-        ).first().get_payload()
+        outbox_event = integration_db.query(OutboxEvent).filter(
+            OutboxEvent.event_type == "ADHOC_CREATED",
+            OutboxEvent.aggregate_id == str(adhoc.id),
+        ).first()
+        assert outbox_event is not None
+        payload = outbox_event.get_payload()
         adhoc_data = payload["adhoc_data"]
 
         for field in MAPPER_REQUIRED_FIELDS:
