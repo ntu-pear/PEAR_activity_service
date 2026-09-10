@@ -1,14 +1,16 @@
-name: CD
+name: CD-prod
 
 on:
   push:
-    branches: ['main']
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   precheck:
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, activity]
     steps:
       - name: Check kubectl permissions
@@ -22,6 +24,7 @@ jobs:
           docker info || (echo "Docker not accessible" && exit 1)
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: precheck
     runs-on: [self-hosted, Linux, X64, activity]
     environment: 'prod'

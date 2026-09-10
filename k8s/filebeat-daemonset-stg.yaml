@@ -1,13 +1,3 @@
-# All Filebeat logs will be sent to the ELK stack via Logstash.
-# This DaemonSet will run Filebeat on each node in the cluster to collect logs.
-# Ensure that the ELK stack is set up to receive logs from Filebeat. Please change output.logstash accordingly.
-#
-# NOTE: this file and filebeat-daemonset-stg.yaml both deploy a DaemonSet/ConfigMap
-# named "filebeat"/"filebeat-config" in the same "kube-system" namespace -- they are
-# not independent, they manage the SAME object (cd-prod.yaml applies this file,
-# cd-staging.yaml applies the -stg file). Keep them in sync; whichever pipeline
-# deploys last overwrites the other's config.
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -44,8 +34,6 @@ spec:
       - name: logs-stg
         hostPath:
           path: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
-
-# Define ConfigMap for Filebeat configuration
 ---
 apiVersion: v1
 kind: ConfigMap

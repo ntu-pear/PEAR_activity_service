@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.crud.centre_activity_crud import create_centre_activity
 from app.database import SessionLocal
 from app.models.activity_model import Activity
+from app.models.adhoc_model import Adhoc
 from app.models.centre_activity_exclusion_model import CentreActivityExclusion
 from app.models.centre_activity_model import CentreActivity
 from app.models.centre_activity_preference_model import CentreActivityPreference
@@ -252,7 +253,11 @@ def cleanup_test_data(integration_db):
         
         integration_db.query(CentreActivityRecommendation).delete(synchronize_session=False)
         integration_db.commit()
-        
+
+        # Adhocs hold FKs to CENTRE_ACTIVITY, so they must go before it
+        integration_db.query(Adhoc).delete(synchronize_session=False)
+        integration_db.commit()
+
         # 3. Centre activities (child of Activity)
         # Preserve ID=1 - needed by preference/exclusion/recommendation tests
         integration_db.query(CentreActivity).filter(
