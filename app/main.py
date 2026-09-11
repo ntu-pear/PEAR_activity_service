@@ -231,7 +231,30 @@ app.include_router(outbox_router.router)
 for router, prefix, tags, in routers:
     app.include_router(router, prefix=prefix, tags=tags)
 
-if os.getenv("BYPASS_AUTH", "false").lower() == "true":
+def _is_bypass_auth_enabled() -> bool:
+    """
+    BYPASS_AUTH is a local-development-only escape hatch that replaces every
+    auth dependency with a hard-coded SUPERVISOR user. It requires BOTH
+    BYPASS_AUTH=true and ENVIRONMENT=local to take effect. ENVIRONMENT
+    defaults to "production" (fail-safe), so BYPASS_AUTH is inert unless a
+    developer explicitly opts in on their own machine. Setting BYPASS_AUTH=true
+    anywhere ENVIRONMENT isn't "local" is treated as a misconfiguration and
+    refuses to start, rather than silently running with or without auth.
+    """
+    if os.getenv("BYPASS_AUTH", "false").lower() != "true":
+        return False
+
+    environment = os.getenv("ENVIRONMENT", "production").lower()
+    if environment != "local":
+        raise RuntimeError(
+            "BYPASS_AUTH=true is only permitted when ENVIRONMENT=local "
+            f"(got ENVIRONMENT={environment!r}). Refusing to start to avoid "
+            "silently disabling authentication outside local development."
+        )
+    return True
+
+
+if _is_bypass_auth_enabled():
     _mock_user = JWTPayload(
         userId="1",
         fullName="Dev User",
@@ -242,7 +265,7 @@ if os.getenv("BYPASS_AUTH", "false").lower() == "true":
     app.dependency_overrides[get_current_user] = lambda: _mock_user
     app.dependency_overrides[get_user_and_token] = lambda: (_mock_user, "mock-token")
     app.dependency_overrides[get_current_user_and_token_with_flag] = lambda: (_mock_user, "mock-token")
-    logger.info("BYPASS_AUTH=true: all auth dependencies overridden with mock SUPERVISOR user")
+    logger.info("BYPASS_AUTH=true, ENVIRONMENT=local: all auth dependencies overridden with mock SUPERVISOR user")
 
 
 @app.get("/")
