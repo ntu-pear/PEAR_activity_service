@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.crud.centre_activity_crud import create_centre_activity
 from app.database import SessionLocal
 from app.models.activity_model import Activity
+from app.models.adhoc_model import Adhoc
 from app.models.centre_activity_exclusion_model import CentreActivityExclusion
 from app.models.centre_activity_model import CentreActivity
 from app.models.centre_activity_preference_model import CentreActivityPreference
@@ -252,7 +253,11 @@ def cleanup_test_data(integration_db):
         
         integration_db.query(CentreActivityRecommendation).delete(synchronize_session=False)
         integration_db.commit()
-        
+
+        # Adhocs hold FKs to CENTRE_ACTIVITY, so they must go before it
+        integration_db.query(Adhoc).delete(synchronize_session=False)
+        integration_db.commit()
+
         # 3. Centre activities (child of Activity)
         # Preserve ID=1 - needed by preference/exclusion/recommendation tests
         integration_db.query(CentreActivity).filter(
@@ -294,9 +299,9 @@ def _create_base_activity_if_not_exists(db: Session) -> int:
         # Create Activity ID=1
         new_activity = Activity(
             id=1,  # CRITICAL: Explicitly set ID to 1
-            name='Test Activity',
+            title='Test Activity',
             description='Activity for integration tests',
-            category='TEST',
+            # category='TEST',
             created_date=datetime.now(),
             created_by_id='system'
         )
@@ -341,7 +346,7 @@ def _create_test_centre_activity(db: Session) -> CentreActivity:
         min_duration=60,
         max_duration=60,
         min_people_req=1,
-        fixed_time_slots="0-3,1-3,2-3,3-3,4-3",
+        fixed_time_slots="Monday 12:00,Tuesday 12:00,Wednesday 12:00,Thursday 12:00,Friday 12:00",
         created_by_id="test-setup-system"
     )
     

@@ -31,6 +31,18 @@ def disable_crud_logging(monkeypatch):
     monkeypatch.setattr(routine_crud, "log_crud_action", lambda *args, **kwargs: None)
 
 
+@pytest.fixture(autouse=True)
+def mock_routine_outbox(monkeypatch):
+    """Replace the outbox service in routine_crud so tests never touch RabbitMQ."""
+    mock_service = MagicMock()
+    monkeypatch.setattr(
+        "app.crud.routine_crud.get_outbox_service",
+        lambda: mock_service,
+        raising=False,
+    )
+    return mock_service
+
+
 @pytest.fixture
 def create_routine_schema(base_routine_data):
     """RoutineCreate schema instance"""
@@ -349,6 +361,31 @@ def test_update_routine_success(
     mock_validate.assert_called_once()
 
 
+@patch("app.crud.routine_crud._validate_routine_data")
+@patch("app.crud.routine_crud._check_for_duplicate_routine")
+def test_update_routine_no_changes_skips_write(
+    mock_check_duplicate, mock_validate,
+    get_db_session_mock, mock_supervisor_user, base_routine_data,
+    existing_routine, mock_routine_outbox
+):
+    """update_routine is a no-op (no commit, no outbox event) when nothing actually changed"""
+    mock_check_duplicate.return_value = None
+    mock_validate.return_value = None
+
+    same_data_schema = RoutineUpdate(**base_routine_data)
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine
+
+    result = update_routine(
+        db=get_db_session_mock,
+        routine_data=same_data_schema,
+        current_user_info=mock_supervisor_user
+    )
+
+    assert result == existing_routine
+    get_db_session_mock.commit.assert_not_called()
+    mock_routine_outbox.create_event.assert_not_called()
+
+
 def test_update_routine_not_found(get_db_session_mock, mock_supervisor_user, update_routine_schema):
     """Raises HTTPException when routine not found"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
@@ -406,6 +443,114 @@ def test_delete_routine_not_found(get_db_session_mock, mock_supervisor_user):
         )
     
     assert exc.value.status_code == 404
+
+
+# ===== Outbox event tests =====
+
+@patch("app.crud.routine_crud.get_patient_by_id")
+@patch("app.crud.routine_crud.get_activity_by_id")
+def test_create_routine_publishes_routine_created_event(
+    mock_get_activity, mock_get_patient,
+    get_db_session_mock, mock_supervisor_user,
+    create_routine_schema, existing_activity, mock_routine_outbox
+):
+    """create_routine writes a ROUTINE_CREATED outbox event in the same transaction"""
+    mock_get_activity.return_value = existing_activity
+    mock_get_patient.return_value = {"patientId": 1}
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+
+    create_routine(
+        db=get_db_session_mock,
+        routine_data=create_routine_schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_routine_outbox.create_event.assert_called_once()
+    kwargs = mock_routine_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "ROUTINE_CREATED"
+    assert kwargs["routing_key"].startswith("activity.routine.created.")
+    assert kwargs["payload"]["event_type"] == "ROUTINE_CREATED"
+    assert kwargs["payload"]["routine_data"]["name"] == create_routine_schema.name
+    assert kwargs["payload"]["routine_data"]["activity_title"] == existing_activity.title
+    get_db_session_mock.commit.assert_called_once()
+
+
+@patch("app.crud.routine_crud._validate_routine_data")
+@patch("app.crud.routine_crud._check_for_duplicate_routine")
+@patch("app.crud.routine_crud.get_activity_by_id")
+def test_update_routine_publishes_routine_updated_event(
+    mock_get_activity, mock_check_duplicate, mock_validate,
+    get_db_session_mock, mock_supervisor_user,
+    update_routine_schema, existing_routine, existing_activity, mock_routine_outbox
+):
+    """update_routine writes a ROUTINE_UPDATED outbox event with old/new data"""
+    mock_check_duplicate.return_value = None
+    mock_validate.return_value = None
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine
+
+    update_routine(
+        db=get_db_session_mock,
+        routine_data=update_routine_schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_routine_outbox.create_event.assert_called_once()
+    kwargs = mock_routine_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "ROUTINE_UPDATED"
+    assert kwargs["routing_key"] == f"activity.routine.updated.{existing_routine.id}"
+    assert kwargs["payload"]["new_data"]["name"] == update_routine_schema.name
+    assert "old_data" in kwargs["payload"]
+    assert "changes" in kwargs["payload"]
+    get_db_session_mock.commit.assert_called_once()
+
+
+@patch("app.crud.routine_crud.get_activity_by_id")
+def test_delete_routine_publishes_routine_deleted_event(
+    mock_get_activity,
+    get_db_session_mock, mock_supervisor_user,
+    existing_routine, existing_activity, mock_routine_outbox
+):
+    """delete_routine writes a ROUTINE_DELETED outbox event in the same transaction"""
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_routine
+
+    delete_routine(
+        db=get_db_session_mock,
+        routine_id=existing_routine.id,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_routine_outbox.create_event.assert_called_once()
+    kwargs = mock_routine_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "ROUTINE_DELETED"
+    assert kwargs["routing_key"] == f"activity.routine.deleted.{existing_routine.id}"
+    assert kwargs["payload"]["routine_data"]["is_deleted"] is True
+    get_db_session_mock.commit.assert_called_once()
+
+
+@patch("app.crud.routine_crud.get_patient_by_id")
+@patch("app.crud.routine_crud.get_activity_by_id")
+def test_create_routine_rolls_back_when_outbox_fails(
+    mock_get_activity, mock_get_patient,
+    get_db_session_mock, mock_supervisor_user,
+    create_routine_schema, existing_activity, mock_routine_outbox
+):
+    """A failing outbox write aborts the whole create_routine transaction"""
+    mock_get_activity.return_value = existing_activity
+    mock_get_patient.return_value = {"patientId": 1}
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    mock_routine_outbox.create_event.side_effect = Exception("outbox boom")
+
+    with pytest.raises(HTTPException):
+        create_routine(
+            db=get_db_session_mock,
+            routine_data=create_routine_schema,
+            current_user_info=mock_supervisor_user,
+        )
+
+    get_db_session_mock.rollback.assert_called()
+    get_db_session_mock.commit.assert_not_called()
 
 
 # ===== Helper Function tests =====
@@ -744,7 +889,7 @@ def test_delete_routine_role_access(
     result = router_delete_routine(
         db=get_db_session_mock,
         routine_id=1,
-        current_user=mock_user_roles
+        user_and_token=(mock_user_roles, "mock_token")
     )
 
     assert result is not None
@@ -761,7 +906,7 @@ def test_delete_routine_role_access_fail(
         router_delete_routine(
             db=get_db_session_mock,
             routine_id=1,
-            current_user=mock_user_roles
+            user_and_token=(mock_user_roles, "mock_token")
         )
 
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN

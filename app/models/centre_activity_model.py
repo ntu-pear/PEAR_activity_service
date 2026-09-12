@@ -19,8 +19,8 @@ class CentreActivity(Base):
     
     # Duration will only be 60min to make it easy for Scheduler.
     # Will still keep these fields in case future allows diff durations
-    min_duration = Column(Integer, nullable=False, default=60)       
-    max_duration = Column(Integer, nullable=False, default =60)
+    min_duration = Column(Integer, nullable=False, default=30)       
+    max_duration = Column(Integer, nullable=False, default =30)
     min_people_req = Column(Integer, nullable=False, default=1)
     fixed_time_slots = Column(String, nullable=True)
 

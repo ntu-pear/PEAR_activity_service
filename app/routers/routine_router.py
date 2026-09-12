@@ -127,8 +127,9 @@ def update_routine(
 def delete_routine(
     routine_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[JWTPayload] = Depends(get_current_user)
+    user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
+    current_user, token = user_and_token
     if current_user and not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -136,6 +137,7 @@ def delete_routine(
         )
     user_info = {
         "id": current_user.userId if current_user else None,
-        "fullname": current_user.fullName if current_user else "Anonymous"
+        "fullname": current_user.fullName if current_user else "Anonymous",
+        "bearer_token": token
     }
     return crud.delete_routine(db=db, routine_id=routine_id, current_user_info=user_info)
