@@ -26,6 +26,13 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          # Config comes from the cluster, not from the image. The ConfigMap is
+          # created by the CD workflow before this manifest is applied; if it is
+          # missing the pod fails to start rather than falling back to a stale
+          # baked-in .env.
+          envFrom:
+            - configMapRef:
+                name: activity-service-stg-env
           env:
             - name: TZ
               value: "Asia/Singapore"
@@ -36,6 +43,23 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          # The FastAPI lifespan connects to the DB, starts the outbox processor
+          # and opens the RabbitMQ consumers before serving. startupProbe allows
+          # up to 120s for that; readiness then gates rollout traffic.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           volumeMounts:
             - name: log-volume
               mountPath: /app/logs
