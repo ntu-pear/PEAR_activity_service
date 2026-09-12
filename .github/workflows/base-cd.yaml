@@ -1,0 +1,177 @@
+name: Base CD
+
+# Reusable deployment workflow shared by every environment.
+#
+# Config is NOT passed in by the caller. A job that calls a reusable workflow
+# cannot declare `environment:`, so any vars/secrets referenced in the caller
+# would resolve against repository scope instead of the environment. The deploy
+# job below DOES declare `environment:`, so `vars.*` and `secrets.*` here
+# resolve against the GitHub Environment named by the `environment` input.
+#
+# The caller supplies only structural inputs: which namespace, which object
+# names, which files. Both environments share one cluster, so those MUST be
+# parameterised - nothing about staging or prod is hardcoded here.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'GitHub Environment to read vars/secrets from (must match the name in GitHub exactly, case-sensitive)'
+        required: true
+        type: string
+      runner-label:
+        description: 'JSON array of self-hosted runner labels'
+        required: true
+        type: string
+      namespace:
+        description: 'Kubernetes namespace to deploy into'
+        required: true
+        type: string
+      deployment-name:
+        description: 'Name of the Deployment object'
+        required: true
+        type: string
+      container-name:
+        description: 'Container name inside the pod (used by kubectl set image)'
+        required: true
+        type: string
+      configmap-name:
+        description: 'ConfigMap the Deployment reads via envFrom'
+        required: true
+        type: string
+      docker-image-name:
+        description: 'Image name to build and push'
+        required: true
+        type: string
+      kube-deployment-file:
+        description: 'Deployment + Service manifest for this environment'
+        required: true
+        type: string
+      filebeat-file:
+        description: 'Filebeat DaemonSet manifest (declares its own kube-system namespace)'
+        required: true
+        type: string
+      dockerfile:
+        required: false
+        type: string
+        default: 'Dockerfile.dev'
+
+permissions:
+  contents: read
+
+jobs:
+  # No `environment:` here on purpose: this job reads no vars or secrets, and
+  # adding one would put an extra approval gate in front of every deploy if the
+  # environment ever gains required reviewers.
+  precheck:
+    runs-on: ${{ fromJSON(inputs.runner-label) }}
+    steps:
+      - name: Check kubectl permissions
+        run: |
+          kubectl auth can-i create deployments -n ${{ inputs.namespace }} \
+            || (echo "No permission to create deployments in ${{ inputs.namespace }}" && exit 1)
+          kubectl auth can-i patch deployments -n ${{ inputs.namespace }} \
+            || (echo "No permission to patch deployments in ${{ inputs.namespace }}" && exit 1)
+
+      - name: Check Docker registry access
+        run: docker info || (echo "Docker not accessible" && exit 1)
+
+  deploy:
+    needs: precheck
+    runs-on: ${{ fromJSON(inputs.runner-label) }}
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set commit SHA
+        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+
+      - name: Create .env from environment variables and secrets
+        run: |
+          : > .env
+
+          echo "SERVICE_NAME=${{ vars.SERVICE_NAME || secrets.SERVICE_NAME }}" >> .env
+
+          # Database
+          echo "DB_SERVER=${{ vars.DB_SERVER || secrets.DB_SERVER }}" >> .env
+          echo "DB_DATABASE=${{ vars.DB_DATABASE || secrets.DB_DATABASE }}" >> .env
+          echo "DB_DATABASE_PORT=${{ vars.DB_DATABASE_PORT || secrets.DB_DATABASE_PORT }}" >> .env
+          echo "DB_USERNAME=${{ vars.DB_USERNAME || secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_DRIVER=${{ vars.DB_DRIVER || secrets.DB_DRIVER }}" >> .env
+
+          # Origins
+          echo "WEB_FE_ORIGIN=${{ vars.WEB_FE_ORIGIN || secrets.WEB_FE_ORIGIN }}" >> .env
+          echo "PATIENT_BE_ORIGIN=${{ vars.PATIENT_BE_ORIGIN || secrets.PATIENT_BE_ORIGIN }}" >> .env
+          echo "USER_BE_ORIGIN=${{ vars.USER_BE_ORIGIN || secrets.USER_BE_ORIGIN }}" >> .env
+
+          # RabbitMQ
+          echo "RABBITMQ_HOST=${{ vars.RABBITMQ_HOST || secrets.RABBITMQ_HOST }}" >> .env
+          echo "RABBITMQ_PORT=${{ vars.RABBITMQ_PORT || secrets.RABBITMQ_PORT }}" >> .env
+          echo "RABBITMQ_USER=${{ vars.RABBITMQ_USER || secrets.RABBITMQ_USER }}" >> .env
+          echo "RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}" >> .env
+          echo "RABBITMQ_VIRTUAL_HOST=${{ vars.RABBITMQ_VIRTUAL_HOST || secrets.RABBITMQ_VIRTUAL_HOST }}" >> .env
+
+      # A var or secret missing from the environment resolves to an empty string
+      # rather than erroring, which would otherwise deploy a silently broken pod.
+      # Matches only KEY= with nothing after it, so a password that legitimately
+      # ends in '=' is not flagged.
+      - name: Verify nothing resolved to empty
+        run: |
+          MISSING=$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=$' .env | cut -d= -f1 || true)
+          if [ -n "$MISSING" ]; then
+            echo "Empty or missing in the '${{ inputs.environment }}' GitHub Environment:"
+            echo "$MISSING"
+            echo "Add them under Settings > Environments > ${{ inputs.environment }}"
+            exit 1
+          fi
+          echo "All required environment variables and secrets present."
+
+      # Created before the Deployment is applied, because a manifest using
+      # envFrom.configMapRef will not start a pod if the ConfigMap is missing.
+      - name: Create/Update ConfigMap in Kubernetes
+        run: |
+          kubectl create configmap ${{ inputs.configmap-name }} \
+            -n ${{ inputs.namespace }} \
+            --from-env-file=.env \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Build Docker image
+        run: |
+          docker build --no-cache -f ${{ inputs.dockerfile }} \
+            -t ${{ inputs.docker-image-name }}:${{ env.COMMIT_SHA }} .
+
+      - name: Tag and push to local registry
+        run: |
+          docker tag ${{ inputs.docker-image-name }}:${{ env.COMMIT_SHA }} \
+                     localhost:5000/${{ inputs.docker-image-name }}:${{ env.COMMIT_SHA }}
+          docker push localhost:5000/${{ inputs.docker-image-name }}:${{ env.COMMIT_SHA }}
+
+      # Git stays the source of truth for the whole spec (Service, ports, probes,
+      # labels). Applied unconditionally - the previous `kubectl get || apply`
+      # meant manifest edits never reached an existing deployment.
+      - name: Apply Kubernetes manifests
+        run: kubectl apply -f '${{ inputs.kube-deployment-file }}' -n ${{ inputs.namespace }}
+
+      # Pin the running image to this exact commit so the deployed version is
+      # traceable. This also overrides the ':latest' tag in the manifest above.
+      - name: Roll out this commit's image
+        run: |
+          kubectl set image deployment/${{ inputs.deployment-name }} \
+            -n ${{ inputs.namespace }} \
+            ${{ inputs.container-name }}=host.minikube.internal:5000/${{ inputs.docker-image-name }}:${{ env.COMMIT_SHA }}
+          kubectl rollout status deployment/${{ inputs.deployment-name }} \
+            -n ${{ inputs.namespace }} --timeout=300s
+
+      # No -n flag: the DaemonSet manifest declares namespace kube-system itself,
+      # and passing a conflicting namespace would make kubectl reject it.
+      - name: Deploy Filebeat DaemonSet
+        run: kubectl apply -f '${{ inputs.filebeat-file }}'
+
+      - name: Kubernetes maintenance cleanup
+        run: |
+          docker container prune -f
+          docker image prune -a -f
+          minikube ssh -- "docker container prune -f && docker image prune -a -f"
