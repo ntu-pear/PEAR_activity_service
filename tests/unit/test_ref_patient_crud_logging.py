@@ -77,13 +77,13 @@ def test_create_ref_patient_logs_create_action(mock_log_crud_action, bypass_idem
     db.commit.assert_called_once()
 
 
-def test_create_ref_patient_duplicate_does_not_log(mock_log_crud_action):
+def test_create_ref_patient_duplicate_does_not_log(mock_log_crud_action, monkeypatch):
     db = MagicMock()
 
     def fake_process_idempotent_duplicate(db, correlation_id, event_type, aggregate_id, processed_by, operation):
         return None, True
 
-    ref_patient_crud.IdempotencyService.process_idempotent = fake_process_idempotent_duplicate
+    monkeypatch.setattr(ref_patient_crud.IdempotencyService, "process_idempotent", fake_process_idempotent_duplicate)
 
     existing_patient = MagicMock(spec=RefPatient)
     db.query.return_value.filter.return_value.first.return_value = existing_patient
