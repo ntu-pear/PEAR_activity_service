@@ -85,6 +85,8 @@ def test_create_ref_patient_allocation_logs_create_action(mock_log_crud_action, 
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"] is None
     assert kwargs["updated_data"]["doctor_id"] == "doc-1"
+    assert kwargs["patient_id"] == 10
+    assert kwargs["patient_full_name"] is None
     assert kwargs["log_type"] == "system"
     assert kwargs["is_system_config"] is True
     db.commit.assert_called_once()
@@ -147,7 +149,9 @@ def test_update_ref_patient_allocation_logs_update_action(mock_log_crud_action, 
     assert kwargs["user"] == "patient_service"
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"]["doctorId"] == "doc-1"
-    assert kwargs["updated_data"]["doctor_id"] == "doc-2"
+    assert kwargs["updated_data"]["doctorId"] == "doc-2"
+    assert kwargs["patient_id"] == 10
+    assert kwargs["patient_full_name"] is None
     db.commit.assert_called_once()
 
 
@@ -192,6 +196,8 @@ def test_delete_ref_patient_allocation_logs_delete_action(mock_log_crud_action, 
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"]["isDeleted"] == "0"
     assert kwargs["updated_data"] is None
+    assert kwargs["patient_id"] == 10
+    assert kwargs["patient_full_name"] is None
     db.commit.assert_called_once()
 
 

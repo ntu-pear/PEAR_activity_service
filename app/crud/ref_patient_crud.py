@@ -109,6 +109,8 @@ def create_ref_patient(
             entity_id=result.id,
             original_data=None,
             updated_data=serialize_data(patient.model_dump()),
+            patient_id=result.id,
+            patient_full_name=result.name,
             log_type="system",
             is_system_config=True,
         )
@@ -164,7 +166,7 @@ def update_ref_patient(
         logger.debug(f"Updating patient {patient_id}")
 
         # Capture original state before mutation for audit logging
-        original_data_holder['data'] = model_to_dict(db_patient)
+        original_data_holder['data'] = serialize_data(model_to_dict(db_patient))
 
         # Update only the fields that were provided
         update_data = patient_update.model_dump(exclude_unset=True)
@@ -228,6 +230,8 @@ def update_ref_patient(
             entity_id=result.id,
             original_data=original_data_holder.get('data'),
             updated_data=serialize_data(update_data_holder.get('data')),
+            patient_id=result.id,
+            patient_full_name=result.name,
             log_type="system",
             is_system_config=True,
         )
@@ -283,7 +287,7 @@ def delete_ref_patient(
         logger.info(f"Soft deleting patient {patient_id}")
 
         # Capture original state before mutation for audit logging
-        original_data_holder['data'] = model_to_dict(db_patient)
+        original_data_holder['data'] = serialize_data(model_to_dict(db_patient))
 
         # Perform soft delete using schema data
         db_patient.is_deleted = "1"
@@ -325,6 +329,8 @@ def delete_ref_patient(
                 entity_id=result.id,
                 original_data=original_data_holder.get('data'),
                 updated_data=None,
+                patient_id=result.id,
+                patient_full_name=result.name,
                 log_type="system",
                 is_system_config=True,
             )

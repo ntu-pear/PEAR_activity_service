@@ -12,6 +12,21 @@ from ..logger.logger_utils import log_crud_action, ActionType, serialize_data, m
 
 logger = logging.getLogger(__name__)
 
+# Maps RefPatientAllocationUpdate (snake_case) field names to the RefPatientAllocation
+# model's (camelCase) column names, mirroring the mapping applied in
+# update_ref_patient_allocation's mutation loop below. Fields not listed here use the
+# same name in both the schema and the model (e.g. active, modified_date, modified_by_id).
+ALLOCATION_UPDATE_FIELD_TO_MODEL_COLUMN = {
+    'patient_id': 'patientId',
+    'doctor_id': 'doctorId',
+    'game_therapist_id': 'gameTherapistId',
+    'supervisor_id': 'supervisorId',
+    'caregiver_id': 'caregiverId',
+    'temp_doctor_id': 'tempDoctorId',
+    'temp_caregiver_id': 'tempCaregiverId',
+    'is_deleted': 'isDeleted',
+}
+
 def create_ref_patient_allocation(
     db: Session,
     allocation: RefPatientAllocationCreate,
@@ -113,6 +128,8 @@ def create_ref_patient_allocation(
             entity_id=result.id,
             original_data=None,
             updated_data=serialize_data(allocation.model_dump()),
+            patient_id=result.patientId,
+            patient_full_name=None,
             log_type="system",
             is_system_config=True,
         )
@@ -168,7 +185,7 @@ def update_ref_patient_allocation(
         logger.debug(f"Updating patient allocation {allocation_id}")
 
         # Capture original state before mutation for audit logging
-        original_data_holder['data'] = model_to_dict(db_allocation)
+        original_data_holder['data'] = serialize_data(model_to_dict(db_allocation))
 
         # Update only the fields that were provided
         update_data = allocation_update.model_dump(exclude_unset=True)
@@ -252,7 +269,12 @@ def update_ref_patient_allocation(
             table="REF_PATIENT_ALLOCATION",
             entity_id=result.id,
             original_data=original_data_holder.get('data'),
-            updated_data=serialize_data(update_data_holder.get('data')),
+            updated_data=serialize_data({
+                ALLOCATION_UPDATE_FIELD_TO_MODEL_COLUMN.get(field, field): value
+                for field, value in update_data_holder.get('data', {}).items()
+            }),
+            patient_id=result.patientId,
+            patient_full_name=None,
             log_type="system",
             is_system_config=True,
         )
@@ -308,7 +330,7 @@ def delete_ref_patient_allocation(
         logger.info(f"Soft deleting patient allocation {allocation_id}")
 
         # Capture original state before mutation for audit logging
-        original_data_holder['data'] = model_to_dict(db_allocation)
+        original_data_holder['data'] = serialize_data(model_to_dict(db_allocation))
 
         # Perform soft delete using schema data
         db_allocation.isDeleted = "1"
@@ -350,6 +372,8 @@ def delete_ref_patient_allocation(
                 entity_id=result.id,
                 original_data=original_data_holder.get('data'),
                 updated_data=None,
+                patient_id=result.patientId,
+                patient_full_name=None,
                 log_type="system",
                 is_system_config=True,
             )

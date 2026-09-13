@@ -72,6 +72,8 @@ def test_create_ref_patient_logs_create_action(mock_log_crud_action, bypass_idem
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"] is None
     assert kwargs["updated_data"]["name"] == "Alice"
+    assert kwargs["patient_id"] == 1
+    assert kwargs["patient_full_name"] == "Alice"
     assert kwargs["log_type"] == "system"
     assert kwargs["is_system_config"] is True
     db.commit.assert_called_once()
@@ -143,6 +145,8 @@ def test_update_ref_patient_logs_update_action(mock_log_crud_action, bypass_idem
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"]["name"] == "Alice"
     assert kwargs["updated_data"]["name"] == "Alice Updated"
+    assert kwargs["patient_id"] == 1
+    assert kwargs["patient_full_name"] == "Alice Updated"
     db.commit.assert_called_once()
 
 
@@ -200,6 +204,8 @@ def test_delete_ref_patient_logs_delete_action(mock_log_crud_action, bypass_idem
     assert kwargs["entity_id"] == 1
     assert kwargs["original_data"]["is_deleted"] == "0"
     assert kwargs["updated_data"] is None
+    assert kwargs["patient_id"] == 1
+    assert kwargs["patient_full_name"] == "Alice"
     db.commit.assert_called_once()
 
 
