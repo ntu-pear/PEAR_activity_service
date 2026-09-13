@@ -8,6 +8,7 @@ from ..models import RefPatient
 from ..models.processed_events_model import ProcessedEvent
 from ..schemas.ref_patient import RefPatientCreate, RefPatientUpdate, RefPatientDelete
 from ..services.idempotency_service import IdempotencyService
+from ..logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,20 @@ def create_ref_patient(
             existing_patient = db.query(RefPatient).filter(RefPatient.id == patient.id).first()
             logger.info(f"Duplicate create event for patient {patient.id}, returning existing")
             return existing_patient, True
-        
+
+        log_crud_action(
+            action=ActionType.CREATE,
+            user=created_by,
+            user_full_name=created_by,
+            message=f"Created patient: {result.name} (ID {result.id}) via patient_service sync",
+            table="REF_PATIENT",
+            entity_id=result.id,
+            original_data=None,
+            updated_data=serialize_data(patient.model_dump()),
+            log_type="system",
+            is_system_config=True,
+        )
+
         db.commit()
         logger.info(f"Successfully created patient {patient.id}")
         return result, False
@@ -133,25 +147,32 @@ def update_ref_patient(
         Exception: For database or other errors
     """
     
+    original_data_holder = {}
+    update_data_holder = {}
+
     def update_operation():
         # Find the patient to update
         db_patient = db.query(RefPatient).filter(
             RefPatient.id == patient_id,
             RefPatient.is_deleted == "0"
         ).first()
-        
+
         if not db_patient:
             logger.warning(f"Patient {patient_id} not found for update")
             return None
-        
+
         logger.debug(f"Updating patient {patient_id}")
-        
+
+        # Capture original state before mutation for audit logging
+        original_data_holder['data'] = model_to_dict(db_patient)
+
         # Update only the fields that were provided
         update_data = patient_update.model_dump(exclude_unset=True)
+        update_data_holder['data'] = update_data
         for field, value in update_data.items():
             if hasattr(db_patient, field) and field != 'id':  # Never update ID
                 setattr(db_patient, field, value)
-        
+
         db.flush()
         return db_patient
     
@@ -197,7 +218,20 @@ def update_ref_patient(
             logger.warning(f"Patient {patient_id} not found for update")
             db.commit()  # Commit the idempotency record even if patient not found
             return None, False
-        
+
+        log_crud_action(
+            action=ActionType.UPDATE,
+            user=patient_update.modified_by_id,
+            user_full_name=patient_update.modified_by_id,
+            message=f"Updated patient: {result.name} (ID {result.id}) via patient_service sync",
+            table="REF_PATIENT",
+            entity_id=result.id,
+            original_data=original_data_holder.get('data'),
+            updated_data=serialize_data(update_data_holder.get('data')),
+            log_type="system",
+            is_system_config=True,
+        )
+
         db.commit()
         logger.debug(f"Successfully updated patient {patient_id}")
         return result, False
@@ -232,25 +266,30 @@ def delete_ref_patient(
         Exception: For database or other errors
     """
     
+    original_data_holder = {}
+
     def delete_operation():
         # Find the patient to delete
         db_patient = db.query(RefPatient).filter(RefPatient.id == patient_id).first()
-        
+
         if not db_patient:
             logger.warning(f"Patient {patient_id} not found for deletion")
             return None
-        
+
         if db_patient.is_deleted == "1":
             logger.info(f"Patient {patient_id} already deleted")
             return db_patient
-        
+
         logger.info(f"Soft deleting patient {patient_id}")
-        
+
+        # Capture original state before mutation for audit logging
+        original_data_holder['data'] = model_to_dict(db_patient)
+
         # Perform soft delete using schema data
         db_patient.is_deleted = "1"
         db_patient.modified_by_id = patient_delete.modified_by_id
         db_patient.modified_date = patient_delete.modified_date
-        
+
         db.flush()
         return db_patient
     
@@ -275,7 +314,21 @@ def delete_ref_patient(
             logger.warning(f"Patient {patient_id} not found for deletion")
             db.commit()  # Commit the idempotency record even if patient not found
             return None, False
-        
+
+        if original_data_holder.get('data') is not None:
+            log_crud_action(
+                action=ActionType.DELETE,
+                user=patient_delete.modified_by_id,
+                user_full_name=patient_delete.modified_by_id,
+                message=f"Deleted patient: {result.name} (ID {result.id}) via patient_service sync",
+                table="REF_PATIENT",
+                entity_id=result.id,
+                original_data=original_data_holder.get('data'),
+                updated_data=None,
+                log_type="system",
+                is_system_config=True,
+            )
+
         db.commit()
         logger.info(f"Successfully deleted patient {patient_id}")
         return result, False
