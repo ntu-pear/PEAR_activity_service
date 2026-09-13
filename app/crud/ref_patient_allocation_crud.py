@@ -8,6 +8,7 @@ from ..models.ref_patient_allocation_model import RefPatientAllocation
 from ..models.processed_events_model import ProcessedEvent
 from ..schemas.ref_patient_allocation import RefPatientAllocationCreate, RefPatientAllocationUpdate, RefPatientAllocationDelete
 from ..services.idempotency_service import IdempotencyService
+from ..logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,20 @@ def create_ref_patient_allocation(
             existing_allocation = db.query(RefPatientAllocation).filter(RefPatientAllocation.id == allocation.id).first()
             logger.info(f"Duplicate create event for patient allocation {allocation.id}, returning existing")
             return existing_allocation, True
-        
+
+        log_crud_action(
+            action=ActionType.CREATE,
+            user=created_by,
+            user_full_name=created_by,
+            message=f"Created patient allocation {result.id} for patient {result.patientId} via patient_service sync",
+            table="REF_PATIENT_ALLOCATION",
+            entity_id=result.id,
+            original_data=None,
+            updated_data=serialize_data(allocation.model_dump()),
+            log_type="system",
+            is_system_config=True,
+        )
+
         db.commit()
         logger.info(f"Successfully created patient allocation {allocation.id} for patient {allocation.patient_id}")
         return result, False
@@ -121,37 +135,44 @@ def update_ref_patient_allocation(
 ) -> Tuple[Optional[RefPatientAllocation], bool]:
     """
     Update an existing patient allocation with idempotency protection.
-    
+
     Args:
         db: Database session
         allocation_id: ID of allocation to update
         allocation_update: Fields to update (includes modified_date and modified_by_id)
         correlation_id: Correlation ID from outbox service for deduplication
         skip_duplicate_check: If True, bypass idempotency check (for sync events)
-        
+
     Returns:
         Tuple of (RefPatientAllocation or None, was_duplicate: bool)
         None if allocation not found
-        
+
     Raises:
         Exception: For database or other errors
     """
-    
+
+    original_data_holder = {}
+    update_data_holder = {}
+
     def update_operation():
         # Find the allocation to update
         db_allocation = db.query(RefPatientAllocation).filter(
             RefPatientAllocation.id == allocation_id,
             RefPatientAllocation.isDeleted == "0"
         ).first()
-        
+
         if not db_allocation:
             logger.warning(f"Patient allocation {allocation_id} not found for update")
             return None
-        
+
         logger.debug(f"Updating patient allocation {allocation_id}")
-        
+
+        # Capture original state before mutation for audit logging
+        original_data_holder['data'] = model_to_dict(db_allocation)
+
         # Update only the fields that were provided
         update_data = allocation_update.model_dump(exclude_unset=True)
+        update_data_holder['data'] = update_data
         for field, value in update_data.items():
             # Map schema field names to model field names
             if field == 'patient_id':
@@ -222,7 +243,20 @@ def update_ref_patient_allocation(
             logger.warning(f"Patient allocation {allocation_id} not found for update")
             db.commit()  # Commit the idempotency record even if allocation not found
             return None, False
-        
+
+        log_crud_action(
+            action=ActionType.UPDATE,
+            user=allocation_update.modified_by_id,
+            user_full_name=allocation_update.modified_by_id,
+            message=f"Updated patient allocation {result.id} for patient {result.patientId} via patient_service sync",
+            table="REF_PATIENT_ALLOCATION",
+            entity_id=result.id,
+            original_data=original_data_holder.get('data'),
+            updated_data=serialize_data(update_data_holder.get('data')),
+            log_type="system",
+            is_system_config=True,
+        )
+
         db.commit()
         logger.debug(f"Successfully updated patient allocation {allocation_id}")
         return result, False
@@ -241,41 +275,46 @@ def delete_ref_patient_allocation(
 ) -> Tuple[Optional[RefPatientAllocation], bool]:
     """
     Soft delete a patient allocation with idempotency protection.
-    
+
     Args:
         db: Database session
         allocation_id: ID of allocation to delete
         allocation_delete: Delete data including timestamp and user info
         correlation_id: Correlation ID from outbox service for deduplication
         skip_duplicate_check: If True, bypass idempotency check (for sync events)
-        
+
     Returns:
         Tuple of (RefPatientAllocation or None, was_duplicate: bool)
         None if allocation not found
-        
+
     Raises:
         Exception: For database or other errors
     """
-    
+
+    original_data_holder = {}
+
     def delete_operation():
         # Find the allocation to delete
         db_allocation = db.query(RefPatientAllocation).filter(RefPatientAllocation.id == allocation_id).first()
-        
+
         if not db_allocation:
             logger.warning(f"Patient allocation {allocation_id} not found for deletion")
             return None
-        
+
         if db_allocation.isDeleted == "1":
             logger.info(f"Patient allocation {allocation_id} already deleted")
             return db_allocation
-        
+
         logger.info(f"Soft deleting patient allocation {allocation_id}")
-        
+
+        # Capture original state before mutation for audit logging
+        original_data_holder['data'] = model_to_dict(db_allocation)
+
         # Perform soft delete using schema data
         db_allocation.isDeleted = "1"
         db_allocation.modified_by_id = allocation_delete.modified_by_id
         db_allocation.modified_date = allocation_delete.modified_date
-        
+
         db.flush()
         return db_allocation
     
@@ -300,7 +339,21 @@ def delete_ref_patient_allocation(
             logger.warning(f"Patient allocation {allocation_id} not found for deletion")
             db.commit()  # Commit the idempotency record even if allocation not found
             return None, False
-        
+
+        if original_data_holder.get('data') is not None:
+            log_crud_action(
+                action=ActionType.DELETE,
+                user=allocation_delete.modified_by_id,
+                user_full_name=allocation_delete.modified_by_id,
+                message=f"Deleted patient allocation {result.id} for patient {result.patientId} via patient_service sync",
+                table="REF_PATIENT_ALLOCATION",
+                entity_id=result.id,
+                original_data=original_data_holder.get('data'),
+                updated_data=None,
+                log_type="system",
+                is_system_config=True,
+            )
+
         db.commit()
         logger.info(f"Successfully deleted patient allocation {allocation_id}")
         return result, False
