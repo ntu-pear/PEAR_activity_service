@@ -119,6 +119,8 @@ def create_ref_patient_allocation(
             logger.info(f"Duplicate create event for patient allocation {allocation.id}, returning existing")
             return existing_allocation, True
 
+        db.commit()
+
         log_crud_action(
             action=ActionType.CREATE,
             user=created_by,
@@ -134,7 +136,6 @@ def create_ref_patient_allocation(
             is_system_config=True,
         )
 
-        db.commit()
         logger.info(f"Successfully created patient allocation {allocation.id} for patient {allocation.patient_id}")
         return result, False
         
@@ -261,6 +262,8 @@ def update_ref_patient_allocation(
             db.commit()  # Commit the idempotency record even if allocation not found
             return None, False
 
+        db.commit()
+
         log_crud_action(
             action=ActionType.UPDATE,
             user=allocation_update.modified_by_id,
@@ -279,7 +282,6 @@ def update_ref_patient_allocation(
             is_system_config=True,
         )
 
-        db.commit()
         logger.debug(f"Successfully updated patient allocation {allocation_id}")
         return result, False
         
@@ -362,6 +364,8 @@ def delete_ref_patient_allocation(
             db.commit()  # Commit the idempotency record even if allocation not found
             return None, False
 
+        db.commit()
+
         if original_data_holder.get('data') is not None:
             log_crud_action(
                 action=ActionType.DELETE,
@@ -378,7 +382,6 @@ def delete_ref_patient_allocation(
                 is_system_config=True,
             )
 
-        db.commit()
         logger.info(f"Successfully deleted patient allocation {allocation_id}")
         return result, False
         
