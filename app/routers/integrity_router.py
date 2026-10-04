@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from datetime import datetime, timedelta
 from typing import List, Optional
 from app.database import get_db
@@ -9,6 +9,7 @@ from app.models.centre_activity_model import CentreActivity
 from app.models.centre_activity_preference_model import CentreActivityPreference
 from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
 from app.models.centre_activity_exclusion_model import CentreActivityExclusion
+from app.models.adhoc_model import Adhoc
 
 router = APIRouter()
 
@@ -265,6 +266,59 @@ async def get_centre_activity_exclusion_integrity(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Centre activity exclusion integrity check failed: {str(e)}")
+
+@router.get("/adhoc")
+async def get_adhoc_integrity(
+    hours_back: int = Query(1, ge=1, le=168),
+    limit: int = Query(1000, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns adhoc IDs and their last modified timestamps.
+    """
+    try:
+        cutoff_time = datetime.now() - timedelta(hours=hours_back)
+
+        # modified_date is NULL until the first update, so fall back to created_date
+        last_modified_col = func.coalesce(Adhoc.modified_date, Adhoc.created_date)
+
+        adhocs = db.query(Adhoc).filter(
+            last_modified_col >= cutoff_time
+        ).order_by(Adhoc.id).limit(limit).offset(offset).all()
+
+        records = []
+        for adhoc in adhocs:
+            last_modified = adhoc.modified_date or adhoc.created_date
+
+            records.append({
+                "id": adhoc.id,
+                "patient_id": adhoc.patient_id,
+                "modified_date": last_modified.isoformat(),
+                "version_timestamp": int(last_modified.timestamp() * 1000),
+                "record_type": "adhoc"
+            })
+
+        total_count = db.query(Adhoc).filter(
+            last_modified_col >= cutoff_time
+        ).count()
+
+        return {
+            "service": "activity",
+            "endpoint": "/integrity/adhoc",
+            "window_hours": hours_back,
+            "cutoff_time": cutoff_time.isoformat(),
+            "total_count": total_count,
+            "returned_count": len(records),
+            "limit": limit,
+            "offset": offset,
+            "has_more": (offset + len(records)) < total_count,
+            "records": records,
+            "generated_at": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Adhoc integrity check failed: {str(e)}")
 
 @router.get("/summary")
 async def get_integrity_summary(
