@@ -39,6 +39,7 @@ class DriftConsumer:
         from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
         from app.models.centre_activity_exclusion_model import CentreActivityExclusion
         from app.models.adhoc_model import Adhoc
+        from app.models.routine_model import Routine
 
         self.Activity = Activity
         self.CentreActivity = CentreActivity
@@ -46,6 +47,7 @@ class DriftConsumer:
         self.CentreActivityRecommendation = CentreActivityRecommendation
         self.CentreActivityExclusion = CentreActivityExclusion
         self.Adhoc = Adhoc
+        self.Routine = Routine
     
     @contextmanager
     def get_db_session(self):
@@ -158,6 +160,7 @@ class DriftConsumer:
                 "centre_activity_recommendation": (self.CentreActivityRecommendation, self._publish_recommendation_sync),
                 "centre_activity_exclusion": (self.CentreActivityExclusion, self._publish_exclusion_sync),
                 "adhoc": (self.Adhoc, self._publish_adhoc_sync),
+                "routine": (self.Routine, self._publish_routine_sync),
             }
             
             handler_info = handlers.get(record_type)
@@ -480,6 +483,46 @@ class DriftConsumer:
 
         except Exception as e:
             logger.error(f"Error publishing adhoc sync: {str(e)}")
+            return False
+
+    def _publish_routine_sync(self, routine) -> bool:
+        """Publish routine sync event (UPDATE)"""
+        try:
+            # Reuse the CRUD serializer so the payload matches regular routine events.
+            # It copies routine.__dict__, so don't touch routine.activity before this
+            # or the loaded relationship ends up in the payload.
+            from app.crud.routine_crud import _routine_to_dict
+
+            correlation_id = str(uuid.uuid4())
+            last_modified = routine.modified_date or routine.created_date
+
+            # Scheduler's RoutineConsumer reads ROUTINE_UPDATED data from "new_data"
+            message = {
+                "correlation_id": correlation_id,
+                "event_type": "ROUTINE_UPDATED",
+                "routine_id": routine.id,
+                "old_data": {},
+                "new_data": _routine_to_dict(routine),
+                "changes": {},
+                "modified_by": routine.modified_by_id or "drift_reconciliation",
+                "modified_by_name": "Drift Reconciliation",
+                "timestamp": last_modified.isoformat() if last_modified else None,
+                "is_sync_event": True,
+                "sync_reason": "drift_detected"
+            }
+
+            success = self.producer_manager.publish(
+                self.exchange,
+                "activity.routine.updated.sync",
+                message
+            )
+
+            if success:
+                logger.info(f"Published routine sync for id={routine.id}")
+            return success
+
+        except Exception as e:
+            logger.error(f"Error publishing routine sync: {str(e)}")
             return False
 
     def get_health_status(self) -> Dict[str, Any]:
