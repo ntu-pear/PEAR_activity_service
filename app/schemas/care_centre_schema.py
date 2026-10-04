@@ -96,3 +96,13 @@ class CareCentreResponse(CareCentreBase):
     modified_by_id: Optional[str] = Field(..., description="User ID who modified it")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+class CareCentreWorkingHoursResponse(BaseModel):
+    """Deliberately exposes only working_hours (no name/address/contact/etc).
+    Unauthenticated by design - see router for why."""
+    id: int = Field(..., description="Care centre ID")
+    working_hours: Dict[Day, Dict[str, Optional[str]]] = Field(
+        ..., description="Working hours per day"
+    )
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
