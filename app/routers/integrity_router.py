@@ -10,6 +10,7 @@ from app.models.centre_activity_preference_model import CentreActivityPreference
 from app.models.centre_activity_recommendation_model import CentreActivityRecommendation
 from app.models.centre_activity_exclusion_model import CentreActivityExclusion
 from app.models.adhoc_model import Adhoc
+from app.models.routine_model import Routine
 
 router = APIRouter()
 
@@ -319,6 +320,58 @@ async def get_adhoc_integrity(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Adhoc integrity check failed: {str(e)}")
+
+@router.get("/routine")
+async def get_routine_integrity(
+    hours_back: int = Query(1, ge=1, le=168),
+    limit: int = Query(1000, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns routine IDs and their last modified timestamps.
+    """
+    try:
+        cutoff_time = datetime.now() - timedelta(hours=hours_back)
+
+        # modified_date is NULL until the first update, so fall back to created_date
+        last_modified_col = func.coalesce(Routine.modified_date, Routine.created_date)
+
+        routines = db.query(Routine).filter(
+            last_modified_col >= cutoff_time
+        ).order_by(Routine.id).limit(limit).offset(offset).all()
+
+        records = []
+        for routine in routines:
+            last_modified = routine.modified_date or routine.created_date
+
+            records.append({
+                "id": routine.id,
+                "modified_date": last_modified.isoformat(),
+                "version_timestamp": int(last_modified.timestamp() * 1000),
+                "record_type": "routine"
+            })
+
+        total_count = db.query(Routine).filter(
+            last_modified_col >= cutoff_time
+        ).count()
+
+        return {
+            "service": "activity",
+            "endpoint": "/integrity/routine",
+            "window_hours": hours_back,
+            "cutoff_time": cutoff_time.isoformat(),
+            "total_count": total_count,
+            "returned_count": len(records),
+            "limit": limit,
+            "offset": offset,
+            "has_more": (offset + len(records)) < total_count,
+            "records": records,
+            "generated_at": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Routine integrity check failed: {str(e)}")
 
 @router.get("/summary")
 async def get_integrity_summary(
