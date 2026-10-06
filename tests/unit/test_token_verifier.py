@@ -122,3 +122,29 @@ def test_malformed_200_is_unavailable(monkeypatch):
 def test_shadow_malformed_200_returns_none_without_raising(monkeypatch):
     _malformed_200(monkeypatch)
     assert apply_verification("tok", "U1", "SUPERVISOR", "/x") is None
+
+
+def _raise_boom(*args, **kwargs):
+    raise RuntimeError("boom")
+
+
+def test_shadow_verifier_error_returns_none_and_logs(monkeypatch, caplog):
+    monkeypatch.setattr(token_verifier, "verify_token", _raise_boom)
+    with caplog.at_level(logging.WARNING, logger="pear.auth"):
+        assert apply_verification("tok", "U1", "SUPERVISOR", "/x") is None
+    assert caplog.records[-1].auth_reason == "verifier_error"
+
+
+def test_enforce_verifier_error_is_503(monkeypatch):
+    monkeypatch.setenv("AUTH_VERIFY_MODE", "enforce")
+    monkeypatch.setattr(token_verifier, "verify_token", _raise_boom)
+    with pytest.raises(HTTPException) as exc:
+        apply_verification("tok", "U1", "SUPERVISOR", "/x")
+    assert exc.value.status_code == 503
+
+
+def test_log_message_includes_claimed_identity(monkeypatch, caplog):
+    _respond(monkeypatch, 200, USER)
+    with caplog.at_level(logging.WARNING, logger="pear.auth"):
+        apply_verification("tok", claimed_user_id="U1", claimed_role="ADMIN", endpoint="/routines")
+    assert "claimed user U1, role ADMIN" in caplog.records[-1].getMessage()

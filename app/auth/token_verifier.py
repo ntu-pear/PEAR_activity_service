@@ -106,7 +106,7 @@ def verify_token(token: str, now: Optional[Callable[[], float]] = None) -> Tuple
 
 def _log_auth_event(event: str, reason: str, endpoint: str, claimed_user_id: str, claimed_role: str) -> None:
     auth_logger.warning(
-        f"Auth {event}: {reason} on {endpoint}",
+        f"Auth {event}: {reason} on {endpoint} (claimed user {claimed_user_id}, role {claimed_role})",
         extra={
             "auth_event": event,
             "auth_reason": reason,
@@ -118,8 +118,15 @@ def _log_auth_event(event: str, reason: str, endpoint: str, claimed_user_id: str
 
 
 def apply_verification(token: str, claimed_user_id: str, claimed_role: str, endpoint: str) -> Optional[VerifiedUser]:
-    verdict, user = verify_token(token)
     mode = verify_mode()
+    try:
+        verdict, user = verify_token(token)
+    except Exception:
+        if mode == "shadow":
+            _log_auth_event("would_reject", "verifier_error", endpoint, claimed_user_id, claimed_role)
+            return None
+        _log_auth_event("rejected", "verifier_error", endpoint, claimed_user_id, claimed_role)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication service unavailable")
 
     if verdict == Verdict.UNCONFIGURED:
         if mode == "enforce":
