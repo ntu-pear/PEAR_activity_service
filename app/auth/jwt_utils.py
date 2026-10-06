@@ -5,6 +5,7 @@ import base64, json, time, binascii
 from pydantic import BaseModel, ValidationError
 import logging
 from app.services.user_service import user_login
+from app.auth.token_verifier import apply_verification, record_auth_bypass
 
 # Internal debugging
 logger = logging.getLogger("uvicorn")
@@ -22,7 +23,7 @@ class JWTPayload(BaseModel):
     roleName: str
     sessionId: str
 
-def decode_jwt_token(token: str, require_auth: bool = True) -> Optional[JWTPayload]:
+def decode_jwt_token(token: str, require_auth: bool = True, endpoint: str = "") -> Optional[JWTPayload]:
 
     try:
         # Split JWT into parts (header.payload.signature)
@@ -48,22 +49,44 @@ def decode_jwt_token(token: str, require_auth: bool = True) -> Optional[JWTPaylo
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No user data in 'sub'")
             return None
         user_data = json.loads(sub)
-        return JWTPayload(**user_data)
+        claimed = JWTPayload(**user_data)
+        try:
+            verified = apply_verification(
+                token=token,
+                claimed_user_id=claimed.userId,
+                claimed_role=claimed.roleName,
+                endpoint=endpoint,
+            )
+        except HTTPException:
+            if require_auth:
+                raise
+            return None
+        if verified is None:
+            return claimed
+        return JWTPayload(
+            userId=verified.userId,
+            fullName=verified.fullName,
+            email=verified.email,
+            roleName=verified.roleName,
+            sessionId=claimed.sessionId,
+        )
     except (ValidationError, ValueError, json.JSONDecodeError, IndexError, binascii.Error) as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}")
 
 
 def get_user_and_token(
+        request: Request,
         token: str = Depends(oauth2_scheme)
 ) -> tuple[JWTPayload, str]:
     """
     Get user and token from request.
     Token comes from Authorization header via oauth2_scheme.
     """
-    user = decode_jwt_token(token)
+    user = decode_jwt_token(token, endpoint=request.url.path)
     return user, token
 
 def get_current_user(
+    request: Request,
     token: str = Depends(oauth2_scheme),
 ) -> JWTPayload:
     '''
@@ -72,10 +95,11 @@ def get_current_user(
     '''
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    return decode_jwt_token(token)
+    return decode_jwt_token(token, endpoint=request.url.path)
 
 
 def get_current_user_and_token_with_flag(
+    request: Request,
     require_auth: bool = Query(True, description="Require authentication"),
     token: str = Depends(oauth2_scheme),
 ) -> tuple[Optional[JWTPayload], Optional[str]]:
@@ -83,8 +107,9 @@ def get_current_user_and_token_with_flag(
     Get current user and token from request.
     Additional "require_auth" in the endpoint params to bypass authentication.
     """
-    
-    user = decode_jwt_token(token, require_auth=require_auth)
+    if not require_auth:
+        record_auth_bypass(endpoint=request.url.path)
+    user = decode_jwt_token(token, require_auth=require_auth, endpoint=request.url.path)
     return user, token
 
 def get_user_id(payload: Optional[JWTPayload]) -> Optional[str]:
