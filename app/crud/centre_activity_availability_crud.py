@@ -6,8 +6,22 @@ import app.models.care_centre_model as care_centre_models
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.crud.care_centre_crud import get_care_centre_by_id
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
+from app.services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
 from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Business fields compared to decide whether an update is worth publishing
+_TRACKED_FIELDS = (
+    "centre_activity_id", "days_of_week", "start_time", "end_time",
+    "start_date", "end_date", "is_deleted",
+)
+
+def _availability_to_dict(obj) -> dict:
+    """Columns only (no relationships), as JSON-serialisable values for messaging."""
+    return serialize_data(model_to_dict(obj))
 
 def _get_days_from_bitmask(days_of_week: int) -> list[str]:
     """
@@ -116,40 +130,73 @@ def create_centre_activity_availability(
         db:Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityCreate,
         current_user_info: dict,
+        correlation_id: str = None,
     ):
     current_user_id = current_user_info.get("id") or centre_activity_availability_data.created_by_id
-    
+
     _check_for_duplicate_availability(db, centre_activity_availability_data)
     _check_centre_activity_availability_validity(db, centre_activity_availability_data)
 
-    db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
-    db_centre_activity_availability.created_by_id = current_user_id
-    db_centre_activity_availability.created_date = datetime.now()
-    db.add(db_centre_activity_availability)
-
-    try:
-        db.commit()
-        db.refresh(db_centre_activity_availability)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating Centre Activity Availability: {str(e)}") from e
-    
-    updated_data_dict = serialize_data(centre_activity_availability_data.model_dump())
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     centre_activity = get_centre_activity_by_id(db, centre_activity_availability_data.centre_activity_id)
     activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
 
-    log_crud_action(
-        action = ActionType.CREATE,
-        user = current_user_id,
-        user_full_name = current_user_info.get("fullname"),
-        message = f"Created centre activity availability: {activity_name}",
-        table = "CENTRE_ACTIVITY_AVAILABILITY",
-        entity_id = db_centre_activity_availability.id,
-        original_data = None,
-        updated_data = updated_data_dict,
-        log_type= "system",
-        is_system_config= True,
+    try:
+        timestamp = datetime.now()
+        db_centre_activity_availability = models.CentreActivityAvailability(**centre_activity_availability_data.model_dump())
+        db_centre_activity_availability.created_by_id = current_user_id
+        db_centre_activity_availability.created_date = timestamp
+        db.add(db_centre_activity_availability)
+        db.flush()  # assign the primary key without committing
+
+        # Emit the domain event in the same transaction (outbox pattern)
+        event_payload = {
+            "event_type": "CENTRE_ACTIVITY_AVAILABILITY_CREATED",
+            "availability_id": db_centre_activity_availability.id,
+            "availability_data": _availability_to_dict(db_centre_activity_availability),
+            "created_by": current_user_id,
+            "created_by_name": current_user_info.get("fullname"),
+            "timestamp": timestamp.isoformat(),
+            "correlation_id": correlation_id,
+        }
+        outbox_event = get_outbox_service().create_event(
+            db=db,
+            event_type="CENTRE_ACTIVITY_AVAILABILITY_CREATED",
+            aggregate_id=db_centre_activity_availability.id,
+            payload=event_payload,
+            routing_key=f"activity.centre_activity_availability.created.{db_centre_activity_availability.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_id,
+        )
+
+        log_crud_action(
+            action = ActionType.CREATE,
+            user = current_user_id,
+            user_full_name = current_user_info.get("fullname"),
+            message = f"Created centre activity availability: {activity_name}",
+            table = "CENTRE_ACTIVITY_AVAILABILITY",
+            entity_id = db_centre_activity_availability.id,
+            original_data = None,
+            updated_data = serialize_data(centre_activity_availability_data.model_dump()),
+            log_type= "system",
+            is_system_config= True,
+        )
+
+        db.commit()
+        db.refresh(db_centre_activity_availability)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create centre activity availability: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating Centre Activity Availability: {str(e)}") from e
+
+    logger.info(
+        f"Created centre activity availability {db_centre_activity_availability.id} with outbox event "
+        f"{outbox_event.id} (correlation: {correlation_id})"
     )
     return db_centre_activity_availability
 
@@ -199,6 +246,7 @@ def update_centre_activity_availability(
         db: Session,
         centre_activity_availability_data: schemas.CentreActivityAvailabilityUpdate,
         current_user_info: dict,
+        correlation_id: str = None,
     ):
 
     db_centre_activity_availability = (db.query(models.CentreActivityAvailability).filter(
@@ -206,49 +254,97 @@ def update_centre_activity_availability(
         ).first())
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found.")
-    
+
     _check_for_duplicate_availability(db, centre_activity_availability_data, exclude_id=centre_activity_availability_data.id)
     _check_centre_activity_availability_validity(db, centre_activity_availability_data)
+
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
 
     original_data = serialize_data(model_to_dict(db_centre_activity_availability))
     updated_data = serialize_data(centre_activity_availability_data.model_dump())
 
+    # Only business field changes are published; audit-only saves are not
+    changes = {}
+    for field in _TRACKED_FIELDS:
+        old_value = getattr(db_centre_activity_availability, field)
+        new_value = getattr(centre_activity_availability_data, field)
+        if old_value != new_value:
+            changes[field] = {"old": serialize_data(old_value), "new": serialize_data(new_value)}
+
     modified_by_id = current_user_info.get("id") or centre_activity_availability_data.modified_by_id
-    
-    for field in schemas.CentreActivityAvailabilityUpdate.model_fields.keys():
-        if field != "id" and hasattr(centre_activity_availability_data, field):
-            setattr(db_centre_activity_availability, field, getattr(centre_activity_availability_data, field))
-    db_centre_activity_availability.modified_by_id = modified_by_id
-    db_centre_activity_availability.modified_date = datetime.now(timezone.utc)
 
     try:
+        for field in schemas.CentreActivityAvailabilityUpdate.model_fields.keys():
+            if field != "id" and hasattr(centre_activity_availability_data, field):
+                setattr(db_centre_activity_availability, field, getattr(centre_activity_availability_data, field))
+        db_centre_activity_availability.modified_by_id = modified_by_id
+        db_centre_activity_availability.modified_date = datetime.now(timezone.utc)
+        db.flush()
+
+        outbox_event = None
+        if changes:
+            event_payload = {
+                "event_type": "CENTRE_ACTIVITY_AVAILABILITY_UPDATED",
+                "availability_id": db_centre_activity_availability.id,
+                "old_data": original_data,
+                "new_data": _availability_to_dict(db_centre_activity_availability),
+                "changes": changes,
+                "modified_by": modified_by_id,
+                "modified_by_name": current_user_info.get("fullname"),
+                "timestamp": datetime.now().isoformat(),
+                "correlation_id": correlation_id,
+            }
+            outbox_event = get_outbox_service().create_event(
+                db=db,
+                event_type="CENTRE_ACTIVITY_AVAILABILITY_UPDATED",
+                aggregate_id=db_centre_activity_availability.id,
+                payload=event_payload,
+                routing_key=f"activity.centre_activity_availability.updated.{db_centre_activity_availability.id}",
+                correlation_id=correlation_id,
+                created_by=modified_by_id,
+            )
+
+        centre_activity = db_centre_activity_availability.centre_activity
+        activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
+        log_crud_action(
+            action = ActionType.UPDATE,
+            user = modified_by_id,
+            user_full_name = current_user_info.get("fullname"),
+            message = f"Updated centre activity availability: {activity_name}.",
+            table = "CENTRE_ACTIVITY_AVAILABILITY",
+            entity_id = db_centre_activity_availability.id,
+            original_data = original_data,
+            updated_data = updated_data,
+            log_type= "system",
+            is_system_config= True,
+        )
+
         db.commit()
         db.refresh(db_centre_activity_availability)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to update centre activity availability: {str(e)}")
         raise HTTPException(status_code = 500, detail = f"Error updating Centre Activity Availability: {str(e)}") from e
 
-    centre_activity = db_centre_activity_availability.centre_activity
-    activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
-
-    log_crud_action(
-        action = ActionType.UPDATE,
-        user = modified_by_id,
-        user_full_name = current_user_info.get("fullname"),
-        message = f"Updated centre activity availability: {activity_name}.",
-        table = "CENTRE_ACTIVITY_AVAILABILITY",
-        entity_id = db_centre_activity_availability.id,
-        original_data = original_data,
-        updated_data = updated_data,
-        log_type= "system",
-        is_system_config= True,
-    )
+    if outbox_event is not None:
+        logger.info(
+            f"Updated centre activity availability {db_centre_activity_availability.id} with outbox event "
+            f"{outbox_event.id} (correlation: {correlation_id})"
+        )
+    else:
+        logger.info(f"Updated centre activity availability {db_centre_activity_availability.id} with no business changes")
     return db_centre_activity_availability
 
 def delete_centre_activity_availability(
         db: Session,
         centre_activity_availability_id: int,
         current_user_info: dict,
+        correlation_id: str = None,
     ):
 
     db_centre_activity_availability = db.query(models.CentreActivityAvailability).filter(
@@ -257,33 +353,67 @@ def delete_centre_activity_availability(
         ).first()
     if not db_centre_activity_availability:
         raise HTTPException(status_code = 404, detail = "Centre Activity Availability not found or already soft deleted.")
-    
-    db_centre_activity_availability.is_deleted = True
-    db_centre_activity_availability.modified_by_id = current_user_info.get("id")
-    db_centre_activity_availability.modified_date = datetime.now()
+
+    if not correlation_id:
+        correlation_id = generate_correlation_id()
+
+    # Captured before the soft delete, matching the other entities' DELETED payloads
+    availability_data = _availability_to_dict(db_centre_activity_availability)
 
     try:
+        timestamp = datetime.now()
+        db_centre_activity_availability.is_deleted = True
+        db_centre_activity_availability.modified_by_id = current_user_info.get("id")
+        db_centre_activity_availability.modified_date = timestamp
+        db.flush()
+
+        event_payload = {
+            "event_type": "CENTRE_ACTIVITY_AVAILABILITY_DELETED",
+            "availability_id": db_centre_activity_availability.id,
+            "availability_data": availability_data,
+            "deleted_by": current_user_info.get("id"),
+            "deleted_by_name": current_user_info.get("fullname"),
+            "timestamp": timestamp.isoformat(),
+            "correlation_id": correlation_id,
+        }
+        outbox_event = get_outbox_service().create_event(
+            db=db,
+            event_type="CENTRE_ACTIVITY_AVAILABILITY_DELETED",
+            aggregate_id=db_centre_activity_availability.id,
+            payload=event_payload,
+            routing_key=f"activity.centre_activity_availability.deleted.{db_centre_activity_availability.id}",
+            correlation_id=correlation_id,
+            created_by=current_user_info.get("id"),
+        )
+
+        centre_activity = db_centre_activity_availability.centre_activity
+        activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
+
+        log_crud_action(
+            action = ActionType.DELETE,
+            user = current_user_info.get("id"),
+            user_full_name = current_user_info.get("fullname"),
+            message = f"Deleted centre activity availability: {activity_name}.",
+            table = "CENTRE_ACTIVITY_AVAILABILITY",
+            entity_id = db_centre_activity_availability.id,
+            original_data = serialize_data(model_to_dict(db_centre_activity_availability)),
+            updated_data = None,
+            log_type= "system",
+            is_system_config= True,
+        )
+
         db.commit()
         db.refresh(db_centre_activity_availability)
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to delete centre activity availability: {str(e)}")
         raise HTTPException(status_code = 500, detail = f"Error deleting Centre Activity Availability: {str(e)}") from e
-    
-    original_data_dict = serialize_data(model_to_dict(db_centre_activity_availability))
 
-    centre_activity = db_centre_activity_availability.centre_activity
-    activity_name = centre_activity.activity.title if centre_activity and centre_activity.activity else "Unknown"
-
-    log_crud_action(
-        action = ActionType.DELETE,
-        user = current_user_info.get("id"),
-        user_full_name = current_user_info.get("fullname"),
-        message = f"Deleted centre activity availability: {activity_name}.",
-        table = "CENTRE_ACTIVITY_AVAILABILITY",
-        entity_id = db_centre_activity_availability.id,
-        original_data = original_data_dict,
-        updated_data = None,
-        log_type= "system",
-        is_system_config= True,
+    logger.info(
+        f"Deleted centre activity availability {db_centre_activity_availability.id} with outbox event "
+        f"{outbox_event.id} (correlation: {correlation_id})"
     )
     return db_centre_activity_availability
