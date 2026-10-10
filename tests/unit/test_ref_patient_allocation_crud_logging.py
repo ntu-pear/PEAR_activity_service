@@ -217,3 +217,63 @@ def test_delete_ref_patient_allocation_already_deleted_does_not_log(mock_log_cru
 
     assert was_duplicate is False
     mock_log_crud_action.assert_not_called()
+
+
+def _commits_seen_at_log(mock_log, db):
+    seen = []
+    mock_log.side_effect = lambda *args, **kwargs: seen.append(db.commit.call_count)
+    return seen
+
+
+def test_create_ref_patient_allocation_logs_after_commit(mock_log_crud_action, bypass_idempotency):
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.side_effect = [None, _make_allocation()]
+    seen = _commits_seen_at_log(mock_log_crud_action, db)
+
+    ref_patient_allocation_crud.create_ref_patient_allocation(
+        db=db,
+        allocation=RefPatientAllocationCreate(
+            id=1, patient_id=10, doctor_id="doc-1", game_therapist_id="gt-1",
+            supervisor_id="sup-1", caregiver_id="care-1",
+            created_date=datetime(2024, 1, 1), modified_date=datetime(2024, 1, 1),
+            created_by_id="patient_service", modified_by_id="patient_service",
+        ),
+        correlation_id="corr-6",
+        created_by="patient_service",
+    )
+
+    assert seen == [1]
+
+
+def test_update_ref_patient_allocation_logs_after_commit(mock_log_crud_action, bypass_idempotency):
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = _make_allocation()
+    seen = _commits_seen_at_log(mock_log_crud_action, db)
+
+    ref_patient_allocation_crud.update_ref_patient_allocation(
+        db=db,
+        allocation_id="1",
+        allocation_update=RefPatientAllocationUpdate(
+            doctor_id="doc-2", modified_date=datetime(2024, 2, 1), modified_by_id="patient_service"
+        ),
+        correlation_id="corr-7",
+    )
+
+    assert seen == [1]
+
+
+def test_delete_ref_patient_allocation_logs_after_commit(mock_log_crud_action, bypass_idempotency):
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = _make_allocation()
+    seen = _commits_seen_at_log(mock_log_crud_action, db)
+
+    ref_patient_allocation_crud.delete_ref_patient_allocation(
+        db=db,
+        allocation_id="1",
+        allocation_delete=RefPatientAllocationDelete(
+            modified_date=datetime(2024, 3, 1), modified_by_id="patient_service"
+        ),
+        correlation_id="corr-8",
+    )
+
+    assert seen == [1]
