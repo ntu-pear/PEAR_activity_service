@@ -24,8 +24,8 @@ class ValidatedAdhoc(AdhocBase):
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")
         if sd >= ed:
             raise ValueError("Start date must be before end date.")
-        now = datetime.now(timezone.utc) 
-        if sd < now:
+        now = datetime.now(timezone.utc)
+        if sd.date() < now.date():
             raise ValueError("Start date cannot be in the past.")
         days_to_sunday = 6 - now.weekday()
         end_of_week = (

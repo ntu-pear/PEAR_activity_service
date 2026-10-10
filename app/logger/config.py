@@ -12,39 +12,44 @@ log_file = f"{LOG_DIR}/activity_{today}.log"
 
 class ConditionalFormatter(logging.Formatter):
     """
-    Custom formatter that handles optional fields gracefully
+    Emits real JSON (via json.dumps) instead of %-style string
+    interpolation, so missing/None fields serialize as JSON null rather
+    than the literal string "None" -- the logger service's LogDocument
+    schema can't coerce "None" into Optional[int] fields like patient_id,
+    which was silently dropping every log for patient-independent tables
+    (ACTIVITY, CARE_CENTRE, CENTRE_ACTIVITY_AVAILABILITY, ...).
     """
-    def __init__(self, detailed_format, simple_format, datefmt=None):
-        super().__init__(datefmt=datefmt)
-        self.detailed_format = detailed_format
-        self.simple_format = simple_format
-    
     def format(self, record):
-        # Check if this is a detailed log record with user info
+        timestamp = self.formatTime(record, self.datefmt)
         if all(hasattr(record, f) for f in ["user", "user_full_name", "table", "action", "log_text"]):
-            # Use detailed format for CRUD operations
-            for field, default in [("patient_id", ""), ("patient_full_name", ""), ("log_type", ""), ("is_system_config", False)]:
-                if not hasattr(record, field):
-                    setattr(record, field, default)
-            formatter = logging.Formatter(self.detailed_format, datefmt=self.datefmt)
+            log_dict = {
+                "timestamp": timestamp,
+                "level": record.levelname,
+                "logger": record.name,
+                "user": record.user,
+                "user_full_name": record.user_full_name,
+                "table": record.table,
+                "action": record.action,
+                "log_text": record.log_text,
+                "patient_id": getattr(record, "patient_id", None),
+                "patient_full_name": getattr(record, "patient_full_name", None),
+                "log_type": getattr(record, "log_type", None),
+                "is_system_config": bool(getattr(record, "is_system_config", False)),
+                "message": record.msg,
+            }
         else:
-            # Use simple format for general logging
-            formatter = logging.Formatter(self.simple_format, datefmt=self.datefmt)
-        
-        return formatter.format(record)
-
-# Detailed format for CRUD operations (when user context is available)
-detailed_format = ('{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "user": "%(user)s", "user_full_name": "%(user_full_name)s", "table": "%(table)s", "action": "%(action)s", "log_text": "%(log_text)s", '
-                   '"patient_id": "%(patient_id)s", "patient_full_name": "%(patient_full_name)s", "log_type": "%(log_type)s", "is_system_config": "%(is_system_config)s", '
-                   '"message": %(message)s}')
-
-# Simple format for general logging (when user context is not available)
-simple_format = '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}'
+            log_dict = {
+                "timestamp": timestamp,
+                "level": record.levelname,
+                "logger": record.name,
+                "message": record.getMessage(),
+            }
+        return json.dumps(log_dict, default=str)
 
 date_format = "%Y-%m-%dT%H:%M:%S"
 
 # Create custom formatter
-custom_formatter = ConditionalFormatter(detailed_format, simple_format, datefmt=date_format)
+custom_formatter = ConditionalFormatter(datefmt=date_format)
 
 file_handler = logging.FileHandler(log_file)
 file_handler.setLevel(logging.INFO)

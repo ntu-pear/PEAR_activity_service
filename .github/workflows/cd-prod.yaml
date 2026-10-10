@@ -1,0 +1,25 @@
+name: CD (Prod)
+
+on:
+  push:
+    branches: ['main']
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-prod:
+    uses: ./.github/workflows/base-cd.yaml
+    secrets: inherit
+    with:
+      # must match the GitHub Environment name exactly (case-sensitive)
+      environment: 'prod'
+      runner-label: '["self-hosted","Linux","X64","activity"]'
+      namespace: 'default'
+      deployment-name: 'activity-service-dev'
+      container-name: 'activity-service'
+      configmap-name: 'activity-service-dev-env'
+      docker-image-name: 'activity_service_dev'
+      kube-deployment-file: './k8s/deployment-dev.yaml'
+      filebeat-file: './k8s/filebeat-daemonset.yaml'
+      dockerfile: 'Dockerfile.dev'

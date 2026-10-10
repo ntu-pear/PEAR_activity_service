@@ -20,6 +20,18 @@ from app.routers.centre_activity_availability_router import (
     delete_centre_activity_availability as router_delete_centre_activity_availability
 )
 
+
+@pytest.fixture(autouse=True)
+def mock_availability_outbox(monkeypatch):
+    """Replace the outbox service in centre_activity_availability_crud so tests never touch RabbitMQ."""
+    mock_service = MagicMock()
+    monkeypatch.setattr(
+        "app.crud.centre_activity_availability_crud.get_outbox_service",
+        lambda: mock_service,
+        raising=False,
+    )
+    return mock_service
+
 # ===== GET tests ======
 def test_get_centre_activity_availability_by_id_success(get_db_session_mock, existing_centre_activity_availability):
     
@@ -540,3 +552,162 @@ def test_get_centre_activity_availabilities_role_access_fail(
         )
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
     assert exc_info.value.detail == "You do not have permission to view Centre Activity Availabilities."
+
+
+# ===== OUTBOX EVENT tests ======
+def _mock_update_queries(db, existing):
+    """Queries in update order: fetch record, duplicate check, validity check."""
+    mock_query_for_update = MagicMock()
+    mock_query_for_update.filter.return_value.first.return_value = existing
+    mock_query_for_duplicate = MagicMock()
+    mock_query_for_duplicate.filter.return_value.first.return_value = None
+    mock_query_for_validity = MagicMock()
+    mock_query_for_validity.filter.return_value.first.return_value = None
+    db.query.side_effect = [mock_query_for_update, mock_query_for_duplicate, mock_query_for_validity]
+
+@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
+def test_create_centre_activity_availability_emits_outbox_event(
+    mock_get_centre_activity,
+    mock_get_care_centre_by_id,
+    get_db_session_mock,
+    mock_supervisor_user,
+    create_centre_activity_availability_schema,
+    existing_centre_activity,
+    existing_care_centre,
+    mock_availability_outbox,
+):
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    mock_get_centre_activity.return_value = existing_centre_activity
+    mock_get_care_centre_by_id.return_value = existing_care_centre
+
+    create_centre_activity_availability(
+        db=get_db_session_mock,
+        centre_activity_availability_data=create_centre_activity_availability_schema,
+        current_user_info=mock_supervisor_user,
+        correlation_id="CORR-CREATE",
+    )
+
+    mock_availability_outbox.create_event.assert_called_once()
+    kwargs = mock_availability_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "CENTRE_ACTIVITY_AVAILABILITY_CREATED"
+    assert kwargs["routing_key"].startswith("activity.centre_activity_availability.created.")
+    assert kwargs["correlation_id"] == "CORR-CREATE"
+    data = kwargs["payload"]["availability_data"]
+    assert data["centre_activity_id"] == create_centre_activity_availability_schema.centre_activity_id
+    assert data["days_of_week"] == create_centre_activity_availability_schema.days_of_week
+    assert data["start_time"] == create_centre_activity_availability_schema.start_time.isoformat()
+    assert "centre_activity" not in data  # relationships must not leak into the message
+    get_db_session_mock.commit.assert_called_once()
+
+@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
+def test_create_centre_activity_availability_outbox_failure_rolls_back(
+    mock_get_centre_activity,
+    mock_get_care_centre_by_id,
+    get_db_session_mock,
+    mock_supervisor_user,
+    create_centre_activity_availability_schema,
+    existing_centre_activity,
+    existing_care_centre,
+    mock_availability_outbox,
+):
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+    mock_get_centre_activity.return_value = existing_centre_activity
+    mock_get_care_centre_by_id.return_value = existing_care_centre
+    mock_availability_outbox.create_event.side_effect = Exception("outbox down")
+
+    with pytest.raises(HTTPException) as exc_info:
+        create_centre_activity_availability(
+            db=get_db_session_mock,
+            centre_activity_availability_data=create_centre_activity_availability_schema,
+            current_user_info=mock_supervisor_user,
+        )
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    get_db_session_mock.rollback.assert_called_once()
+    get_db_session_mock.commit.assert_not_called()
+
+@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
+def test_update_centre_activity_availability_emits_outbox_event(
+    mock_get_centre_activity,
+    mock_get_care_centre_by_id,
+    get_db_session_mock,
+    mock_supervisor_user,
+    update_centre_activity_availability_schema,
+    existing_centre_activity_availability,
+    existing_centre_activity,
+    existing_care_centre,
+    mock_availability_outbox,
+):
+    _mock_update_queries(get_db_session_mock, existing_centre_activity_availability)
+    mock_get_centre_activity.return_value = existing_centre_activity
+    mock_get_care_centre_by_id.return_value = existing_care_centre
+    old_start_time = existing_centre_activity_availability.start_time
+
+    update_centre_activity_availability(
+        db=get_db_session_mock,
+        centre_activity_availability_data=update_centre_activity_availability_schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_availability_outbox.create_event.assert_called_once()
+    kwargs = mock_availability_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "CENTRE_ACTIVITY_AVAILABILITY_UPDATED"
+    assert kwargs["routing_key"].startswith("activity.centre_activity_availability.updated.")
+    payload = kwargs["payload"]
+    assert payload["changes"]["start_time"] == {
+        "old": old_start_time.isoformat(),
+        "new": update_centre_activity_availability_schema.start_time.isoformat(),
+    }
+    assert payload["new_data"]["start_time"] == update_centre_activity_availability_schema.start_time.isoformat()
+
+@patch("app.crud.centre_activity_availability_crud.get_care_centre_by_id")
+@patch("app.crud.centre_activity_availability_crud.get_centre_activity_by_id")
+def test_update_centre_activity_availability_no_changes_skips_outbox(
+    mock_get_centre_activity,
+    mock_get_care_centre_by_id,
+    get_db_session_mock,
+    mock_supervisor_user,
+    update_centre_activity_availability_schema,
+    existing_centre_activity_availability,
+    existing_centre_activity,
+    existing_care_centre,
+    mock_availability_outbox,
+):
+    # Make the stored record match the incoming update exactly
+    for field in ("centre_activity_id", "days_of_week", "start_time", "end_time", "start_date", "end_date", "is_deleted"):
+        setattr(existing_centre_activity_availability, field, getattr(update_centre_activity_availability_schema, field))
+    _mock_update_queries(get_db_session_mock, existing_centre_activity_availability)
+    mock_get_centre_activity.return_value = existing_centre_activity
+    mock_get_care_centre_by_id.return_value = existing_care_centre
+
+    update_centre_activity_availability(
+        db=get_db_session_mock,
+        centre_activity_availability_data=update_centre_activity_availability_schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_availability_outbox.create_event.assert_not_called()
+    get_db_session_mock.commit.assert_called_once()
+
+def test_delete_centre_activity_availability_emits_outbox_event(
+    get_db_session_mock,
+    mock_supervisor_user,
+    existing_centre_activity_availability,
+    mock_availability_outbox,
+):
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity_availability
+
+    delete_centre_activity_availability(
+        db=get_db_session_mock,
+        centre_activity_availability_id=1,
+        current_user_info=mock_supervisor_user,
+    )
+
+    mock_availability_outbox.create_event.assert_called_once()
+    kwargs = mock_availability_outbox.create_event.call_args.kwargs
+    assert kwargs["event_type"] == "CENTRE_ACTIVITY_AVAILABILITY_DELETED"
+    assert kwargs["routing_key"] == "activity.centre_activity_availability.deleted.1"
+    # Snapshot is taken before the soft delete
+    assert kwargs["payload"]["availability_data"]["is_deleted"] is False

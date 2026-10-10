@@ -72,4 +72,4 @@ logs/*.log
 # IntelliJ
 .idea/
 
-pear_activity_service/
+pear_activity_service/.worktrees/
