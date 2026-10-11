@@ -5,6 +5,7 @@ import app.models.centre_activity_exclusion_model as models
 import app.schemas.centre_activity_exclusion_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.services.patient_service import get_patient_by_id, get_patient_name
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import (
     log_crud_action, ActionType, serialize_data, model_to_dict
 )
@@ -265,7 +266,7 @@ def update_centre_activity_exclusion(
                 action=ActionType.UPDATE,
                 user=modified_by_id,
                 user_full_name=current_user_info.get("fullname"),
-                message=f"Updated activity exclusion: {activity_name}",
+                message=with_change_summary(f"Updated activity exclusion: {activity_name}", original_data_dict, updated_data_dict),
                 table="CENTRE_ACTIVITY_EXCLUSION",
                 entity_id=db_obj.id,
                 original_data=original_data_dict,
