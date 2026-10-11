@@ -5,6 +5,7 @@ import app.schemas.centre_activity_availability_schema as schemas
 import app.models.care_centre_model as care_centre_models
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.crud.care_centre_crud import get_care_centre_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from app.services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
@@ -312,7 +313,7 @@ def update_centre_activity_availability(
             action = ActionType.UPDATE,
             user = modified_by_id,
             user_full_name = current_user_info.get("fullname"),
-            message = f"Updated centre activity availability: {activity_name}.",
+            message = with_change_summary(f"Updated centre activity availability: {activity_name}.", original_data, updated_data),
             table = "CENTRE_ACTIVITY_AVAILABILITY",
             entity_id = db_centre_activity_availability.id,
             original_data = original_data,

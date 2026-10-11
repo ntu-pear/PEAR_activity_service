@@ -10,6 +10,7 @@ from app.crud.care_centre_crud import get_care_centre_by_id
 from app.crud.centre_activity_availability_crud import _get_days_from_bitmask
 from app.services.patient_service import get_patient_by_id, get_patient_name
 from app.services.outbox_service import get_outbox_service, generate_correlation_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 
 logger = logging.getLogger(__name__)
@@ -296,7 +297,7 @@ def update_routine(
             action=ActionType.UPDATE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Routine: {routine_data.name} ({activity_name}) for {patient_name}",
+            message=with_change_summary(f"Updated Routine: {routine_data.name} ({activity_name}) for {patient_name}", original_data_dict, serialize_data(model_to_dict(db_routine))),
             table="ROUTINE",
             entity_id=db_routine.id,
             original_data=original_data_dict,
