@@ -9,7 +9,7 @@ Run Pytest with command:
 
 """
 
-from datetime import date, datetime, time
+from datetime import datetime, time, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -42,8 +42,15 @@ MAPPER_OPTIONAL_FIELDS = [
 
 
 def _today_at(hour: int) -> datetime:
-    """Anchor adhoc dates inside today, which always satisfies the schema validators."""
-    return datetime.combine(date.today(), time(hour=hour))
+    """
+    Anchor adhoc dates inside today, which always satisfies the schema validators.
+    Built explicitly in UTC (not the test runner's local clock) because
+    ValidatedAdhoc.validate_adhoc() ultimately compares everything against
+    datetime.now(timezone.utc) - anchoring to the runner's local date.today()
+    is only safe if the runner's OS timezone happens to match what the
+    validator assumes, which isn't guaranteed (e.g. on self-hosted runners).
+    """
+    return datetime.combine(datetime.now(timezone.utc).date(), time(hour=hour), tzinfo=timezone.utc)
 
 
 @pytest.fixture
