@@ -9,7 +9,7 @@ Run Pytest with command:
 
 """
 
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 
 import pytest
 from fastapi import HTTPException
