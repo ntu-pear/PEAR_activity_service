@@ -100,6 +100,8 @@ def create_ref_patient(
             logger.info(f"Duplicate create event for patient {patient.id}, returning existing")
             return existing_patient, True
 
+        db.commit()
+
         log_crud_action(
             action=ActionType.CREATE,
             user=created_by,
@@ -115,7 +117,6 @@ def create_ref_patient(
             is_system_config=True,
         )
 
-        db.commit()
         logger.info(f"Successfully created patient {patient.id}")
         return result, False
         
@@ -221,6 +222,8 @@ def update_ref_patient(
             db.commit()  # Commit the idempotency record even if patient not found
             return None, False
 
+        db.commit()
+
         log_crud_action(
             action=ActionType.UPDATE,
             user=patient_update.modified_by_id,
@@ -236,7 +239,6 @@ def update_ref_patient(
             is_system_config=True,
         )
 
-        db.commit()
         logger.debug(f"Successfully updated patient {patient_id}")
         return result, False
         
@@ -319,6 +321,8 @@ def delete_ref_patient(
             db.commit()  # Commit the idempotency record even if patient not found
             return None, False
 
+        db.commit()
+
         if original_data_holder.get('data') is not None:
             log_crud_action(
                 action=ActionType.DELETE,
@@ -335,7 +339,6 @@ def delete_ref_patient(
                 is_system_config=True,
             )
 
-        db.commit()
         logger.info(f"Successfully deleted patient {patient_id}")
         return result, False
         
