@@ -104,3 +104,38 @@ def test_log_crud_action_enriches_both_sides():
     data = lg.info.call_args[0][0]
     assert data["original_data"]["routine_name"] == "Morning Walk"
     assert data["updated_data"]["activity_name"] == "Gardening"
+
+
+def test_lookup_session_sets_lock_timeout_first():
+    from unittest.mock import MagicMock
+    db = MagicMock()
+    db.query.return_value.filter.return_value.all.return_value = [(1, "Gardening")]
+    with patch("app.database.SessionLocal", return_value=db):
+        assert rn._fetch_names("activity", [1]) == {1: "Gardening"}
+    first = db.execute.call_args_list[0][0][0]
+    assert "LOCK_TIMEOUT 500" in str(first)
+    assert db.execute.call_args_list[0] == db.method_calls[0]
+    db.close.assert_called_once()
+
+
+def test_lock_timeout_error_returns_data_unchanged():
+    from unittest.mock import MagicMock
+    db = MagicMock()
+    db.query.return_value.filter.return_value.all.side_effect = Exception("Lock request time out period exceeded")
+    data = {"activity_id": 1}
+    with patch("app.database.SessionLocal", return_value=db):
+        assert rn.add_reference_names(data) == {"activity_id": 1}
+    db.close.assert_called_once()
+
+
+def test_lock_timeout_reset_even_when_query_raises():
+    from unittest.mock import MagicMock
+    db = MagicMock()
+    db.query.return_value.filter.return_value.all.side_effect = Exception("boom")
+    with patch("app.database.SessionLocal", return_value=db):
+        with pytest.raises(Exception):
+            rn._fetch_names("activity", [1])
+    stmts = [str(c[0][0]) for c in db.execute.call_args_list]
+    assert "LOCK_TIMEOUT 500" in stmts[0]
+    assert "LOCK_TIMEOUT -1" in stmts[-1]
+    db.close.assert_called_once()

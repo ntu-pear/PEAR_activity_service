@@ -3,6 +3,8 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple
 
+from sqlalchemy import text
+
 CACHE_TTL_SECONDS = 300
 
 _log = logging.getLogger(__name__)
@@ -28,6 +30,8 @@ def _fetch_names(kind: str, ids: List[int]) -> Dict[int, str]:
 
     db = SessionLocal()
     try:
+        # Fail fast instead of waiting on rows locked by the in-flight request.
+        db.execute(text("SET LOCK_TIMEOUT 500"))
         if kind == "activity":
             rows = db.query(Activity.id, Activity.title).filter(Activity.id.in_(ids)).all()
         elif kind == "centre_activity":
@@ -43,6 +47,11 @@ def _fetch_names(kind: str, ids: List[int]) -> Dict[int, str]:
             return {}
         return {r[0]: r[1] for r in rows if r[1] is not None}
     finally:
+        # LOCK_TIMEOUT sticks to the pooled connection; restore the default.
+        try:
+            db.execute(text("SET LOCK_TIMEOUT -1"))
+        except Exception:
+            pass
         db.close()
 
 
