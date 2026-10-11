@@ -234,7 +234,7 @@ def update_activity_by_id(
                 action=ActionType.UPDATE,
                 user=current_user_info.get("id"),
                 user_full_name=current_user_info.get("fullname"),
-                message=with_change_summary(f"Updated activity: {obj.title}", original, {**original, **serialize_data(update_data)}),
+                message=with_change_summary(f"Updated activity: {obj.title}", original, serialize_data(update_data)),
                 table="ACTIVITY",
                 entity_id=obj.id,
                 original_data=original,

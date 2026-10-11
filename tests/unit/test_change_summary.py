@@ -27,3 +27,12 @@ def test_non_dict_or_missing_sides_leave_message_alone():
 def test_drops_trailing_id_in_labels():
     assert with_change_summary("Updated X", {"centre_activity_id": 1}, {"centre_activity_id": 2}) == \
         "Updated X (changed: Centre Activity)"
+
+
+def test_ignores_keys_present_on_only_one_side():
+    assert with_change_summary("Updated X", {"name": "A", "start_time": "10:00"},
+                               {"start_time": "11:00", "extra_schema_field": 5}) == "Updated X (changed: Start Time)"
+
+
+def test_no_overlapping_keys_leaves_message_alone():
+    assert with_change_summary("Updated X", {"a": 1}, {"b": 2}) == "Updated X"

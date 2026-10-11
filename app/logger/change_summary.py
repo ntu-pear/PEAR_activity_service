@@ -19,8 +19,8 @@ def with_change_summary(message: str, original: Optional[Any], updated: Optional
     if not isinstance(original, dict) or not isinstance(updated, dict):
         return message
     changed: List[str] = []
-    for key in list(dict.fromkeys(list(original) + list(updated))):
-        if key.lower() in _IGNORED:
+    for key in original:
+        if key not in updated or key.lower() in _IGNORED:
             continue
         if original.get(key) != updated.get(key):
             changed.append(_label(key))
