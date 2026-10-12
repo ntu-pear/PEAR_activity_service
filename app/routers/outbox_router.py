@@ -165,7 +165,7 @@ async def retry_failed_events(current_user: JWTPayload = Depends(get_current_use
         outbox_service = get_outbox_service()
         count = outbox_service.retry_failed_events()
         
-        logger.info(f"User {current_user.fullName} ({current_user.userId}) retried {count} failed events")
+        logger.info(f"User {current_user.userId} retried {count} failed events")
         return {"message": f"Reset {count} failed events for retry"}
     except Exception as e:
         logger.error(f"Error retrying failed events: {str(e)}")
@@ -188,7 +188,7 @@ async def process_now(
         outbox_service = get_outbox_service()
         successful, failed = outbox_service.process_pending_events(batch_size)
         
-        logger.info(f"User {current_user.fullName} ({current_user.userId}) triggered manual processing - Success: {successful}, Failed: {failed}")
+        logger.info(f"User {current_user.userId} triggered manual processing - Success: {successful}, Failed: {failed}")
         return {
             "message": "Processing completed",
             "successful": successful,
@@ -231,7 +231,7 @@ async def cleanup_old_events(
             db.commit()
             count = len(deleted_events)
             
-            logger.info(f"User {current_user.fullName} ({current_user.userId}) cleaned up {count} old events (older than {days} days)")
+            logger.info(f"User {current_user.userId} cleaned up {count} old events (older than {days} days)")
             return {
                 "message": f"Cleaned up {count} old events",
                 "deleted_count": count,

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activity-service-stg
+  namespace: staging
+  labels:
+    app: activity-service-stg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: activity-service-stg
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: activity-service-stg
+    spec:
+      containers:
+        - name: activity-service
+          image: host.minikube.internal:5000/activity_service_stg:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          # Config comes from the cluster, not from the image. The ConfigMap is
+          # created by the CD workflow before this manifest is applied; if it is
+          # missing the pod fails to start rather than falling back to a stale
+          # baked-in .env.
+          envFrom:
+            - configMapRef:
+                name: activity-service-stg-env
+          env:
+            - name: TZ
+              value: "Asia/Singapore"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # The FastAPI lifespan connects to the DB, starts the outbox processor
+          # and opens the RabbitMQ consumers before serving. startupProbe allows
+          # up to 120s for that; readiness then gates rollout traffic.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: log-volume
+              mountPath: /app/logs
+      volumes:
+        - name: log-volume
+          hostPath:
+            path: /home/VMadmin/FYP_microservices/PEAR_activity_service_stg/logs
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: activity-service-stg
+  namespace: staging
+spec:
+  type: NodePort
+  selector:
+    app: activity-service-stg
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30010

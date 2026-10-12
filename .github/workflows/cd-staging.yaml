@@ -1,0 +1,25 @@
+name: CD (Staging)
+
+on:
+  push:
+    branches: ['staging']
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-staging:
+    uses: ./.github/workflows/base-cd.yaml
+    secrets: inherit
+    with:
+      # must match the GitHub Environment name exactly (case-sensitive)
+      environment: 'staging'
+      runner-label: '["self-hosted","Linux","X64","activity_staging"]'
+      namespace: 'staging'
+      deployment-name: 'activity-service-stg'
+      container-name: 'activity-service'
+      configmap-name: 'activity-service-stg-env'
+      docker-image-name: 'activity_service_stg'
+      kube-deployment-file: './k8s/deployment-stg.yaml'
+      filebeat-file: './k8s/filebeat-daemonset-stg.yaml'
+      dockerfile: 'Dockerfile.dev'
