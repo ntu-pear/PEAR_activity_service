@@ -4,6 +4,7 @@ import app.models.centre_activity_model as models
 from app.models.care_centre_model import CareCentre
 import app.schemas.centre_activity_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
@@ -468,7 +469,7 @@ def update_centre_activity(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Centre Activity: {activity_name}",
+            message=with_change_summary(f"Updated Centre Activity: {activity_name}", original_data_dict, updated_data_dict),
             table="CENTRE_ACTIVITY",
             entity_id=db_centre_activity.id,
             original_data=original_data_dict,

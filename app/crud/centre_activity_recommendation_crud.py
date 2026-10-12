@@ -3,6 +3,7 @@ from typing import Union, Dict, Any
 import app.models.centre_activity_recommendation_model as models
 import app.schemas.centre_activity_recommendation_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
@@ -427,7 +428,7 @@ def update_centre_activity_recommendation(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Centre Activity Recommendation: {activity_name} marked as {recommendation_status} for {patient_name}",
+            message=with_change_summary(f"Updated Centre Activity Recommendation: {activity_name} marked as {recommendation_status} for {patient_name}", original_data_dict, updated_data_dict),
             table="CENTRE_ACTIVITY_RECOMMENDATION",
             entity_id=existing_centre_activity_recommendation.id,
             original_data=original_data_dict,

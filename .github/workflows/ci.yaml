@@ -11,6 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     env:
+      TZ: Asia/Singapore
       SERVICE_NAME: ACTIVITY
       DB_DRIVER: "ODBC Driver 17 for SQL Server"
       DB_SERVER: localhost

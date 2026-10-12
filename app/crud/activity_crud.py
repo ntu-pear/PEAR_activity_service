@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import logging
 
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 
@@ -233,7 +234,7 @@ def update_activity_by_id(
                 action=ActionType.UPDATE,
                 user=current_user_info.get("id"),
                 user_full_name=current_user_info.get("fullname"),
-                message=f"Updated activity: {obj.title}",
+                message=with_change_summary(f"Updated activity: {obj.title}", original, serialize_data(update_data)),
                 table="ACTIVITY",
                 entity_id=obj.id,
                 original_data=original,
