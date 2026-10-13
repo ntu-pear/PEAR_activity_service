@@ -80,7 +80,38 @@ def test_update_activity_by_id_not_found(mock_get, get_db_session_mock, activity
 def test_delete_activity_by_id_success(mock_get, get_db_session_mock, existing_activity):
     """Should mark is_deleted, commit, refresh, and return."""
     mock_get.return_value = existing_activity
-    result = delete_activity_by_id(get_db_session_mock, activity_id=existing_activity.id, current_user_info={"id": "test-user", "fullname": "Test User"})
+    with mock.patch(
+        "app.crud.centre_activity_crud.get_active_centre_activity_ids_by_activity_id",
+        return_value=[],
+    ):
+        result = delete_activity_by_id(get_db_session_mock, activity_id=existing_activity.id, current_user_info={"id": "test-user", "fullname": "Test User"})
+    assert result.is_deleted
+
+@mock.patch("app.crud.activity_crud.get_outbox_service")
+@mock.patch("app.crud.activity_crud.get_activity_by_id")
+def test_delete_activity_by_id_cascades_to_centre_activities(mock_get, get_db_session_mock, existing_activity):
+    """Deleting an Activity should soft-delete its still-active CentreActivity
+    configs too, so none are left live and schedule-affecting behind a
+    deleted Activity."""
+    mock_get.return_value = existing_activity
+    user_info = {"id": "test-user", "fullname": "Test User"}
+
+    with mock.patch(
+        "app.crud.centre_activity_crud.get_active_centre_activity_ids_by_activity_id",
+        return_value=[10, 11],
+    ) as mock_get_ids, mock.patch(
+        "app.crud.centre_activity_crud.delete_centre_activity"
+    ) as mock_delete_ca:
+        result = delete_activity_by_id(
+            get_db_session_mock, activity_id=existing_activity.id, current_user_info=user_info
+        )
+
+    mock_get_ids.assert_called_once_with(get_db_session_mock, activity_id=existing_activity.id)
+    assert mock_delete_ca.call_count == 2
+    called_centre_activity_ids = {
+        call.kwargs["centre_activity_id"] for call in mock_delete_ca.call_args_list
+    }
+    assert called_centre_activity_ids == {10, 11}
     assert result.is_deleted
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
