@@ -166,6 +166,24 @@ def update_activity_by_id(
             detail="Activity not found"
         )
 
+    # duplicate-title check - same guard as create_activity, so a rename can't
+    # collide with another active Activity's title (the scheduler matches by
+    # title, so a silent collision here is a real scheduling hazard)
+    duplicate = (
+        db.query(models.Activity)
+          .filter(
+                models.Activity.title == activity_in.title,
+                models.Activity.is_deleted == False,
+                models.Activity.id != activity_id,
+          )
+          .first()
+    )
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Activity already exists"
+        )
+
     # Generate correlation ID if not provided
     if not correlation_id:
         correlation_id = generate_correlation_id()

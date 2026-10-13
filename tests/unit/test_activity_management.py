@@ -62,6 +62,8 @@ def test_create_activity_duplicate(mock_activity_cls, get_db_session_mock, activ
 def test_update_activity_by_id_success(mock_get, get_db_session_mock, existing_activity, activity_data):
     """Should update fields, commit, refresh, and return the Activity."""
     mock_get.return_value = existing_activity
+    # duplicate-title check: no other active Activity has this title
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
     result = update_activity_by_id(
         get_db_session_mock, activity_id=existing_activity.id, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"}
     )
@@ -74,6 +76,20 @@ def test_update_activity_by_id_not_found(mock_get, get_db_session_mock, activity
     with pytest.raises(HTTPException) as exc:
         update_activity_by_id(get_db_session_mock, activity_id=999, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"})
     assert exc.value.status_code == status.HTTP_404_NOT_FOUND
+
+@mock.patch("app.crud.activity_crud.get_activity_by_id")
+def test_update_activity_by_id_duplicate_title(mock_get, get_db_session_mock, existing_activity, activity_data):
+    """Should 400 if renaming to a title another active Activity already has."""
+    mock_get.return_value = existing_activity
+    other_activity = mock.MagicMock(spec=Activity)
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = other_activity
+
+    with pytest.raises(HTTPException) as exc:
+        update_activity_by_id(
+            get_db_session_mock, activity_id=existing_activity.id, activity_in=activity_data, current_user_info={"id": "test-user", "fullname": "Test User"}
+        )
+    assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert exc.value.detail == "Activity already exists"
 
 @mock.patch("app.crud.activity_crud.get_outbox_service")
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
