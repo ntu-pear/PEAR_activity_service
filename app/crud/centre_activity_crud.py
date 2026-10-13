@@ -360,6 +360,20 @@ def get_centre_activity_by_id(
     return db_centre_activity
 
 
+def get_active_centre_activity_ids_by_activity_id(db: Session, activity_id: int) -> List[int]:
+    """IDs of non-deleted CentreActivity rows for an Activity - used to cascade
+    a soft-delete of the Activity to its still-active schedule configs, so a
+    deleted Activity can never leave a live CentreActivity behind."""
+    return [
+        row.id for row in db.query(models.CentreActivity.id)
+        .filter(
+            models.CentreActivity.activity_id == activity_id,
+            models.CentreActivity.is_deleted == False,
+        )
+        .all()
+    ]
+
+
 def get_centre_activities(
         db: Session,
         include_deleted: bool = False,

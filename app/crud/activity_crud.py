@@ -166,6 +166,24 @@ def update_activity_by_id(
             detail="Activity not found"
         )
 
+    # duplicate-title check - same guard as create_activity, so a rename can't
+    # collide with another active Activity's title (the scheduler matches by
+    # title, so a silent collision here is a real scheduling hazard)
+    duplicate = (
+        db.query(models.Activity)
+          .filter(
+                models.Activity.title == activity_in.title,
+                models.Activity.is_deleted == False,
+                models.Activity.id != activity_id,
+          )
+          .first()
+    )
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Activity already exists"
+        )
+
     # Generate correlation ID if not provided
     if not correlation_id:
         correlation_id = generate_correlation_id()
@@ -278,17 +296,33 @@ def delete_activity_by_id(
     if not correlation_id:
         correlation_id = generate_correlation_id()
 
+    # Cascade: soft-delete any still-active CentreActivity configs for this
+    # Activity first, so a deleted Activity can never leave a live,
+    # schedule-affecting CentreActivity behind. Done before the Activity's own
+    # soft-delete so a failure here leaves the Activity untouched rather than
+    # deleted-but-still-configured.
+    from app.crud import centre_activity_crud
+    for centre_activity_id in centre_activity_crud.get_active_centre_activity_ids_by_activity_id(
+        db, activity_id=activity_id
+    ):
+        centre_activity_crud.delete_centre_activity(
+            db=db,
+            centre_activity_id=centre_activity_id,
+            current_user_info=current_user_info,
+            correlation_id=correlation_id,
+        )
+
     try:
         # 1. Capture original data
         original = serialize_data(model_to_dict(obj))
 
         # 2. Perform soft delete
         timestamp = datetime.now()
-        
+
         obj.is_deleted = True
         obj.modified_by_id = current_user_info.get("id")
         obj.modified_date = timestamp
-        
+
         db.flush()
         
         # 3. Capture activity data AFTER soft delete to include updated modified_date
