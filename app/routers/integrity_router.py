@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query, Depends, HTTPException
+import os
+from fastapi import APIRouter, Query, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from datetime import datetime, timedelta
@@ -14,7 +15,19 @@ from app.models.routine_model import Routine
 
 router = APIRouter()
 
-@router.get("/activity")
+
+def verify_internal_api_key(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
+    """
+    These endpoints are for service-to-service reconciliation, not logged-in
+    staff, so they're gated by a shared internal API key rather than JWT auth.
+    Fails closed: if INTERNAL_SERVICE_API_KEY isn't configured, nothing gets in.
+    """
+    expected_key = os.environ.get("INTERNAL_SERVICE_API_KEY")
+    if not expected_key or x_api_key != expected_key:
+        raise HTTPException(status_code=403, detail="Not authorised")
+
+
+@router.get("/activity", dependencies=[Depends(verify_internal_api_key)])
 async def get_activity_integrity(
     hours_back: int = Query(1, ge=1, le=168, description="Hours to look back (1-168)"),
     limit: int = Query(1000, ge=1, le=5000, description="Max records to return"),
@@ -63,7 +76,7 @@ async def get_activity_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Activity integrity check failed: {str(e)}")
 
-@router.get("/centre-activity")
+@router.get("/centre-activity", dependencies=[Depends(verify_internal_api_key)])
 async def get_centre_activity_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     limit: int = Query(1000, ge=1, le=5000),
@@ -116,7 +129,7 @@ async def get_centre_activity_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Centre activity integrity check failed: {str(e)}")
 
-@router.get("/centre-activity-preference")
+@router.get("/centre-activity-preference", dependencies=[Depends(verify_internal_api_key)])
 async def get_centre_activity_preference_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     patient_id: Optional[int] = Query(None, description="Filter by specific patient"),
@@ -166,7 +179,7 @@ async def get_centre_activity_preference_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Centre activity preference integrity check failed: {str(e)}")
 
-@router.get("/centre-activity-recommendation")
+@router.get("/centre-activity-recommendation", dependencies=[Depends(verify_internal_api_key)])
 async def get_centre_activity_recommendation_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     patient_id: Optional[int] = Query(None, description="Filter by specific patient"),
@@ -221,7 +234,7 @@ async def get_centre_activity_recommendation_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Centre activity recommendation integrity check failed: {str(e)}")
 
-@router.get("/centre-activity-exclusion")
+@router.get("/centre-activity-exclusion", dependencies=[Depends(verify_internal_api_key)])
 async def get_centre_activity_exclusion_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     patient_id: Optional[int] = Query(None, description="Filter by specific patient"),
@@ -268,7 +281,7 @@ async def get_centre_activity_exclusion_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Centre activity exclusion integrity check failed: {str(e)}")
 
-@router.get("/adhoc")
+@router.get("/adhoc", dependencies=[Depends(verify_internal_api_key)])
 async def get_adhoc_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     limit: int = Query(1000, ge=1, le=5000),
@@ -321,7 +334,7 @@ async def get_adhoc_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Adhoc integrity check failed: {str(e)}")
 
-@router.get("/routine")
+@router.get("/routine", dependencies=[Depends(verify_internal_api_key)])
 async def get_routine_integrity(
     hours_back: int = Query(1, ge=1, le=168),
     limit: int = Query(1000, ge=1, le=5000),
@@ -373,7 +386,7 @@ async def get_routine_integrity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Routine integrity check failed: {str(e)}")
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(verify_internal_api_key)])
 async def get_integrity_summary(
     hours_back: int = Query(1, ge=1, le=168),
     db: Session = Depends(get_db)
