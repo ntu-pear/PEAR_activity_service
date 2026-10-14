@@ -519,10 +519,34 @@ def delete_centre_activity(
     
     if not db_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found or deleted")
-    
+
     # Generate correlation ID if not provided
     if not correlation_id:
         correlation_id = generate_correlation_id()
+
+    # Cascade: soft-delete any still-active preference/exclusion rows for this
+    # CentreActivity first, so neither is left pointing at a deleted config.
+    # Done before the CentreActivity's own soft-delete so a failure here
+    # leaves it untouched rather than deleted-but-still-referenced.
+    from app.crud import centre_activity_preference_crud, centre_activity_exclusion_crud
+    for preference_id in centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id(
+        db, centre_activity_id=centre_activity_id
+    ):
+        centre_activity_preference_crud.delete_centre_activity_preference_by_id(
+            centre_activity_preference_id=preference_id,
+            db=db,
+            current_user_info=current_user_info,
+            correlation_id=correlation_id,
+        )
+    for exclusion_id in centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id(
+        db, centre_activity_id=centre_activity_id
+    ):
+        centre_activity_exclusion_crud.delete_centre_activity_exclusion(
+            db=db,
+            exclusion_id=exclusion_id,
+            current_user_info=current_user_info,
+            correlation_id=correlation_id,
+        )
 
     try:
         # 1. Capture original data
