@@ -45,33 +45,8 @@ connection_url = sa.URL.create(
     query={"driver": DB_DRIVER, "TrustServerCertificate": "yes"},
 )
 
-###############################################################
-# Get the database URL from environment (DOCKER LOCAL)
-#DB_URL_LOCAL = os.getenv("DB_URL_LOCAL")
-#DB_DRIVER = os.getenv("DB_DRIVER")
-#DB_SERVER = os.getenv("DB_SERVER")
-#DB_DATABASE = os.getenv("DB_DATABASE")
-#DB_USERNAME = os.getenv("DB_USERNAME")
-#DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-#===== Local Docker Development =========
-# connection_url = sa.URL.create(
-#     "mssql+pyodbc",
-#     username=DB_USERNAME,
-#     password=DB_PASSWORD,
-#     host=DB_SERVER,
-#     port=DB_DATABASE_PORT,
-#     database=DB_DATABASE,
-#     query={"driver": DB_DRIVER, "TrustServerCertificate": "yes"},
-# )
-##############################################
-
 print(connection_url)
 engine = sa.create_engine(connection_url)
-##############################################################
-# print(DATABASE_URL)
-# engine = create_engine(DATABASE_URL, connect_args={"timeout": 30})
-# engine_dev = create_engine(DATABASE_URL_DEV, )  # Increase the timeout if necessary
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
