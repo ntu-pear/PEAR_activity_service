@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import logging
 from fastapi import HTTPException
 
+from app.ops_logging import outbound_headers
+
 load_dotenv()
 logger = logging.getLogger("uvicorn")
 
@@ -11,12 +13,17 @@ logger = logging.getLogger("uvicorn")
 PATIENT_BE_ORIGIN = os.getenv("PATIENT_BE_ORIGIN")
 BASE_URL = f'{PATIENT_BE_ORIGIN}/api/v1'
 
+
+def _headers(require_auth: bool, bearer_token: str):
+    headers = dict(outbound_headers())
+    if require_auth:
+        headers["Authorization"] = f"Bearer {bearer_token}"
+    return headers or None
+
 def get_patient_by_id(require_auth: bool, bearer_token: str, patient_id: int):
     url = f'{BASE_URL}/patients/{patient_id}'
     params = {"require_auth": f"{require_auth}", "mask": "true"}
-    headers = None
-    if require_auth:
-        headers = {"Authorization": f"Bearer {bearer_token}"}
+    headers = _headers(require_auth, bearer_token)
 
     response = requests.get(url, headers=headers, params=params)
 
@@ -30,9 +37,7 @@ def get_patient_by_id(require_auth: bool, bearer_token: str, patient_id: int):
 def get_patient_allocation_by_patient_id(require_auth: bool, bearer_token: str, patient_id: int):
     url = f'{BASE_URL}/allocation/patient/{patient_id}?' 
     params = {"require_auth": f"{require_auth}"}
-    headers = None
-    if require_auth:
-        headers = {"Authorization": f"Bearer {bearer_token}"}
+    headers = _headers(require_auth, bearer_token)
 
     response = requests.get(url, headers=headers, params=params)
 
