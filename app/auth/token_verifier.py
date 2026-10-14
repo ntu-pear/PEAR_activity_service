@@ -8,6 +8,8 @@ from typing import Callable, Dict, Optional, Tuple
 import httpx
 from fastapi import HTTPException, status
 
+from app.ops_logging import outbound_headers
+
 BASE_URL_ENV = "USER_BE_ORIGIN"
 CACHE_TTL_SECONDS = 60
 OUTAGE_BACKOFF_SECONDS = 30
@@ -51,7 +53,7 @@ def verify_mode() -> str:
 def _call_user_service(base_url: str, token: str) -> httpx.Response:
     return httpx.get(
         f"{base_url}/api/v1/current_user/",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", **outbound_headers()},
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
 

@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.services.background_processor import get_processor
 from app.messaging.consumer_manager import create_activity_consumer_manager
+from app.logger.config import LOG_DIR
+from app.ops_logging import setup_ops_logging
 
 from app.models import(
     activity_model,
@@ -266,6 +268,10 @@ if _is_bypass_auth_enabled():
     app.dependency_overrides[get_user_and_token] = lambda: (_mock_user, "mock-token")
     app.dependency_overrides[get_current_user_and_token_with_flag] = lambda: (_mock_user, "mock-token")
     logger.info("BYPASS_AUTH=true, ENVIRONMENT=local: all auth dependencies overridden with mock SUPERVISOR user")
+
+# Operational logs (errors, requests, auth events). Dark unless OPS_LOGGING is on.
+# Last middleware added, so it is the outermost one.
+setup_ops_logging(app, service="activity", log_dir=LOG_DIR)
 
 
 @app.get("/")
