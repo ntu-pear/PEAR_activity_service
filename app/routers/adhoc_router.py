@@ -19,7 +19,7 @@ def create_adhoc(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create an Adhoc record."
@@ -40,11 +40,11 @@ def create_adhoc(
 def list_adhocs(
     include_deleted: bool = Query(False, description="Include soft‑deleted"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, gt=0),
+    limit: int = Query(100, gt=0, le=1000),
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Adhoc records."
@@ -69,7 +69,7 @@ def get_adhoc_by_id(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Adhoc records."
@@ -110,7 +110,7 @@ def update_adhoc(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update Adhoc records."
@@ -134,7 +134,7 @@ def delete_adhoc(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete Adhoc records."
