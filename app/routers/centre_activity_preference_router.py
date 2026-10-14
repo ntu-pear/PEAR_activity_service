@@ -21,7 +21,7 @@ def create_centre_activity_preference(
 ):
     current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create a Centre Activity Preference"
@@ -51,7 +51,7 @@ def get_centre_activity_preferences(
 ):
     current_user, token = user_and_token
     # Check if Role is Supervisor, Caregiver or Doctor
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Centre Activity Preferences"
@@ -74,7 +74,7 @@ def get_centre_activity_preference_by_id(
 
     current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this Centre Activity Preference"
@@ -103,7 +103,7 @@ def get_centre_activity_preferences_by_patient_id(
 ):
     current_user, token = user_and_token
     # Check if Role is Supervisor, Caregiver or Doctor
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user) or is_doctor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Centre Activity Preferences for this Patient"
@@ -130,7 +130,7 @@ def update_centre_activity_preference_by_id(
 ):
     current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update this Centre Activity Preference"
@@ -160,7 +160,7 @@ def delete_centre_activity_preference_by_id(
 ):
     current_user, token = user_and_token
     # Check if Role is Supervisor or Caregiver
-    if current_user and not (is_supervisor(current_user) or is_caregiver(current_user)):
+    if not (is_supervisor(current_user) or is_caregiver(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this Centre Activity Preference"

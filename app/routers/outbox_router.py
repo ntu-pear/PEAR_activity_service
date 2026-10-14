@@ -49,7 +49,7 @@ async def get_health():
 @router.get("/stats")
 async def get_stats(current_user: JWTPayload = Depends(get_current_user)):
     """Get outbox statistics (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view outbox statistics."
@@ -77,7 +77,7 @@ async def get_events(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Get outbox events with optional filters (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view outbox events."
@@ -120,7 +120,7 @@ async def get_event_detail(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Get detailed event information including payload (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view event details."
@@ -155,7 +155,7 @@ async def get_event_detail(
 @router.post("/retry-failed")
 async def retry_failed_events(current_user: JWTPayload = Depends(get_current_user)):
     """Retry all failed events (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to retry failed events."
@@ -178,7 +178,7 @@ async def process_now(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Manually trigger event processing (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to manually process events."
@@ -206,7 +206,7 @@ async def cleanup_old_events(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Clean up old processed events (requires admin auth only)"""
-    if current_user and not is_admin(current_user):
+    if not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to cleanup events. Admin access required."
@@ -251,7 +251,7 @@ async def get_event_types(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Get list of all event types (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view event types."
@@ -273,7 +273,7 @@ async def get_failed_events(
     current_user: JWTPayload = Depends(get_current_user)
 ):
     """Get failed events with error details (requires supervisor or admin auth)"""
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view failed events."
