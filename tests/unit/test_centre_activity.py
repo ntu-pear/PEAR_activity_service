@@ -496,15 +496,58 @@ def test_delete_centre_activity_success(get_db_session_mock, mock_supervisor_use
     """Deletes when Centre Activity record exists and is_deleted is false"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity    # Centre Activity record exists
 
-    result = delete_centre_activity(
-        db=get_db_session_mock,
-        centre_activity_id=existing_centre_activity.id,
-        current_user_info=mock_supervisor_user
-    )
-    
+    with patch(
+        "app.crud.centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id",
+        return_value=[],
+    ), patch(
+        "app.crud.centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id",
+        return_value=[],
+    ):
+        result = delete_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_id=existing_centre_activity.id,
+            current_user_info=mock_supervisor_user
+        )
+
     assert result.id == existing_centre_activity.id
     assert result.is_deleted == True
     assert result.modified_by_id == mock_supervisor_user.get("id")
+
+def test_delete_centre_activity_cascades_to_preferences_and_exclusions(get_db_session_mock, mock_supervisor_user,
+                                existing_centre_activity):
+    """Deleting a CentreActivity should soft-delete its still-active preference
+    and exclusion rows too, so neither is left pointing at a deleted config."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity
+
+    with patch(
+        "app.crud.centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id",
+        return_value=[101, 102],
+    ) as mock_get_pref_ids, patch(
+        "app.crud.centre_activity_preference_crud.delete_centre_activity_preference_by_id"
+    ) as mock_delete_pref, patch(
+        "app.crud.centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id",
+        return_value=[201],
+    ) as mock_get_excl_ids, patch(
+        "app.crud.centre_activity_exclusion_crud.delete_centre_activity_exclusion"
+    ) as mock_delete_excl:
+        result = delete_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_id=existing_centre_activity.id,
+            current_user_info=mock_supervisor_user
+        )
+
+    mock_get_pref_ids.assert_called_once_with(get_db_session_mock, centre_activity_id=existing_centre_activity.id)
+    mock_get_excl_ids.assert_called_once_with(get_db_session_mock, centre_activity_id=existing_centre_activity.id)
+    assert mock_delete_pref.call_count == 2
+    deleted_pref_ids = {call.kwargs["centre_activity_preference_id"] for call in mock_delete_pref.call_args_list}
+    assert deleted_pref_ids == {101, 102}
+    mock_delete_excl.assert_called_once_with(
+        db=get_db_session_mock,
+        exclusion_id=201,
+        current_user_info=mock_supervisor_user,
+        correlation_id=mock_delete_pref.call_args_list[0].kwargs["correlation_id"],
+    )
+    assert result.is_deleted == True
 
 def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervisor_user,
                                 existing_centre_activity):

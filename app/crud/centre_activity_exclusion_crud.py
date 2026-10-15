@@ -34,6 +34,20 @@ def _exclusion_to_dict(exclusion) -> Dict[str, Any]:
         logger.error(f"Error converting exclusion to dict: {str(e)}")
         return {}
 
+def get_active_exclusion_ids_by_centre_activity_id(db: Session, centre_activity_id: int) -> List[int]:
+    """IDs of non-deleted exclusion rows for a CentreActivity - used to cascade
+    a soft-delete of the CentreActivity to its still-active exclusions, so
+    none are left pointing at a deleted config."""
+    return [
+        row.id for row in db.query(models.CentreActivityExclusion.id)
+        .filter(
+            models.CentreActivityExclusion.centre_activity_id == centre_activity_id,
+            models.CentreActivityExclusion.is_deleted == False,
+        )
+        .all()
+    ]
+
+
 def get_centre_activity_exclusion_by_id(
     db: Session,
     exclusion_id: int,

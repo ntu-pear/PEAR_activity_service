@@ -263,6 +263,20 @@ def create_centre_activity_preference(
         logger.error(f"Failed to create centre activity preference: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
+def get_active_preference_ids_by_centre_activity_id(db: Session, centre_activity_id: int) -> list:
+    """IDs of non-deleted preference rows for a CentreActivity - used to cascade
+    a soft-delete of the CentreActivity to its still-active preferences, so
+    none are left pointing at a deleted config."""
+    return [
+        row.id for row in db.query(models.CentreActivityPreference.id)
+        .filter(
+            models.CentreActivityPreference.centre_activity_id == centre_activity_id,
+            models.CentreActivityPreference.is_deleted == False,
+        )
+        .all()
+    ]
+
+
 def get_centre_activity_preference_by_id(
         db: Session, 
         centre_activity_preference_id: int,
