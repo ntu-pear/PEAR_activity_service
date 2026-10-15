@@ -532,20 +532,25 @@ def delete_centre_activity(
     for preference_id in centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id(
         db, centre_activity_id=centre_activity_id
     ):
+        # No correlation_id passed on purpose - see note below the loops.
         centre_activity_preference_crud.delete_centre_activity_preference_by_id(
             centre_activity_preference_id=preference_id,
             db=db,
             current_user_info=current_user_info,
-            correlation_id=correlation_id,
         )
     for exclusion_id in centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id(
         db, centre_activity_id=centre_activity_id
     ):
+        # No correlation_id passed on purpose: each cascaded delete needs its
+        # own. The scheduler's consumer treats a correlation_id it has already
+        # seen as a duplicate and drops the message, so reusing one here meant
+        # the cascaded child events were processed and this CentreActivity's
+        # own CENTRE_ACTIVITY_DELETED - published last - was silently dropped,
+        # leaving the row deleted here but still live in REF_CENTRE_ACTIVITY.
         centre_activity_exclusion_crud.delete_centre_activity_exclusion(
             db=db,
             exclusion_id=exclusion_id,
             current_user_info=current_user_info,
-            correlation_id=correlation_id,
         )
 
     try:

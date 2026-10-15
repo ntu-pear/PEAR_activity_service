@@ -128,6 +128,15 @@ def test_delete_activity_by_id_cascades_to_centre_activities(mock_get, get_db_se
         call.kwargs["centre_activity_id"] for call in mock_delete_ca.call_args_list
     }
     assert called_centre_activity_ids == {10, 11}
+
+    # Cascaded deletes must NOT inherit this delete's correlation_id - the
+    # scheduler's consumer drops a correlation_id it has already processed,
+    # so sharing one across a cascade loses every event after the first.
+    for call in mock_delete_ca.call_args_list:
+        assert "correlation_id" not in call.kwargs, (
+            "cascaded delete must not reuse the parent's correlation_id"
+        )
+
     assert result.is_deleted
 
 @mock.patch("app.crud.activity_crud.get_activity_by_id")
