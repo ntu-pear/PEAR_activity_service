@@ -545,8 +545,17 @@ def test_delete_centre_activity_cascades_to_preferences_and_exclusions(get_db_se
         db=get_db_session_mock,
         exclusion_id=201,
         current_user_info=mock_supervisor_user,
-        correlation_id=mock_delete_pref.call_args_list[0].kwargs["correlation_id"],
     )
+
+    # Cascaded deletes must NOT inherit this delete's correlation_id. The
+    # scheduler's consumer drops any message whose correlation_id it has
+    # already processed, so sharing one across a cascade meant the children
+    # were applied and this CentreActivity's own CENTRE_ACTIVITY_DELETED -
+    # published last - was silently discarded.
+    for call in list(mock_delete_pref.call_args_list) + list(mock_delete_excl.call_args_list):
+        assert "correlation_id" not in call.kwargs, (
+            "cascaded delete must not reuse the parent's correlation_id"
+        )
     assert result.is_deleted == True
 
 def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervisor_user,

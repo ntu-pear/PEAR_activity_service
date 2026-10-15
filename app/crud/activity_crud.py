@@ -305,11 +305,14 @@ def delete_activity_by_id(
     for centre_activity_id in centre_activity_crud.get_active_centre_activity_ids_by_activity_id(
         db, activity_id=activity_id
     ):
+        # No correlation_id passed on purpose: each cascaded delete needs its
+        # own. The scheduler's consumer treats a correlation_id it has already
+        # seen as a duplicate and drops the message, so reusing one here means
+        # only the first event of the cascade survives.
         centre_activity_crud.delete_centre_activity(
             db=db,
             centre_activity_id=centre_activity_id,
             current_user_info=current_user_info,
-            correlation_id=correlation_id,
         )
 
     try:
