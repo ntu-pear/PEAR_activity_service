@@ -21,7 +21,7 @@ def create_centre_activity_recommendation(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if not is_doctor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"You do not have permission to create a Centre Activity Recommendation {current_user.roleName if current_user else 'Anonymous'}"
@@ -54,7 +54,7 @@ def get_centre_activity_recommendation_by_id(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
+    if not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -80,7 +80,7 @@ def get_all_centre_activity_recommendations(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
+    if not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -114,7 +114,7 @@ def get_centre_activity_recommendations_by_patient_id(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not (is_doctor(current_user) or is_supervisor(current_user)):
+    if not (is_doctor(current_user) or is_supervisor(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access Centre Activity Recommendations"
@@ -149,7 +149,7 @@ def update_centre_activity_recommendation(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if not is_doctor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update Centre Activity Recommendations"
@@ -185,7 +185,7 @@ def delete_centre_activity_recommendation(
 ):
     current_user, token = user_and_token
     # Check if Role is Doctor
-    if current_user and not is_doctor(current_user):
+    if not is_doctor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete Centre Activity Recommendations"

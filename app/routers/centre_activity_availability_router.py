@@ -21,7 +21,7 @@ def create_centre_activity_availability(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token)
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to create a Centre Activity Availability."
@@ -51,7 +51,7 @@ def get_all_centre_activity_availabilities(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to view Centre Activity Availabilities."
@@ -74,7 +74,7 @@ def get_centre_activity_availability_by_id(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = Query(False, description = "Include soft-deleted records.")
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to view a Centre Activity Availability."
@@ -99,7 +99,7 @@ def update_centre_activity_availability(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to update a Centre Activity Availability."
@@ -131,7 +131,7 @@ def delete_centre_activity_availability(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail = "You do not have permission to delete a Centre Activity Availability."

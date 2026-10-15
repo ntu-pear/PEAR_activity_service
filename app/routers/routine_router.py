@@ -20,7 +20,7 @@ def create_routine(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create a routine."
@@ -40,11 +40,11 @@ def create_routine(
 def list_routines(
     include_deleted: bool = Query(False, description="Include soft-deleted routines"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, gt=0),
+    limit: int = Query(100, gt=0, le=1000),
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view routines."
@@ -67,7 +67,7 @@ def get_routine_by_id(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view routines."
@@ -89,7 +89,7 @@ def list_routines_by_patient(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user)
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view routines."
@@ -107,7 +107,7 @@ def update_routine(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update routines."
@@ -130,7 +130,7 @@ def delete_routine(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete routines."

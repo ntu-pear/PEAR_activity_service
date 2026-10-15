@@ -5,7 +5,6 @@ import app.schemas.centre_activity_preference_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
-from tests.conftest import existing_centre_activity_preference
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
 from datetime import datetime

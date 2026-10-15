@@ -19,7 +19,7 @@ def create_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create a Care Centre."
@@ -47,7 +47,7 @@ def list_care_centres(
     limit: int = 100,
     include_deleted: bool = False,
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Care Centres."
@@ -65,7 +65,7 @@ def get_care_centre_by_id(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = False,
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this Care Centre."
@@ -101,7 +101,7 @@ def update_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update a Care Centre."
@@ -127,7 +127,7 @@ def delete_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete a Care Centre."
