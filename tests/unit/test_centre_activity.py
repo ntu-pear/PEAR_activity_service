@@ -12,6 +12,7 @@ from app.crud.centre_activity_crud import (
     get_centre_activities,
     update_centre_activity,
     delete_centre_activity,
+    _validate_care_centre_exists,
 )
 
 
@@ -574,3 +575,38 @@ def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervi
     assert exc.value.detail == "Centre Activity not found or deleted"
 
     
+
+#===== care_centre_id =========
+def test_validate_care_centre_exists_accepts_none(get_db_session_mock):
+    """care_centre_id is nullable while existing rows are backfilled, so a create
+    without one must be allowed and must not hit the database at all."""
+    _validate_care_centre_exists(get_db_session_mock, None)
+    get_db_session_mock.query.assert_not_called()
+
+def test_validate_care_centre_exists_rejects_missing(get_db_session_mock):
+    """A care_centre_id pointing at a missing or soft-deleted Care Centre is a 404,
+    so a Centre Activity can never reference a centre that is not there."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+
+    with pytest.raises(HTTPException) as exc:
+        _validate_care_centre_exists(get_db_session_mock, 99)
+
+    assert exc.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc.value.detail == "Care Centre not found"
+
+def test_validate_care_centre_exists_accepts_live_centre(get_db_session_mock):
+    """An existing, non-deleted Care Centre passes."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = MagicMock()
+    _validate_care_centre_exists(get_db_session_mock, 1)
+
+def test_centre_activity_schema_care_centre_id_defaults_to_none(base_centre_activity_data):
+    """Existing callers that do not send care_centre_id keep working."""
+    assert "care_centre_id" not in base_centre_activity_data
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.care_centre_id is None
+
+def test_centre_activity_schema_round_trips_care_centre_id(base_centre_activity_data):
+    """When supplied, care_centre_id survives into the model dump that builds the row."""
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "care_centre_id": 3})
+    assert schema.care_centre_id == 3
+    assert schema.model_dump()["care_centre_id"] == 3
