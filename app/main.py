@@ -36,6 +36,7 @@ from app.routers import(
     centre_activity_exclusion_router,
     centre_activity_router,
     activity_router,
+    activity_template_router,
     care_centre_router,
     centre_activity_preference_router,
     centre_activity_recommendation_router,
@@ -212,6 +213,7 @@ except Exception as db_init_error:
 routers = [
     (centre_activity_router.router, f"{API_VERSION_PREFIX}/centre_activities", ["Centre Activities"]),
     (activity_router.router, f"{API_VERSION_PREFIX}/activities", ["Activities"]),
+    (activity_template_router.router, f"{API_VERSION_PREFIX}/activity_templates", ["Activity Templates"]),
     (care_centre_router.router, f"{API_VERSION_PREFIX}/care_centres", ["Care Centres"]),
     (centre_activity_preference_router.router, f"{API_VERSION_PREFIX}/centre_activity_preferences", ["Centre Activity Preferences"]),
     (centre_activity_recommendation_router.router, f"{API_VERSION_PREFIX}/centre_activity_recommendations", ["Centre Activity Recommendations"]),

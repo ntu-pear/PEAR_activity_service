@@ -1,5 +1,6 @@
 # Import all models to ensure they are registered with SQLAlchemy
 from .activity_model import Activity
+from .activity_template_model import ActivityTemplate
 from .care_centre_model import CareCentre
 from .centre_activity_model import CentreActivity
 from .centre_activity_availability_model import CentreActivityAvailability
