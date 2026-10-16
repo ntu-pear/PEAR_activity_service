@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import app.crud.activity_template_crud as crud
+import app.crud.apply_template_crud as apply_crud
 import app.schemas.activity_template_schema as schemas
+import app.schemas.apply_template_schema as apply_schemas
 from app.auth.jwt_utils import JWTPayload, get_current_user, is_admin, is_supervisor
 from app.database import get_db
 
@@ -113,4 +115,39 @@ def delete_activity_template(
     _require_supervisor_or_admin(current_user)
     return crud.delete_activity_template(
         db=db, template_id=template_id, current_user_info=_user_info(current_user)
+    )
+
+
+@router.post(
+    "/{template_id}/apply",
+    response_model=apply_schemas.ApplyTemplateResponse,
+    summary="Apply Activity Template",
+    description=(
+        "Create an Activity and a Centre Activity from the submitted values, in one "
+        "transaction. Reuses an existing active Activity when one already has this "
+        "title, so the same template can be applied more than once - producing, say, "
+        "'Breathing AM' and 'Breathing PM' under a single 'Breathing' activity. "
+        "The stored template is not modified."
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+def apply_activity_template(
+    template_id: int,
+    payload: apply_schemas.ApplyTemplateRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[JWTPayload] = Depends(get_current_user),
+):
+    _require_supervisor_or_admin(current_user)
+    activity, centre_activity, activity_was_created = apply_crud.apply_activity_template(
+        db=db,
+        template_id=template_id,
+        payload=payload,
+        current_user_info=_user_info(current_user),
+    )
+    return apply_schemas.ApplyTemplateResponse(
+        activity_id=activity.id,
+        activity_title=activity.title,
+        activity_was_created=activity_was_created,
+        centre_activity_id=centre_activity.id,
+        centre_activity_name=centre_activity.name,
     )
