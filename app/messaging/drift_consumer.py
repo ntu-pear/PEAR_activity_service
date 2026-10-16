@@ -21,7 +21,7 @@ class DriftConsumer:
     
     def __init__(self):
         self.client = RabbitMQClient("activity-drift-consumer")
-        self.drift_queue = "reconciliation.drift.detected"
+        self.drift_queue = "reconciliation.drift.activity"
         self.shutdown_event = None
         self.is_consuming = False
         
