@@ -44,15 +44,48 @@ def create_template_schema(base_template_data):
 
 
 #===== Schema =========
-def test_template_uses_the_shared_activity_rules(base_template_data):
-    """A template that could not produce a valid centre activity is rejected.
+def test_template_may_hold_a_combination_that_is_not_yet_applicable(base_template_data):
+    """A template is a form that is allowed to be incompletely filled in.
 
-    Proves the extraction in activity_rules.py is actually wired up here rather
-    than the template schema carrying its own copy.
+    A group activity with one person would be rejected as a centre activity, but
+    a template may carry it - the supervisor is expected to finish the form when
+    they apply it. ApplyTemplateRequest is where the full rules bite.
     """
-    with pytest.raises(ValidationError) as exc:
-        ActivityTemplateCreate(**{**base_template_data, "is_group": True, "min_people_req": 1})
-    assert "Group activities must have a minimum of 2" in str(exc.value)
+    schema = ActivityTemplateCreate(**{**base_template_data, "is_group": True, "min_people_req": 1})
+    assert schema.is_group is True
+    assert schema.min_people_req == 1
+
+
+def test_template_needs_only_a_name_and_a_title():
+    """Everything else is a default the supervisor can leave until apply time."""
+    schema = ActivityTemplateCreate(name="Physiotherapy (standard)", title="Physiotherapy", created_by_id="1")
+    assert schema.description is None
+    assert schema.is_compulsory is False and schema.is_fixed is False and schema.is_group is False
+    assert schema.min_duration == 60 and schema.min_people_req == 1
+    assert schema.fixed_time_slots is None
+    assert schema.end_date == date(2999, 1, 1)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"is_compulsory": True},
+        {"is_fixed": True},
+        {"is_group": True},
+        {"is_compulsory": True, "is_fixed": True, "is_group": True},
+    ],
+    ids=["compulsory", "fixed", "group", "all three"],
+)
+def test_template_saves_without_slots_or_group_size(overrides):
+    """The combinations the Add Template form can send must all save.
+
+    The form has no field for time slots or minimum people, so requiring them
+    here made every option except all-No unsavable.
+    """
+    schema = ActivityTemplateCreate(
+        name=f"T {sorted(overrides)}", title="X", created_by_id="1", **overrides
+    )
+    assert schema.title == "X"
 
 
 def test_template_allows_a_start_date_in_the_past(base_template_data):
