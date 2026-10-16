@@ -2,6 +2,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, List
 from datetime import datetime, timedelta, timezone, date
 
+from app.schemas.activity_rules import validate_activity_configuration
+
 class CentreActivityBase(BaseModel):
     activity_id: int = Field(..., description="Reference to Activity")
     name: Optional[str] = Field(None, max_length=200, description="What this configuration is called, e.g. 'Breathing AM'. Falls back to the Activity title when unset.")
@@ -20,48 +22,16 @@ class CentreActivityBase(BaseModel):
 
 
 class ValidatedCentreActivity(CentreActivityBase):
-    """Mixin class that adds validation to CentreActivityBase - used by Create and Update classes"""
-    
+    """Mixin class that adds validation to CentreActivityBase - used by Create and Update classes.
+
+    The rules themselves live in app/schemas/activity_rules.py, because an
+    Activity Template carries the same fields and has to satisfy the same rules.
+    Keep them there rather than inlining them here, or the two definitions drift.
+    """
+
     @model_validator(mode='after')
     def validate_input(self):
-        is_compulsory = self.is_compulsory
-        is_fixed = self.is_fixed
-        is_group = self.is_group
-        fixed_time_slots = self.fixed_time_slots
-        start_date = self.start_date
-        end_date = self.end_date
-        min_duration = self.min_duration
-        max_duration = self.max_duration
-        min_people_req = self.min_people_req
-
-        if is_group and (min_people_req is None or min_people_req < 2):
-            raise ValueError("Group activities must have a minimum of 2 people required.")
-        if not is_group and min_people_req != 1:
-            raise ValueError("Individual activities must have a minimum of 1 person required.")
-        if min_duration is None or max_duration is None or min_duration != max_duration:
-            raise ValueError("Activities must have the same minimum and maximum duration.")
-        # if not is_fixed and (min_duration is None or max_duration is None or min_duration > max_duration):
-        #     raise ValueError("Flexible activities, ensure minimum duration is less than or equal to maximum duration.")
-        # if min_duration is None or max_duration is None or min_duration != 60 or max_duration != 60:
-        #     raise ValueError("Duration must be 60 minutes.")
-        if end_date and end_date < self.start_date:
-            raise ValueError("End date cannot be before start date.")
-
-        # Not in SRS, but Scheduler's limitation - compulsory activities must be fixed
-        if is_compulsory and not is_fixed: 
-            raise ValueError("Compulsory activities must be fixed.")
-        if is_compulsory and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-            raise ValueError("Compulsory activities must have fixed time slots specified.")
-        if is_fixed and (fixed_time_slots is None or fixed_time_slots.strip() == ''):
-           raise ValueError("Fixed activities must have fixed time slots specified.")
-        if min_duration is None or min_duration not in (30, 60) or max_duration is None or max_duration not in (30, 60):
-           raise ValueError("Duration must be either 30 or 60 minutes.")
-        fixed_time_slots_tmp = fixed_time_slots.split(",") if fixed_time_slots else []
-        for slot in fixed_time_slots_tmp:
-            try:
-                datetime.strptime(slot, "%A %H:%M")
-            except ValueError:
-                raise ValueError(f"Slot {slot} is not in the correct format. Expected format: 'Day HH:MM' (no space, separated by comma).")
+        validate_activity_configuration(self)
         #if end_date and end_date > (datetime.now(timezone.utc) + timedelta(days=365)).date():
         #    raise ValueError("End date cannot be more than 1 year in the future.")
         return self
