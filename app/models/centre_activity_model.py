@@ -9,6 +9,10 @@ class CentreActivity(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     activity_id = Column(Integer, ForeignKey("ACTIVITY.id"), nullable=False)
 
+    # Nullable because rows created before this column existed have no centre.
+    # Tighten to nullable=False once every environment has been backfilled.
+    care_centre_id = Column(Integer, ForeignKey("CARE_CENTRE.id"), nullable=True)
+
     is_deleted = Column(Boolean, nullable=False, default=False)
     is_compulsory = Column(Boolean, nullable=False, default=True)
     is_fixed = Column(Boolean, nullable=False, default=False)

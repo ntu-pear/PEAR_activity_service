@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone, date
 
 class CentreActivityBase(BaseModel):
     activity_id: int = Field(..., description="Reference to Activity")
+    care_centre_id: Optional[int] = Field(None, description="Reference to the Care Centre this configuration belongs to")
     is_compulsory: bool = Field(..., description="Is compulsory")
     is_fixed: bool = Field(..., description="Is fixed duration")
     is_group: bool = Field(..., description="Is group activity")

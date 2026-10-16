@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 import app.models.centre_activity_model as models
 from app.models.care_centre_model import CareCentre
@@ -20,6 +20,26 @@ def _validate_activity_exists(db: Session, activity_id: int):
     activity = get_activity_by_id(db, activity_id=activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
+
+def _validate_care_centre_exists(db: Session, care_centre_id: Optional[int]):
+    """Validate that the care centre exists, when one was supplied.
+
+    The column is still nullable while existing rows are backfilled, so None is
+    accepted here. Once every environment has a value this should become a
+    required field and the None branch can go.
+    """
+    if care_centre_id is None:
+        return
+    care_centre = (
+        db.query(CareCentre)
+          .filter(
+              CareCentre.id == care_centre_id,
+              CareCentre.is_deleted == False,
+          )
+          .first()
+    )
+    if not care_centre:
+        raise HTTPException(status_code=404, detail="Care Centre not found")
 
 def _validate_compulsory_fixed_time_slots_unique(
     db: Session, 
@@ -147,12 +167,15 @@ def _validate_and_detect_changes(
     - For UPDATE: Validates duplicates AND detects changes (db_centre_activity provided)
     Returns changes dict for updates, None for creates, raises HTTPException if duplicate.
     """
-    # Define essential business fields
+    # Define essential business fields.
+    # care_centre_id is part of the key on purpose: the same activity configured
+    # at two different centres is two distinct rows, not a duplicate. On create
+    # it is only applied when the caller supplied one - see below.
     essential_fields = {
-        "activity_id", "is_compulsory", "is_fixed", "is_group",
+        "activity_id", "care_centre_id", "is_compulsory", "is_fixed", "is_group",
         "start_date", "end_date", "min_duration", "max_duration", "min_people_req"
     }
-    
+
     # For CREATE operations - just check duplicates
     if db_centre_activity is None:
         query_fields = {
@@ -166,7 +189,15 @@ def _validate_and_detect_changes(
             "max_duration": centre_activity_data.max_duration,
             "min_people_req": centre_activity_data.min_people_req,
         }
-        
+
+        # Only narrow by centre when the caller supplied one. Existing rows were
+        # backfilled to a centre, so filtering on care_centre_id IS NULL would
+        # match none of them and let a real duplicate through for every caller
+        # that has not started sending the field yet.
+        if centre_activity_data.care_centre_id is not None:
+            query_fields["care_centre_id"] = centre_activity_data.care_centre_id
+
+
         query = db.query(models.CentreActivity).filter_by(**query_fields)
         
         if exclude_id is not None:
@@ -265,6 +296,7 @@ def create_centre_activity(
     
     # Validate dependencies and check for duplicates
     _validate_activity_exists(db, centre_activity_data.activity_id)
+    _validate_care_centre_exists(db, centre_activity_data.care_centre_id)
     _validate_and_detect_changes(db, centre_activity_data)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data)
     _validate_group_fixed_time_slots(centre_activity_data)
@@ -413,6 +445,7 @@ def update_centre_activity(
     
     # Validate dependencies and check for duplicates (excluding current record)
     _validate_activity_exists(db, centre_activity_data.activity_id)
+    _validate_care_centre_exists(db, centre_activity_data.care_centre_id)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data, exclude_id=centre_activity_data.id)
     _validate_group_fixed_time_slots(centre_activity_data)
     _validate_time_slots(db, centre_activity_data)
