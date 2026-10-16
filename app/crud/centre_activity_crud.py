@@ -171,9 +171,15 @@ def _validate_and_detect_changes(
     # care_centre_id is part of the key on purpose: the same activity configured
     # at two different centres is two distinct rows, not a duplicate. On create
     # it is only applied when the caller supplied one - see below.
+    #
+    # name is in the key for the same reason. fixed_time_slots is deliberately
+    # NOT an essential field, so without name a morning and an afternoon run of
+    # one activity - same flags, same durations, differing only in their slots -
+    # would be rejected as duplicates of each other.
     essential_fields = {
-        "activity_id", "care_centre_id", "is_compulsory", "is_fixed", "is_group",
-        "start_date", "end_date", "min_duration", "max_duration", "min_people_req"
+        "activity_id", "care_centre_id", "name", "is_compulsory", "is_fixed",
+        "is_group", "start_date", "end_date", "min_duration", "max_duration",
+        "min_people_req"
     }
 
     # For CREATE operations - just check duplicates
@@ -190,13 +196,14 @@ def _validate_and_detect_changes(
             "min_people_req": centre_activity_data.min_people_req,
         }
 
-        # Only narrow by centre when the caller supplied one. Existing rows were
-        # backfilled to a centre, so filtering on care_centre_id IS NULL would
-        # match none of them and let a real duplicate through for every caller
-        # that has not started sending the field yet.
+        # Only narrow by these when the caller supplied one. Existing rows were
+        # backfilled, so filtering on IS NULL would match none of them and let a
+        # real duplicate through for every caller that has not started sending
+        # the field yet.
         if centre_activity_data.care_centre_id is not None:
             query_fields["care_centre_id"] = centre_activity_data.care_centre_id
-
+        if centre_activity_data.name is not None:
+            query_fields["name"] = centre_activity_data.name
 
         query = db.query(models.CentreActivity).filter_by(**query_fields)
         

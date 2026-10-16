@@ -663,3 +663,73 @@ def test_create_duplicate_check_uses_care_centre_when_supplied(
 
     kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
     assert kwargs["care_centre_id"] == 2
+
+
+#===== name =========
+def test_centre_activity_schema_name_defaults_to_none(base_centre_activity_data):
+    """Existing callers that do not send a name keep working."""
+    assert "name" not in base_centre_activity_data
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.name is None
+
+def test_centre_activity_schema_round_trips_name(base_centre_activity_data):
+    """When supplied, name survives into the model dump that builds the row."""
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "name": "Breathing AM"})
+    assert schema.name == "Breathing AM"
+    assert schema.model_dump()["name"] == "Breathing AM"
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_omits_name_when_not_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """A create without a name must not filter on name IS NULL.
+
+    Existing rows were backfilled from the parent activity title, so narrowing
+    the duplicate query to NULL would match none of them and let a genuine
+    duplicate through for every caller that has not started sending the field.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.name is None
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert "name" not in kwargs
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_uses_name_when_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """Two runs of one activity differing only by name and time slots are
+    distinct rows, not duplicates.
+
+    fixed_time_slots is not an essential field, so without name in the key a
+    morning and an afternoon session of the same activity - same flags, same
+    durations, same dates - would collide.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "name": "Breathing PM"})
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert kwargs["name"] == "Breathing PM"
