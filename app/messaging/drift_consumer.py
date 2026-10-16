@@ -264,6 +264,7 @@ class DriftConsumer:
             entity_data = {
                 "id": centre_activity.id,
                 "activity_id": centre_activity.activity_id,
+                "name": centre_activity.name,
                 "is_deleted": centre_activity.is_deleted,
                 "is_compulsory": centre_activity.is_compulsory,
                 "is_fixed": centre_activity.is_fixed,
