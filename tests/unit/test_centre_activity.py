@@ -610,3 +610,56 @@ def test_centre_activity_schema_round_trips_care_centre_id(base_centre_activity_
     schema = CentreActivityCreate(**{**base_centre_activity_data, "care_centre_id": 3})
     assert schema.care_centre_id == 3
     assert schema.model_dump()["care_centre_id"] == 3
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_omits_care_centre_when_not_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """A create without care_centre_id must not filter on care_centre_id IS NULL.
+
+    Existing rows were backfilled to a centre, so narrowing the duplicate query
+    to NULL would match none of them and let a genuine duplicate through for
+    every caller that has not started sending the field.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.care_centre_id is None
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert "care_centre_id" not in kwargs
+    assert kwargs["activity_id"] == schema.activity_id
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_care_centre_exists")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_uses_care_centre_when_supplied(
+    mock_ts, mock_compulsory, mock_care_centre, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """When a centre is supplied it narrows the duplicate query, so the same
+    activity configured at two different centres is not treated as a duplicate."""
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "care_centre_id": 2})
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert kwargs["care_centre_id"] == 2

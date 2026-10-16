@@ -169,7 +169,8 @@ def _validate_and_detect_changes(
     """
     # Define essential business fields.
     # care_centre_id is part of the key on purpose: the same activity configured
-    # at two different centres is two distinct rows, not a duplicate.
+    # at two different centres is two distinct rows, not a duplicate. On create
+    # it is only applied when the caller supplied one - see below.
     essential_fields = {
         "activity_id", "care_centre_id", "is_compulsory", "is_fixed", "is_group",
         "start_date", "end_date", "min_duration", "max_duration", "min_people_req"
@@ -179,7 +180,6 @@ def _validate_and_detect_changes(
     if db_centre_activity is None:
         query_fields = {
             "activity_id": centre_activity_data.activity_id,
-            "care_centre_id": centre_activity_data.care_centre_id,
             "is_compulsory": centre_activity_data.is_compulsory,
             "is_fixed": centre_activity_data.is_fixed,
             "is_group": centre_activity_data.is_group,
@@ -189,7 +189,15 @@ def _validate_and_detect_changes(
             "max_duration": centre_activity_data.max_duration,
             "min_people_req": centre_activity_data.min_people_req,
         }
-        
+
+        # Only narrow by centre when the caller supplied one. Existing rows were
+        # backfilled to a centre, so filtering on care_centre_id IS NULL would
+        # match none of them and let a real duplicate through for every caller
+        # that has not started sending the field yet.
+        if centre_activity_data.care_centre_id is not None:
+            query_fields["care_centre_id"] = centre_activity_data.care_centre_id
+
+
         query = db.query(models.CentreActivity).filter_by(**query_fields)
         
         if exclude_id is not None:
