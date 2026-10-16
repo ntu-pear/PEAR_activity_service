@@ -298,8 +298,17 @@ def create_centre_activity(
         db: Session, 
         centre_activity_data: schemas.CentreActivityCreate, 
         current_user_info: dict,
-        correlation_id: str = None
+        correlation_id: str = None,
+        commit: bool = True,
         ):
+    """Create a Centre Activity and its outbox event.
+
+    commit=False leaves the transaction open and the caller owns it, so a larger
+    operation can write a Centre Activity and something else atomically -
+    applying an activity template creates an Activity and this together. Errors
+    are re-raised without rolling back, because a caller holding the transaction
+    has to decide that.
+    """
     
     # Validate dependencies and check for duplicates
     _validate_activity_exists(db, centre_activity_data.activity_id)
@@ -368,13 +377,17 @@ def create_centre_activity(
         )
 
         # 4. Commit both centre activity and outbox event atomically
-        db.commit()
-        db.refresh(db_centre_activity)
-        
+        if commit:
+            db.commit()
+            db.refresh(db_centre_activity)
+
         logger.info(f"Created centre activity {db_centre_activity.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         return db_centre_activity
 
     except Exception as e:
+        if not commit:
+            # The caller owns the transaction, so it decides whether to roll back.
+            raise
         db.rollback()
         logger.error(f"Failed to create centre activity: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating Centre Activity: {str(e)}")

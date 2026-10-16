@@ -64,10 +64,19 @@ def create_activity(
     *,
     activity_in: schemas.ActivityCreate,
     current_user_info: dict,
-    correlation_id: str = None
+    correlation_id: str = None,
+    commit: bool = True,
 ) -> models.Activity:
+    """Create an Activity and its outbox event.
 
-    # duplicate‐title check 
+    commit=False leaves the transaction open and the caller owns it, so a larger
+    operation can write an Activity and something else atomically - applying an
+    activity template needs exactly that. The row is still flushed, so its id is
+    available to the caller. Errors are re-raised without rolling back, because
+    a caller holding the transaction has to decide that.
+    """
+
+    # duplicate‐title check
     existing = (
         db.query(models.Activity)
           .filter(
@@ -138,13 +147,17 @@ def create_activity(
         )
 
         # 4. Commit both activity and outbox event atomically
-        db.commit()
-        db.refresh(obj)
-        
+        if commit:
+            db.commit()
+            db.refresh(obj)
+
         logger.info(f"Created activity {obj.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         return obj
 
     except Exception as e:
+        if not commit:
+            # The caller owns the transaction, so it decides whether to roll back.
+            raise
         db.rollback()
         logger.error(f"Failed to create activity: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
