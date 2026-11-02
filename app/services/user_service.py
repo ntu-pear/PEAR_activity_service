@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import logging
 from fastapi import HTTPException
 
+from app.ops_logging import outbound_headers
+
 load_dotenv()
 logger = logging.getLogger("uvicorn")
 
@@ -24,7 +26,7 @@ def user_login(username: str, password: str):
     }
     
     try:
-        response = requests.post(url, data=body, timeout=10)
+        response = requests.post(url, data=body, timeout=10, headers=outbound_headers() or None)
         
         if response.status_code != 200:
             logger.error(f"User login failed with status {response.status_code}: {response.text}")

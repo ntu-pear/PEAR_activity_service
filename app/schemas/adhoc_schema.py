@@ -1,6 +1,16 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+# The deployed app runs with TZ=Asia/Singapore (see k8s manifests), and
+# "today"/"this week" throughout the rest of this service (e.g. Routine's
+# start_date check) is implicitly evaluated in that same local time. A naive
+# start_date/end_date (no tzinfo) is assumed to be a local Singapore
+# wall-clock reading to match - NOT UTC - and is converted to UTC properly
+# rather than just relabelled, so the comparisons below are apples-to-apples
+# regardless of what tzinfo (or lack of it) the caller sent.
+SERVER_TZ = ZoneInfo("Asia/Singapore")
 
 class AdhocBase(BaseModel):
     old_centre_activity_id: int = Field(..., description="CentreActivity being replaced")
@@ -16,9 +26,11 @@ class ValidatedAdhoc(AdhocBase):
         sd = self.start_date
         ed = self.end_date
         if sd.tzinfo is None:
-            sd = sd.replace(tzinfo=timezone.utc)
+            sd = sd.replace(tzinfo=SERVER_TZ)
         if ed.tzinfo is None:
-            ed = ed.replace(tzinfo=timezone.utc)
+            ed = ed.replace(tzinfo=SERVER_TZ)
+        sd = sd.astimezone(timezone.utc)
+        ed = ed.astimezone(timezone.utc)
 
         if self.old_centre_activity_id == self.new_centre_activity_id:
             raise ValueError("Old centre activity ID and new centre activity ID must be different.")

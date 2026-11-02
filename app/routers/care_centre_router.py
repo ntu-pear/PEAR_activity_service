@@ -19,7 +19,7 @@ def create_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create a Care Centre."
@@ -47,7 +47,7 @@ def list_care_centres(
     limit: int = 100,
     include_deleted: bool = False,
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view Care Centres."
@@ -65,14 +65,31 @@ def get_care_centre_by_id(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
     include_deleted: bool = False,
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this Care Centre."
         )
-    
+
     care_centre = crud.get_care_centre_by_id(db, care_centre_id, include_deleted=include_deleted)
     return care_centre
+
+@router.get(
+        "/{care_centre_id}/working_hours",
+        summary="Get Care Centre Working Hours",
+        description="Get only the working hours of a Care Centre. Unauthenticated on purpose "
+                     "(see note below) - does not expose name/address/contact/email/etc.",
+        response_model=schemas.CareCentreWorkingHoursResponse)
+def get_care_centre_working_hours(
+    care_centre_id: int,
+    db: Session = Depends(get_db),
+):
+    # NOTE: the Scheduler service calls this endpoint directly (REST, no JWT) to pull
+    # operating hours for scheduling. It has no user login of its own, so this route is
+    # intentionally left without an auth dependency. Keep it that way, and keep it narrow
+    # (working_hours only) - do not add fields here without checking the Scheduler's needs,
+    # and do not add auth here without coordinating a service-to-service auth story with it.
+    return crud.get_care_centre_by_id(db, care_centre_id, include_deleted=False)
 
 @router.put(
         "/",
@@ -84,7 +101,7 @@ def update_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update a Care Centre."
@@ -110,7 +127,7 @@ def delete_care_centre(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not (is_supervisor(current_user) or is_admin(current_user)):
+    if not (is_supervisor(current_user) or is_admin(current_user)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete a Care Centre."

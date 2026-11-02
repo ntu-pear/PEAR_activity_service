@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import logging
 
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 
@@ -63,10 +64,19 @@ def create_activity(
     *,
     activity_in: schemas.ActivityCreate,
     current_user_info: dict,
-    correlation_id: str = None
+    correlation_id: str = None,
+    commit: bool = True,
 ) -> models.Activity:
+    """Create an Activity and its outbox event.
 
-    # duplicate‐title check 
+    commit=False leaves the transaction open and the caller owns it, so a larger
+    operation can write an Activity and something else atomically - applying an
+    activity template needs exactly that. The row is still flushed, so its id is
+    available to the caller. Errors are re-raised without rolling back, because
+    a caller holding the transaction has to decide that.
+    """
+
+    # duplicate‐title check
     existing = (
         db.query(models.Activity)
           .filter(
@@ -137,13 +147,17 @@ def create_activity(
         )
 
         # 4. Commit both activity and outbox event atomically
-        db.commit()
-        db.refresh(obj)
-        
+        if commit:
+            db.commit()
+            db.refresh(obj)
+
         logger.info(f"Created activity {obj.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         return obj
 
     except Exception as e:
+        if not commit:
+            # The caller owns the transaction, so it decides whether to roll back.
+            raise
         db.rollback()
         logger.error(f"Failed to create activity: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
@@ -163,6 +177,24 @@ def update_activity_by_id(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Activity not found"
+        )
+
+    # duplicate-title check - same guard as create_activity, so a rename can't
+    # collide with another active Activity's title (the scheduler matches by
+    # title, so a silent collision here is a real scheduling hazard)
+    duplicate = (
+        db.query(models.Activity)
+          .filter(
+                models.Activity.title == activity_in.title,
+                models.Activity.is_deleted == False,
+                models.Activity.id != activity_id,
+          )
+          .first()
+    )
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Activity already exists"
         )
 
     # Generate correlation ID if not provided
@@ -233,7 +265,7 @@ def update_activity_by_id(
                 action=ActionType.UPDATE,
                 user=current_user_info.get("id"),
                 user_full_name=current_user_info.get("fullname"),
-                message=f"Updated activity: {obj.title}",
+                message=with_change_summary(f"Updated activity: {obj.title}", original, serialize_data(update_data)),
                 table="ACTIVITY",
                 entity_id=obj.id,
                 original_data=original,
@@ -277,17 +309,36 @@ def delete_activity_by_id(
     if not correlation_id:
         correlation_id = generate_correlation_id()
 
+    # Cascade: soft-delete any still-active CentreActivity configs for this
+    # Activity first, so a deleted Activity can never leave a live,
+    # schedule-affecting CentreActivity behind. Done before the Activity's own
+    # soft-delete so a failure here leaves the Activity untouched rather than
+    # deleted-but-still-configured.
+    from app.crud import centre_activity_crud
+    for centre_activity_id in centre_activity_crud.get_active_centre_activity_ids_by_activity_id(
+        db, activity_id=activity_id
+    ):
+        # No correlation_id passed on purpose: each cascaded delete needs its
+        # own. The scheduler's consumer treats a correlation_id it has already
+        # seen as a duplicate and drops the message, so reusing one here means
+        # only the first event of the cascade survives.
+        centre_activity_crud.delete_centre_activity(
+            db=db,
+            centre_activity_id=centre_activity_id,
+            current_user_info=current_user_info,
+        )
+
     try:
         # 1. Capture original data
         original = serialize_data(model_to_dict(obj))
 
         # 2. Perform soft delete
         timestamp = datetime.now()
-        
+
         obj.is_deleted = True
         obj.modified_by_id = current_user_info.get("id")
         obj.modified_date = timestamp
-        
+
         db.flush()
         
         # 3. Capture activity data AFTER soft delete to include updated modified_date

@@ -13,6 +13,7 @@ from app.crud.routine_crud import (
     delete_routine,
     _check_for_duplicate_routine,
     _validate_routine_data,
+    _validate_routine_against_working_hours,
 )
 from app.routers.routine_router import (
     create_routine as router_create_routine,
@@ -113,17 +114,19 @@ def test_routine_create_valid_bitmask_combinations(base_routine_data, day_of_wee
 
 # ===== CREATE tests =====
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_create_routine_success(
-    mock_get_activity, mock_get_patient,
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
     get_db_session_mock, mock_supervisor_user,
-    create_routine_schema, existing_activity
+    create_routine_schema, existing_activity, existing_care_centre
 ):
     """Creates routine when all validations pass"""
     mock_get_activity.return_value = existing_activity
     mock_get_patient.return_value = {"patientId": 1}
-    
+    mock_get_care_centre.return_value = existing_care_centre
+
     # No duplicate found
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
     
@@ -447,16 +450,18 @@ def test_delete_routine_not_found(get_db_session_mock, mock_supervisor_user):
 
 # ===== Outbox event tests =====
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_create_routine_publishes_routine_created_event(
-    mock_get_activity, mock_get_patient,
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
     get_db_session_mock, mock_supervisor_user,
-    create_routine_schema, existing_activity, mock_routine_outbox
+    create_routine_schema, existing_activity, existing_care_centre, mock_routine_outbox
 ):
     """create_routine writes a ROUTINE_CREATED outbox event in the same transaction"""
     mock_get_activity.return_value = existing_activity
     mock_get_patient.return_value = {"patientId": 1}
+    mock_get_care_centre.return_value = existing_care_centre
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
 
     create_routine(
@@ -529,16 +534,18 @@ def test_delete_routine_publishes_routine_deleted_event(
     get_db_session_mock.commit.assert_called_once()
 
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_create_routine_rolls_back_when_outbox_fails(
-    mock_get_activity, mock_get_patient,
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
     get_db_session_mock, mock_supervisor_user,
-    create_routine_schema, existing_activity, mock_routine_outbox
+    create_routine_schema, existing_activity, existing_care_centre, mock_routine_outbox
 ):
     """A failing outbox write aborts the whole create_routine transaction"""
     mock_get_activity.return_value = existing_activity
     mock_get_patient.return_value = {"patientId": 1}
+    mock_get_care_centre.return_value = existing_care_centre
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
     mock_routine_outbox.create_event.side_effect = Exception("outbox boom")
 
@@ -555,15 +562,17 @@ def test_create_routine_rolls_back_when_outbox_fails(
 
 # ===== Helper Function tests =====
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_validate_routine_data_success(
-    mock_get_activity, mock_get_patient,
-    get_db_session_mock, create_routine_schema, existing_activity
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
+    get_db_session_mock, create_routine_schema, existing_activity, existing_care_centre
 ):
     """Validates routine data with valid inputs"""
     mock_get_activity.return_value = existing_activity
     mock_get_patient.return_value = {"patientId": 1}
+    mock_get_care_centre.return_value = existing_care_centre
 
     # Should not raise any exception
     _validate_routine_data(
@@ -613,14 +622,16 @@ def test_validate_routine_data_activity_deleted(
     assert "deleted activity" in exc.value.detail
 
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_validate_routine_data_invalid_patient(
-    mock_get_activity, mock_get_patient,
-    get_db_session_mock, create_routine_schema, existing_activity
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
+    get_db_session_mock, create_routine_schema, existing_activity, existing_care_centre
 ):
     """Raises HTTPException with invalid patient ID"""
     mock_get_activity.return_value = existing_activity
+    mock_get_care_centre.return_value = existing_care_centre
     mock_get_patient.side_effect = HTTPException(status_code=404, detail="Patient not found")
 
     with pytest.raises(HTTPException) as exc:
@@ -634,14 +645,16 @@ def test_validate_routine_data_invalid_patient(
     assert "Invalid Patient ID" in exc.value.detail
 
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_validate_routine_data_patient_service_unavailable(
-    mock_get_activity, mock_get_patient,
-    get_db_session_mock, create_routine_schema, existing_activity
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
+    get_db_session_mock, create_routine_schema, existing_activity, existing_care_centre
 ):
     """Raises HTTPException when patient service is unavailable"""
     mock_get_activity.return_value = existing_activity
+    mock_get_care_centre.return_value = existing_care_centre
     mock_get_patient.side_effect = HTTPException(status_code=503, detail="Service unavailable")
 
     with pytest.raises(HTTPException) as exc:
@@ -655,15 +668,17 @@ def test_validate_routine_data_patient_service_unavailable(
     assert "Invalid Patient ID" in exc.value.detail
 
 
+@patch("app.crud.routine_crud.get_care_centre_by_id")
 @patch("app.crud.routine_crud.get_patient_by_id")
 @patch("app.crud.routine_crud.get_activity_by_id")
 def test_validate_routine_data_bearer_token_passed(
-    mock_get_activity, mock_get_patient,
-    get_db_session_mock, create_routine_schema, existing_activity
+    mock_get_activity, mock_get_patient, mock_get_care_centre,
+    get_db_session_mock, create_routine_schema, existing_activity, existing_care_centre
 ):
     """Validates bearer token is correctly passed"""
     mock_get_activity.return_value = existing_activity
     mock_get_patient.return_value = {"patientId": 1}
+    mock_get_care_centre.return_value = existing_care_centre
 
     bearer_token = "test-bearer-token-123"
 
@@ -679,6 +694,65 @@ def test_validate_routine_data_bearer_token_passed(
         bearer_token=bearer_token,
         patient_id=create_routine_schema.patient_id,
     )
+
+
+@patch("app.crud.routine_crud.get_care_centre_by_id")
+def test_validate_routine_against_working_hours_within_hours(
+    mock_get_care_centre, get_db_session_mock, create_routine_schema, existing_care_centre
+):
+    """Does not raise when the routine's day/time falls within working hours"""
+    mock_get_care_centre.return_value = existing_care_centre
+
+    # Should not raise - Monday 09:00-10:00 is within Monday's 09:00-17:00 window
+    _validate_routine_against_working_hours(db=get_db_session_mock, routine_data=create_routine_schema)
+
+
+@patch("app.crud.routine_crud.get_care_centre_by_id")
+def test_validate_routine_against_working_hours_before_opening(
+    mock_get_care_centre, get_db_session_mock, base_routine_data, existing_care_centre
+):
+    """Raises HTTPException when start_time is before the care centre opens"""
+    mock_get_care_centre.return_value = existing_care_centre
+    data = {**base_routine_data, "start_time": time(7, 0), "end_time": time(8, 0)}
+    schema = RoutineCreate(**data)
+
+    with pytest.raises(HTTPException) as exc:
+        _validate_routine_against_working_hours(db=get_db_session_mock, routine_data=schema)
+
+    assert exc.value.status_code == 400
+    assert "outside of working hours" in exc.value.detail["message"]
+
+
+@patch("app.crud.routine_crud.get_care_centre_by_id")
+def test_validate_routine_against_working_hours_after_closing(
+    mock_get_care_centre, get_db_session_mock, base_routine_data, existing_care_centre
+):
+    """Raises HTTPException when end_time is after the care centre closes"""
+    mock_get_care_centre.return_value = existing_care_centre
+    data = {**base_routine_data, "start_time": time(16, 30), "end_time": time(18, 0)}
+    schema = RoutineCreate(**data)
+
+    with pytest.raises(HTTPException) as exc:
+        _validate_routine_against_working_hours(db=get_db_session_mock, routine_data=schema)
+
+    assert exc.value.status_code == 400
+    assert "outside of working hours" in exc.value.detail["message"]
+
+
+@patch("app.crud.routine_crud.get_care_centre_by_id")
+def test_validate_routine_against_working_hours_centre_closed_that_day(
+    mock_get_care_centre, get_db_session_mock, base_routine_data, existing_care_centre
+):
+    """Raises HTTPException when the selected day the care centre is closed (Sunday, bit 64)"""
+    mock_get_care_centre.return_value = existing_care_centre
+    data = {**base_routine_data, "day_of_week": 64}
+    schema = RoutineCreate(**data)
+
+    with pytest.raises(HTTPException) as exc:
+        _validate_routine_against_working_hours(db=get_db_session_mock, routine_data=schema)
+
+    assert exc.value.status_code == 400
+    assert "closed on sunday" in exc.value.detail["message"].lower()
 
 
 def test_check_for_duplicate_routine_overlapping_times(get_db_session_mock, base_routine_data, existing_routine):

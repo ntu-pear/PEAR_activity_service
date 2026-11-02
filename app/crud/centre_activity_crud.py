@@ -1,9 +1,10 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 import app.models.centre_activity_model as models
 from app.models.care_centre_model import CareCentre
 import app.schemas.centre_activity_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
@@ -19,6 +20,26 @@ def _validate_activity_exists(db: Session, activity_id: int):
     activity = get_activity_by_id(db, activity_id=activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
+
+def _validate_care_centre_exists(db: Session, care_centre_id: Optional[int]):
+    """Validate that the care centre exists, when one was supplied.
+
+    The column is still nullable while existing rows are backfilled, so None is
+    accepted here. Once every environment has a value this should become a
+    required field and the None branch can go.
+    """
+    if care_centre_id is None:
+        return
+    care_centre = (
+        db.query(CareCentre)
+          .filter(
+              CareCentre.id == care_centre_id,
+              CareCentre.is_deleted == False,
+          )
+          .first()
+    )
+    if not care_centre:
+        raise HTTPException(status_code=404, detail="Care Centre not found")
 
 def _validate_compulsory_fixed_time_slots_unique(
     db: Session, 
@@ -146,12 +167,21 @@ def _validate_and_detect_changes(
     - For UPDATE: Validates duplicates AND detects changes (db_centre_activity provided)
     Returns changes dict for updates, None for creates, raises HTTPException if duplicate.
     """
-    # Define essential business fields
+    # Define essential business fields.
+    # care_centre_id is part of the key on purpose: the same activity configured
+    # at two different centres is two distinct rows, not a duplicate. On create
+    # it is only applied when the caller supplied one - see below.
+    #
+    # name is in the key for the same reason. fixed_time_slots is deliberately
+    # NOT an essential field, so without name a morning and an afternoon run of
+    # one activity - same flags, same durations, differing only in their slots -
+    # would be rejected as duplicates of each other.
     essential_fields = {
-        "activity_id", "is_compulsory", "is_fixed", "is_group",
-        "start_date", "end_date", "min_duration", "max_duration", "min_people_req"
+        "activity_id", "care_centre_id", "name", "is_compulsory", "is_fixed",
+        "is_group", "start_date", "end_date", "min_duration", "max_duration",
+        "min_people_req"
     }
-    
+
     # For CREATE operations - just check duplicates
     if db_centre_activity is None:
         query_fields = {
@@ -165,7 +195,16 @@ def _validate_and_detect_changes(
             "max_duration": centre_activity_data.max_duration,
             "min_people_req": centre_activity_data.min_people_req,
         }
-        
+
+        # Only narrow by these when the caller supplied one. Existing rows were
+        # backfilled, so filtering on IS NULL would match none of them and let a
+        # real duplicate through for every caller that has not started sending
+        # the field yet.
+        if centre_activity_data.care_centre_id is not None:
+            query_fields["care_centre_id"] = centre_activity_data.care_centre_id
+        if centre_activity_data.name is not None:
+            query_fields["name"] = centre_activity_data.name
+
         query = db.query(models.CentreActivity).filter_by(**query_fields)
         
         if exclude_id is not None:
@@ -259,11 +298,21 @@ def create_centre_activity(
         db: Session, 
         centre_activity_data: schemas.CentreActivityCreate, 
         current_user_info: dict,
-        correlation_id: str = None
+        correlation_id: str = None,
+        commit: bool = True,
         ):
+    """Create a Centre Activity and its outbox event.
+
+    commit=False leaves the transaction open and the caller owns it, so a larger
+    operation can write a Centre Activity and something else atomically -
+    applying an activity template creates an Activity and this together. Errors
+    are re-raised without rolling back, because a caller holding the transaction
+    has to decide that.
+    """
     
     # Validate dependencies and check for duplicates
     _validate_activity_exists(db, centre_activity_data.activity_id)
+    _validate_care_centre_exists(db, centre_activity_data.care_centre_id)
     _validate_and_detect_changes(db, centre_activity_data)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data)
     _validate_group_fixed_time_slots(centre_activity_data)
@@ -328,13 +377,17 @@ def create_centre_activity(
         )
 
         # 4. Commit both centre activity and outbox event atomically
-        db.commit()
-        db.refresh(db_centre_activity)
-        
+        if commit:
+            db.commit()
+            db.refresh(db_centre_activity)
+
         logger.info(f"Created centre activity {db_centre_activity.id} with outbox event {outbox_event.id} (correlation: {correlation_id})")
         return db_centre_activity
 
     except Exception as e:
+        if not commit:
+            # The caller owns the transaction, so it decides whether to roll back.
+            raise
         db.rollback()
         logger.error(f"Failed to create centre activity: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating Centre Activity: {str(e)}")
@@ -357,6 +410,20 @@ def get_centre_activity_by_id(
     if not db_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found")
     return db_centre_activity
+
+
+def get_active_centre_activity_ids_by_activity_id(db: Session, activity_id: int) -> List[int]:
+    """IDs of non-deleted CentreActivity rows for an Activity - used to cascade
+    a soft-delete of the Activity to its still-active schedule configs, so a
+    deleted Activity can never leave a live CentreActivity behind."""
+    return [
+        row.id for row in db.query(models.CentreActivity.id)
+        .filter(
+            models.CentreActivity.activity_id == activity_id,
+            models.CentreActivity.is_deleted == False,
+        )
+        .all()
+    ]
 
 
 def get_centre_activities(
@@ -398,6 +465,7 @@ def update_centre_activity(
     
     # Validate dependencies and check for duplicates (excluding current record)
     _validate_activity_exists(db, centre_activity_data.activity_id)
+    _validate_care_centre_exists(db, centre_activity_data.care_centre_id)
     _validate_compulsory_fixed_time_slots_unique(db, centre_activity_data, exclude_id=centre_activity_data.id)
     _validate_group_fixed_time_slots(centre_activity_data)
     _validate_time_slots(db, centre_activity_data)
@@ -468,7 +536,7 @@ def update_centre_activity(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Centre Activity: {activity_name}",
+            message=with_change_summary(f"Updated Centre Activity: {activity_name}", original_data_dict, updated_data_dict),
             table="CENTRE_ACTIVITY",
             entity_id=db_centre_activity.id,
             original_data=original_data_dict,
@@ -504,10 +572,39 @@ def delete_centre_activity(
     
     if not db_centre_activity:
         raise HTTPException(status_code=404, detail="Centre Activity not found or deleted")
-    
+
     # Generate correlation ID if not provided
     if not correlation_id:
         correlation_id = generate_correlation_id()
+
+    # Cascade: soft-delete any still-active preference/exclusion rows for this
+    # CentreActivity first, so neither is left pointing at a deleted config.
+    # Done before the CentreActivity's own soft-delete so a failure here
+    # leaves it untouched rather than deleted-but-still-referenced.
+    from app.crud import centre_activity_preference_crud, centre_activity_exclusion_crud
+    for preference_id in centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id(
+        db, centre_activity_id=centre_activity_id
+    ):
+        # No correlation_id passed on purpose - see note below the loops.
+        centre_activity_preference_crud.delete_centre_activity_preference_by_id(
+            centre_activity_preference_id=preference_id,
+            db=db,
+            current_user_info=current_user_info,
+        )
+    for exclusion_id in centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id(
+        db, centre_activity_id=centre_activity_id
+    ):
+        # No correlation_id passed on purpose: each cascaded delete needs its
+        # own. The scheduler's consumer treats a correlation_id it has already
+        # seen as a duplicate and drops the message, so reusing one here meant
+        # the cascaded child events were processed and this CentreActivity's
+        # own CENTRE_ACTIVITY_DELETED - published last - was silently dropped,
+        # leaving the row deleted here but still live in REF_CENTRE_ACTIVITY.
+        centre_activity_exclusion_crud.delete_centre_activity_exclusion(
+            db=db,
+            exclusion_id=exclusion_id,
+            current_user_info=current_user_info,
+        )
 
     try:
         # 1. Capture original data

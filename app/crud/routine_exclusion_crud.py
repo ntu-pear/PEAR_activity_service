@@ -5,6 +5,7 @@ from app.models.routine_model import Routine
 import app.models.routine_exclusion_model as models
 import app.schemas.routine_exclusion_schema as schemas
 from app.crud.routine_crud import get_routine_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from app.services.patient_service import get_patient_name
 
@@ -185,7 +186,7 @@ def update_routine_exclusion(
         action=ActionType.UPDATE,
         user=current_user_info.get("id"),
         user_full_name=current_user_info.get("fullname"),
-        message=f"Updated Routine Exclusion for {patient_name}",
+        message=with_change_summary(f"Updated Routine Exclusion for {patient_name}", original_data_dict, updated_data_dict),
         table="ROUTINE_EXCLUSION",
         entity_id=db_exclusion.id,
         original_data=original_data_dict,

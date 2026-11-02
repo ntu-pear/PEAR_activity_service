@@ -12,6 +12,7 @@ from app.crud.centre_activity_crud import (
     get_centre_activities,
     update_centre_activity,
     delete_centre_activity,
+    _validate_care_centre_exists,
 )
 
 
@@ -496,15 +497,67 @@ def test_delete_centre_activity_success(get_db_session_mock, mock_supervisor_use
     """Deletes when Centre Activity record exists and is_deleted is false"""
     get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity    # Centre Activity record exists
 
-    result = delete_centre_activity(
-        db=get_db_session_mock,
-        centre_activity_id=existing_centre_activity.id,
-        current_user_info=mock_supervisor_user
-    )
-    
+    with patch(
+        "app.crud.centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id",
+        return_value=[],
+    ), patch(
+        "app.crud.centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id",
+        return_value=[],
+    ):
+        result = delete_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_id=existing_centre_activity.id,
+            current_user_info=mock_supervisor_user
+        )
+
     assert result.id == existing_centre_activity.id
     assert result.is_deleted == True
     assert result.modified_by_id == mock_supervisor_user.get("id")
+
+def test_delete_centre_activity_cascades_to_preferences_and_exclusions(get_db_session_mock, mock_supervisor_user,
+                                existing_centre_activity):
+    """Deleting a CentreActivity should soft-delete its still-active preference
+    and exclusion rows too, so neither is left pointing at a deleted config."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = existing_centre_activity
+
+    with patch(
+        "app.crud.centre_activity_preference_crud.get_active_preference_ids_by_centre_activity_id",
+        return_value=[101, 102],
+    ) as mock_get_pref_ids, patch(
+        "app.crud.centre_activity_preference_crud.delete_centre_activity_preference_by_id"
+    ) as mock_delete_pref, patch(
+        "app.crud.centre_activity_exclusion_crud.get_active_exclusion_ids_by_centre_activity_id",
+        return_value=[201],
+    ) as mock_get_excl_ids, patch(
+        "app.crud.centre_activity_exclusion_crud.delete_centre_activity_exclusion"
+    ) as mock_delete_excl:
+        result = delete_centre_activity(
+            db=get_db_session_mock,
+            centre_activity_id=existing_centre_activity.id,
+            current_user_info=mock_supervisor_user
+        )
+
+    mock_get_pref_ids.assert_called_once_with(get_db_session_mock, centre_activity_id=existing_centre_activity.id)
+    mock_get_excl_ids.assert_called_once_with(get_db_session_mock, centre_activity_id=existing_centre_activity.id)
+    assert mock_delete_pref.call_count == 2
+    deleted_pref_ids = {call.kwargs["centre_activity_preference_id"] for call in mock_delete_pref.call_args_list}
+    assert deleted_pref_ids == {101, 102}
+    mock_delete_excl.assert_called_once_with(
+        db=get_db_session_mock,
+        exclusion_id=201,
+        current_user_info=mock_supervisor_user,
+    )
+
+    # Cascaded deletes must NOT inherit this delete's correlation_id. The
+    # scheduler's consumer drops any message whose correlation_id it has
+    # already processed, so sharing one across a cascade meant the children
+    # were applied and this CentreActivity's own CENTRE_ACTIVITY_DELETED -
+    # published last - was silently discarded.
+    for call in list(mock_delete_pref.call_args_list) + list(mock_delete_excl.call_args_list):
+        assert "correlation_id" not in call.kwargs, (
+            "cascaded delete must not reuse the parent's correlation_id"
+        )
+    assert result.is_deleted == True
 
 def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervisor_user,
                                 existing_centre_activity):
@@ -522,3 +575,161 @@ def test_delete_centre_activity_not_found_fail(get_db_session_mock, mock_supervi
     assert exc.value.detail == "Centre Activity not found or deleted"
 
     
+
+#===== care_centre_id =========
+def test_validate_care_centre_exists_accepts_none(get_db_session_mock):
+    """care_centre_id is nullable while existing rows are backfilled, so a create
+    without one must be allowed and must not hit the database at all."""
+    _validate_care_centre_exists(get_db_session_mock, None)
+    get_db_session_mock.query.assert_not_called()
+
+def test_validate_care_centre_exists_rejects_missing(get_db_session_mock):
+    """A care_centre_id pointing at a missing or soft-deleted Care Centre is a 404,
+    so a Centre Activity can never reference a centre that is not there."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = None
+
+    with pytest.raises(HTTPException) as exc:
+        _validate_care_centre_exists(get_db_session_mock, 99)
+
+    assert exc.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc.value.detail == "Care Centre not found"
+
+def test_validate_care_centre_exists_accepts_live_centre(get_db_session_mock):
+    """An existing, non-deleted Care Centre passes."""
+    get_db_session_mock.query.return_value.filter.return_value.first.return_value = MagicMock()
+    _validate_care_centre_exists(get_db_session_mock, 1)
+
+def test_centre_activity_schema_care_centre_id_defaults_to_none(base_centre_activity_data):
+    """Existing callers that do not send care_centre_id keep working."""
+    assert "care_centre_id" not in base_centre_activity_data
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.care_centre_id is None
+
+def test_centre_activity_schema_round_trips_care_centre_id(base_centre_activity_data):
+    """When supplied, care_centre_id survives into the model dump that builds the row."""
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "care_centre_id": 3})
+    assert schema.care_centre_id == 3
+    assert schema.model_dump()["care_centre_id"] == 3
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_omits_care_centre_when_not_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """A create without care_centre_id must not filter on care_centre_id IS NULL.
+
+    Existing rows were backfilled to a centre, so narrowing the duplicate query
+    to NULL would match none of them and let a genuine duplicate through for
+    every caller that has not started sending the field.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.care_centre_id is None
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert "care_centre_id" not in kwargs
+    assert kwargs["activity_id"] == schema.activity_id
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_care_centre_exists")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_uses_care_centre_when_supplied(
+    mock_ts, mock_compulsory, mock_care_centre, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """When a centre is supplied it narrows the duplicate query, so the same
+    activity configured at two different centres is not treated as a duplicate."""
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "care_centre_id": 2})
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert kwargs["care_centre_id"] == 2
+
+
+#===== name =========
+def test_centre_activity_schema_name_defaults_to_none(base_centre_activity_data):
+    """Existing callers that do not send a name keep working."""
+    assert "name" not in base_centre_activity_data
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.name is None
+
+def test_centre_activity_schema_round_trips_name(base_centre_activity_data):
+    """When supplied, name survives into the model dump that builds the row."""
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "name": "Breathing AM"})
+    assert schema.name == "Breathing AM"
+    assert schema.model_dump()["name"] == "Breathing AM"
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_omits_name_when_not_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """A create without a name must not filter on name IS NULL.
+
+    Existing rows were backfilled from the parent activity title, so narrowing
+    the duplicate query to NULL would match none of them and let a genuine
+    duplicate through for every caller that has not started sending the field.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**base_centre_activity_data)
+    assert schema.name is None
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert "name" not in kwargs
+
+@patch("app.crud.centre_activity_crud.get_activity_by_id")
+@patch("app.crud.centre_activity_crud._validate_compulsory_fixed_time_slots_unique")
+@patch("app.crud.centre_activity_crud._validate_time_slots")
+def test_create_duplicate_check_uses_name_when_supplied(
+    mock_ts, mock_compulsory, mock_get_activity, get_db_session_mock,
+    mock_supervisor_user, base_centre_activity_data, existing_activity
+):
+    """Two runs of one activity differing only by name and time slots are
+    distinct rows, not duplicates.
+
+    fixed_time_slots is not an essential field, so without name in the key a
+    morning and an afternoon session of the same activity - same flags, same
+    durations, same dates - would collide.
+    """
+    mock_get_activity.return_value = existing_activity
+    get_db_session_mock.query.return_value.filter_by.return_value.first.return_value = None
+    get_db_session_mock.refresh.return_value = existing_activity
+    schema = CentreActivityCreate(**{**base_centre_activity_data, "name": "Breathing PM"})
+
+    create_centre_activity(
+        db=get_db_session_mock,
+        centre_activity_data=schema,
+        current_user_info=mock_supervisor_user,
+    )
+
+    kwargs = get_db_session_mock.query.return_value.filter_by.call_args.kwargs
+    assert kwargs["name"] == "Breathing PM"

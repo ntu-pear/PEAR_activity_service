@@ -4,13 +4,14 @@ import json
 from enum import Enum
 from typing import Optional
 from sqlalchemy.orm import DeclarativeMeta
+from .reference_names import add_reference_names
 
 class ActionType(Enum):
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
 
-EXCLUDED_KEYS = {"CreatedById", "ModifiedById", "ModifiedDate", "CreatedDate", "IsDeleted", "isDeleted"}
+EXCLUDED_KEYS = {"ModifiedDate", "CreatedDate", "IsDeleted", "isDeleted"}
 
 def filter_data(data: dict) -> dict:
     """Removes unwanted keys from the given dictionary."""
@@ -56,7 +57,10 @@ def log_crud_action(
         original_data = None
     elif action == ActionType.DELETE:
         updated_data = None
-        
+
+    original_data = add_reference_names(original_data)
+    updated_data = add_reference_names(updated_data)
+
     log_data = {
     "entity_id": entity_id,
     "original_data": filter_data(original_data),

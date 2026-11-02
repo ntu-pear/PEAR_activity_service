@@ -6,6 +6,7 @@ from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.services.patient_service import get_patient_by_id
 from app.services.patient_service import get_patient_name
 from app.services.outbox_service import get_outbox_service, generate_correlation_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from typing import Any, Dict, List
@@ -261,7 +262,7 @@ def update_adhoc(
             action=ActionType.UPDATE,
             user=current_user_id,
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Adhoc change: {old_activity_name} -> {new_activity_name} for patient: {patient_name}",
+            message=with_change_summary(f"Updated Adhoc change: {old_activity_name} -> {new_activity_name} for patient: {patient_name}", original, updated),
             table="ADHOC",
             entity_id=db_adhoc.id,
             original_data=original,

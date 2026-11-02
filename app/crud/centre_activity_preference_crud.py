@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 import app.models.centre_activity_preference_model as models
 import app.schemas.centre_activity_preference_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
-from tests.conftest import existing_centre_activity_preference
 from ..services.outbox_service import get_outbox_service, generate_correlation_id
 from fastapi import HTTPException
 from datetime import datetime
@@ -263,6 +263,20 @@ def create_centre_activity_preference(
         logger.error(f"Failed to create centre activity preference: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
 
+def get_active_preference_ids_by_centre_activity_id(db: Session, centre_activity_id: int) -> list:
+    """IDs of non-deleted preference rows for a CentreActivity - used to cascade
+    a soft-delete of the CentreActivity to its still-active preferences, so
+    none are left pointing at a deleted config."""
+    return [
+        row.id for row in db.query(models.CentreActivityPreference.id)
+        .filter(
+            models.CentreActivityPreference.centre_activity_id == centre_activity_id,
+            models.CentreActivityPreference.is_deleted == False,
+        )
+        .all()
+    ]
+
+
 def get_centre_activity_preference_by_id(
         db: Session, 
         centre_activity_preference_id: int,
@@ -415,7 +429,7 @@ def update_centre_activity_preference_by_id(
             action=ActionType.UPDATE,
             user=modified_by_id,
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated activity preference: {activity_name} marked as {preference_type} for {patient_name}",
+            message=with_change_summary(f"Updated activity preference: {activity_name} marked as {preference_type} for {patient_name}", original_data_dict, updated_data_dict),
             table="CENTRE_ACTIVITY_PREFERENCE",
             entity_id=existing_centre_activity_preference.id,
             original_data=original_data_dict,

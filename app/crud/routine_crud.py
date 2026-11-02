@@ -6,8 +6,11 @@ from datetime import datetime
 import app.models.routine_model as models
 import app.schemas.routine_schema as schemas
 from app.crud.activity_crud import get_activity_by_id
+from app.crud.care_centre_crud import get_care_centre_by_id
+from app.crud.centre_activity_availability_crud import _get_days_from_bitmask
 from app.services.patient_service import get_patient_by_id, get_patient_name
 from app.services.outbox_service import get_outbox_service, generate_correlation_id
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 
 logger = logging.getLogger(__name__)
@@ -53,14 +56,40 @@ def _check_for_duplicate_routine(
             detail="A routine with overlapping days and times already exists for this patient and activity."
         )
 
+def _validate_routine_against_working_hours(db: Session, routine_data: schemas.RoutineCreate):
+    """
+    Validates that the routine's day(s) and time fall within the care centre's working
+    hours. Mirrors the same check already enforced for CentreActivity.fixed_time_slots
+    and CentreActivityAvailability - Routine was the one place this wasn't checked yet.
+    Only care centre with id 1 is being used for now (same limitation as the other checks).
+    """
+    care_centre_info = get_care_centre_by_id(db, 1)
+
+    selected_days = _get_days_from_bitmask(routine_data.day_of_week)
+    for day_of_the_week in selected_days:
+        working_hours = care_centre_info.working_hours.get(day_of_the_week)
+
+        if not working_hours or not working_hours.get("open") or not working_hours.get("close"):
+            raise HTTPException(status_code=400,
+                detail={"message": f"The selected Routine timing is outside of working hours. Care centre is closed on {day_of_the_week}."})
+
+        opening_hours = datetime.strptime(working_hours["open"], "%H:%M").time()
+        closing_hours = datetime.strptime(working_hours["close"], "%H:%M").time()
+        if routine_data.start_time < opening_hours or routine_data.end_time > closing_hours:
+            raise HTTPException(status_code=400,
+                detail={"message": "The selected Routine timing is outside of working hours. Care centre working hours on "
+                                    + f"{day_of_the_week} is from {opening_hours} to {closing_hours}."})
+
 def _validate_routine_data(db: Session, routine_data: schemas.RoutineCreate, bearer_token: str = None):
     activity = get_activity_by_id(db, activity_id=routine_data.activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail=f"Activity with ID {routine_data.activity_id} not found")
-    
+
     if activity.is_deleted:
         raise HTTPException(status_code=400, detail="Cannot create routine for a deleted activity")
-    
+
+    _validate_routine_against_working_hours(db, routine_data)
+
     try:
         get_patient_by_id(
             require_auth=True,
@@ -268,7 +297,7 @@ def update_routine(
             action=ActionType.UPDATE,
             user=current_user_info.get("id"),
             user_full_name=current_user_info.get("fullname"),
-            message=f"Updated Routine: {routine_data.name} ({activity_name}) for {patient_name}",
+            message=with_change_summary(f"Updated Routine: {routine_data.name} ({activity_name}) for {patient_name}", original_data_dict, serialize_data(model_to_dict(db_routine))),
             table="ROUTINE",
             entity_id=db_routine.id,
             original_data=original_data_dict,

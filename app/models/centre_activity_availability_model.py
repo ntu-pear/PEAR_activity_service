@@ -19,4 +19,4 @@ class CentreActivityAvailability(Base):
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
 
-    centre_activity = relationship("CentreActivity")
+    centre_activity = relationship("CentreActivity", lazy="joined")

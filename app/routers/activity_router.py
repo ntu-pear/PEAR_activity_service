@@ -19,7 +19,7 @@ def create_activity(
     db: Session = Depends(get_db),
     current_user: JWTPayload = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create an Activity."
@@ -78,7 +78,7 @@ def update_activity_by_id(
     db: Session = Depends(get_db),
     current_user: JWTPayload = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update an Activity."
@@ -104,7 +104,7 @@ def delete_activity_by_id(
     db: Session = Depends(get_db),
     current_user: JWTPayload = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete an Activity."

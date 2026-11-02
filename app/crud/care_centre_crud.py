@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 import app.models.care_centre_model as models
 import app.schemas.care_centre_schema as schemas
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import log_crud_action, ActionType, serialize_data, model_to_dict
 from fastapi import HTTPException
 from datetime import datetime, time
@@ -155,7 +156,7 @@ def update_care_centre(
         action=ActionType.UPDATE,
         user=modified_by_id,
         user_full_name=current_user_info.get("fullname"),
-        message=f"Updated Care Centre: {db_care_centre.name}",
+        message=with_change_summary(f"Updated Care Centre: {db_care_centre.name}", original_data_dict, updated_data_dict),
         table="CARE_CENTRE",
         entity_id=db_care_centre.id,
         original_data=original_data_dict,

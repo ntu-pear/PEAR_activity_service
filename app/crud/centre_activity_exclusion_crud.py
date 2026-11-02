@@ -5,6 +5,7 @@ import app.models.centre_activity_exclusion_model as models
 import app.schemas.centre_activity_exclusion_schema as schemas
 from app.crud.centre_activity_crud import get_centre_activity_by_id
 from app.services.patient_service import get_patient_by_id, get_patient_name
+from app.logger.change_summary import with_change_summary
 from app.logger.logger_utils import (
     log_crud_action, ActionType, serialize_data, model_to_dict
 )
@@ -32,6 +33,20 @@ def _exclusion_to_dict(exclusion) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error converting exclusion to dict: {str(e)}")
         return {}
+
+def get_active_exclusion_ids_by_centre_activity_id(db: Session, centre_activity_id: int) -> List[int]:
+    """IDs of non-deleted exclusion rows for a CentreActivity - used to cascade
+    a soft-delete of the CentreActivity to its still-active exclusions, so
+    none are left pointing at a deleted config."""
+    return [
+        row.id for row in db.query(models.CentreActivityExclusion.id)
+        .filter(
+            models.CentreActivityExclusion.centre_activity_id == centre_activity_id,
+            models.CentreActivityExclusion.is_deleted == False,
+        )
+        .all()
+    ]
+
 
 def get_centre_activity_exclusion_by_id(
     db: Session,
@@ -265,7 +280,7 @@ def update_centre_activity_exclusion(
                 action=ActionType.UPDATE,
                 user=modified_by_id,
                 user_full_name=current_user_info.get("fullname"),
-                message=f"Updated activity exclusion: {activity_name}",
+                message=with_change_summary(f"Updated activity exclusion: {activity_name}", original_data_dict, updated_data_dict),
                 table="CENTRE_ACTIVITY_EXCLUSION",
                 entity_id=db_obj.id,
                 original_data=original_data_dict,

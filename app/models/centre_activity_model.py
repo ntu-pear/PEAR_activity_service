@@ -9,6 +9,20 @@ class CentreActivity(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     activity_id = Column(Integer, ForeignKey("ACTIVITY.id"), nullable=False)
 
+    # What this configuration is called, e.g. "Breathing AM" and "Breathing PM"
+    # under one "Breathing" activity. Without it the only name a centre activity
+    # has is its parent activity's title, so two variants have to be two
+    # separate activities.
+    #
+    # Nullable because rows created before this column existed have no name;
+    # read it as `name or activity.title`. Tighten to nullable=False once every
+    # environment has been backfilled.
+    name = Column(String(200), nullable=True)
+
+    # Nullable because rows created before this column existed have no centre.
+    # Tighten to nullable=False once every environment has been backfilled.
+    care_centre_id = Column(Integer, ForeignKey("CARE_CENTRE.id"), nullable=True)
+
     is_deleted = Column(Boolean, nullable=False, default=False)
     is_compulsory = Column(Boolean, nullable=False, default=True)
     is_fixed = Column(Boolean, nullable=False, default=False)
@@ -29,4 +43,4 @@ class CentreActivity(Base):
     created_by_id = Column(String, nullable=False)
     modified_by_id = Column(String, nullable=True)
 
-    activity = relationship("Activity")
+    activity = relationship("Activity", lazy="joined")

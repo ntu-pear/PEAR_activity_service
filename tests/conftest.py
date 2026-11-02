@@ -1,13 +1,21 @@
 import pytest
-from unittest.mock import MagicMock, create_autospec
+from unittest.mock import MagicMock, create_autospec, patch
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta, date, time
+from app.messaging.producer_manager import ProducerManager
 from app.models.activity_model import Activity
 from app.models.centre_activity_model import CentreActivity
 from app.models.care_centre_model import CareCentre
 from app.models.centre_activity_availability_model import CentreActivityAvailability
 from app.schemas.centre_activity_availability_schema import CentreActivityAvailabilityCreate, CentreActivityAvailabilityUpdate
 from app.auth.jwt_utils import JWTPayload
+
+
+@pytest.fixture(autouse=True)
+def _no_producer_threads():
+    """Auto-mock ProducerManager.start_producer so tests never spawn real producer/watchdog threads or hit the broker."""
+    with patch.object(ProducerManager, "start_producer", lambda self: None):
+        yield
 
 
 @pytest.fixture()

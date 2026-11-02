@@ -16,7 +16,7 @@ def create_exclusion(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Supervisors may create exclusions",
@@ -36,7 +36,7 @@ def list_exclusions(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Supervisors may view exclusions",
@@ -49,7 +49,7 @@ def get_exclusion(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Supervisors may view exclusions",
@@ -63,7 +63,7 @@ def update_exclusion(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Supervisors may update exclusions",
@@ -82,7 +82,7 @@ def delete_exclusion(
     user_and_token: Tuple[Optional[JWTPayload], Optional[str]] = Depends(get_user_and_token),
 ):
     current_user, token = user_and_token
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Supervisors may delete exclusions",

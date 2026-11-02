@@ -19,7 +19,7 @@ def create_centre_activity(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to create a Centre Activity."
@@ -76,7 +76,7 @@ def update(
     db: Session = Depends(get_db),
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update a Centre Activity."
@@ -105,7 +105,7 @@ def delete(
     current_user: Optional[JWTPayload] = Depends(get_current_user),
 ):
     
-    if current_user and not is_supervisor(current_user):
+    if not is_supervisor(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete a Centre Activity."

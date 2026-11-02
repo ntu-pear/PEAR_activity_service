@@ -152,6 +152,7 @@ class CentreActivitySyncScript(BaseScript):
             # Manually extract attributes to avoid relationship issues
             centre_activity_dict['id'] = centre_activity.id
             centre_activity_dict['activity_id'] = centre_activity.activity_id
+            centre_activity_dict['name'] = centre_activity.name
             centre_activity_dict['is_deleted'] = centre_activity.is_deleted
             centre_activity_dict['is_compulsory'] = centre_activity.is_compulsory
             centre_activity_dict['is_fixed'] = centre_activity.is_fixed

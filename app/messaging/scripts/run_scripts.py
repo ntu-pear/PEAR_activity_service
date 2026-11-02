@@ -22,6 +22,11 @@ def run_activity_exclusion_sync():
     from messaging.scripts.activity_exclusion_sync_script import main
     main()
 
+def run_centre_activity_availability_sync():
+    """Run the centre activity availability sync script"""
+    from messaging.scripts.centre_activity_availability_sync_script import main
+    main()
+
 def run_activity_preference_sync():
     """Run the activity preference sync script"""
     from messaging.scripts.activity_preference_sync_script import main
@@ -40,6 +45,7 @@ def list_scripts():
     print("  activity-preference-sync    - Emit PREFERENCE_CREATED events for existing activity preferences")
     print("  activity-recommendation-sync - Emit RECOMMENDATION_CREATED events for existing activity recommendations")
     print("  centre-activity-sync        - Emit CENTRE_ACTIVITY_CREATED events for existing centre activities")
+    print("  centre-activity-availability-sync - Emit CENTRE_ACTIVITY_AVAILABILITY_CREATED events for existing availabilities")
     print("")
     print("Usage:")
     print("  python run_scripts.py activity-sync --help")
@@ -66,6 +72,8 @@ def main():
         run_activity_recommendation_sync()
     elif script_name == "centre-activity-sync":
         run_centre_activity_sync()
+    elif script_name == "centre-activity-availability-sync":
+        run_centre_activity_availability_sync()
     elif script_name == "list":
         list_scripts()
     else:
