@@ -5,7 +5,7 @@ import json
 import logging
 import uuid
 
-from ..models.outbox_model import OutboxEvent, OutboxStatus
+from ..models.outbox_model import MAX_RETRY_ATTEMPTS, OutboxEvent, OutboxStatus
 from ..messaging.producer_manager import get_producer_manager
 
 logger = logging.getLogger(__name__)
@@ -92,11 +92,15 @@ class OutboxService:
         
         db = SessionLocal()
         try:
-            # Get pending events - ORDERED BY created_at for proper sequencing
+            # Pick up anything not yet delivered that still has attempts left:
+            # never-tried (PENDING) and previously-failed (FAILED) alike.
+            # ABANDONED is excluded, which is what keeps this from replaying
+            # events that were already given up on.
+            # ORDERED BY created_at for proper sequencing.
             pending_events = db.query(OutboxEvent).filter(
-                OutboxEvent.status == OutboxStatus.PENDING
+                OutboxEvent.status.in_([OutboxStatus.PENDING, OutboxStatus.FAILED])
             ).filter(
-                OutboxEvent.retry_count < 3
+                OutboxEvent.retry_count < MAX_RETRY_ATTEMPTS
             ).order_by(OutboxEvent.created_at.asc()).limit(batch_size).all()  # ASC for sequential processing
             
             # logger.info(f"Found {len(pending_events)} pending events to process")
@@ -158,24 +162,38 @@ class OutboxService:
             pending = db.query(OutboxEvent).filter(OutboxEvent.status == OutboxStatus.PENDING).count()
             published = db.query(OutboxEvent).filter(OutboxEvent.status == OutboxStatus.PUBLISHED).count()
             failed = db.query(OutboxEvent).filter(OutboxEvent.status == OutboxStatus.FAILED).count()
-            
+            abandoned = db.query(OutboxEvent).filter(OutboxEvent.status == OutboxStatus.ABANDONED).count()
+
             return {
                 'total': total,
                 'pending': pending,
                 'published': published,
-                'failed': failed
+                'failed': failed,        # will retry on their own
+                'abandoned': abandoned   # out of attempts, nothing will retry these
             }
         finally:
             db.close()
     
     def retry_failed_events(self) -> int:
-        """Reset all failed events for retry"""
+        """Reset abandoned events so the publisher picks them up again.
+
+        FAILED events retry by themselves now, so this is only for the
+        ABANDONED ones that have run out of attempts.
+
+        Be careful with it. It replays the payload as it was captured at
+        the time, not the current state of the row, so an old event can
+        push stale values over newer ones. When the aim is to resync a
+        consumer, prefer the drift path in messaging/drift_consumer.py,
+        which republishes from the database as it stands today.
+        """
         from ..database import SessionLocal
-        
+
         db = SessionLocal()
         try:
-            failed_events = db.query(OutboxEvent).filter(OutboxEvent.status == OutboxStatus.FAILED).all()
-            
+            failed_events = db.query(OutboxEvent).filter(
+                OutboxEvent.status == OutboxStatus.ABANDONED
+            ).all()
+
             for event in failed_events:
                 event.status = OutboxStatus.PENDING
                 event.retry_count = 0

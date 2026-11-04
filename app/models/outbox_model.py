@@ -8,11 +8,16 @@ import json
 from typing import Dict, Any
 
 
+# How many publish attempts an event gets before it is given up on.
+MAX_RETRY_ATTEMPTS = 3
+
+
 class OutboxStatus(str, Enum):
     """Status enumeration"""
     PENDING = "PENDING"
     PUBLISHED = "PUBLISHED"
-    FAILED = "FAILED"
+    FAILED = "FAILED"        # publish failed, attempts remain, will be retried
+    ABANDONED = "ABANDONED"  # out of attempts, needs a human
 
 
 class OutboxEvent(Base):
@@ -53,14 +58,25 @@ class OutboxEvent(Base):
         self.error_message = None
 
     def mark_failed(self, error: str) -> None:
-        """Mark as failed with error message"""
-        self.status = OutboxStatus.FAILED
+        """Record a failed publish attempt.
+
+        FAILED means "failed but retryable". Once the attempts are used up
+        the event becomes ABANDONED, which the publisher skips.
+
+        This distinction matters: the publisher selects on status, so if
+        every failure landed in one terminal state a single bad attempt
+        would strand the event permanently. That is what happened to 42
+        events between April and August 2026, each with retry_count = 1.
+        """
         self.retry_count += 1
         self.error_message = error[:1000] if error else None
+        self.status = (
+            OutboxStatus.FAILED if self.can_retry() else OutboxStatus.ABANDONED
+        )
 
     def can_retry(self) -> bool:
-        """Check if event can be retried (max 3 attempts)"""
-        return self.retry_count < 3
+        """Whether any publish attempts remain."""
+        return self.retry_count < MAX_RETRY_ATTEMPTS
 
     def __repr__(self):
         return f"<OutboxEvent(id={self.id}, type={self.event_type}, correlation_id={self.correlation_id})>"

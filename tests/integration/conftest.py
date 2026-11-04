@@ -27,6 +27,50 @@ from app.models.outbox_model import OutboxEvent
 from app.schemas.centre_activity_schema import CentreActivityCreate
 
 # ============================================================================
+# REFUSE TO RUN AGAINST A SHARED DATABASE
+# ============================================================================
+
+# These tests write real rows: setup_test_database is session-scoped and
+# autouse, so prerequisite data is inserted the moment the session starts,
+# and the per-test cleanup can be switched off further down this file.
+#
+# app.database reads DB_DATABASE from .env, which on a developer machine
+# often points at a deployed environment so the local service can be run
+# against it. That is fine for running the service. It is not fine for
+# running these tests: doing so once already left fixture rows behind in
+# activity_service_dev, which is the database the production front end
+# reads. Those rows are still visible to supervisors today.
+#
+# So check the name before anything connects, and refuse rather than write.
+PROTECTED_DATABASES = {
+    "activity_service_dev",       # production, despite the name
+    "activity_service_staging",
+    "activity_service_dev_backup",
+}
+
+
+def _refuse_shared_database():
+    """Abort the run if DB_DATABASE names a shared environment.
+
+    Deliberately checked at import time rather than in pytest_configure:
+    that hook is only honoured in the rootdir conftest, not in one nested
+    under tests/integration, so it would never fire from here.
+    """
+    import os
+
+    database = (os.getenv("DB_DATABASE") or "").strip().strip('"').lower()
+    if database in PROTECTED_DATABASES:
+        raise pytest.UsageError(
+            f"Refusing to run integration tests against '{database}'.\n"
+            f"These tests insert and delete rows, and that database is shared.\n"
+            f"Point DB_DATABASE at your own test database before running them, "
+            f"for example fyp_dev_<name>_activity_test."
+        )
+
+
+_refuse_shared_database()
+
+# ============================================================================
 # AUTOMATIC MOCKING OF EXTERNAL SERVICES
 # ============================================================================
 
