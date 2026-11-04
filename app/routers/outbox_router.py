@@ -280,8 +280,10 @@ async def get_failed_events(
         )
     
     try:
+        # Both states, so this view still shows everything that has failed:
+        # FAILED is waiting on another attempt, ABANDONED has given up.
         failed_events = db.query(OutboxEvent).filter(
-            OutboxEvent.status == OutboxStatus.FAILED
+            OutboxEvent.status.in_([OutboxStatus.FAILED, OutboxStatus.ABANDONED])
         ).order_by(OutboxEvent.created_at.desc()).limit(limit).all()
         
         return [
